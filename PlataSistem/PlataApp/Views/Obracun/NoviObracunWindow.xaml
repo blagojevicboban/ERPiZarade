@@ -1,0 +1,99 @@
+<Window x:Class="PlataApp.Views.Obracun.NoviObracunWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Pokretanje novog obračuna plata" 
+        Height="650" Width="950"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource SurfaceBrush}"
+        Style="{DynamicResource {x:Type Window}}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Header -->
+            <RowDefinition Height="Auto"/>  <!-- Parameters (Godina, Mesec, Bod, Fond) -->
+            <RowDefinition Height="*"/>     <!-- DataGrid for Hours Input -->
+            <RowDefinition Height="Auto"/>  <!-- Actions (Save / Cancel) -->
+        </Grid.RowDefinitions>
+
+        <!-- ── HEADER ──────────────────────────────────────────────── -->
+        <Border Grid.Row="0" Padding="20,16">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <GradientStop Color="#1A237E" Offset="0"/>
+                    <GradientStop Color="#283593" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <StackPanel>
+                <TextBlock Text="⚙️ Obračun zarada za nov mesec" FontSize="18" FontWeight="Bold" Foreground="White"/>
+                <TextBlock Text="Unesite radne sate za zaposlene kako biste automatski obračunali neto zarade, poreze i doprinose."
+                           FontSize="12" Foreground="#90CAF9" Margin="0,4,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ── PARAMETERS ──────────────────────────────────────────── -->
+        <Border Grid.Row="1" Style="{StaticResource Card}" Margin="16,12,16,8" Padding="16,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="90"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="90"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="130"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="Godina:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
+                <ComboBox x:Name="ComboGodina" Grid.Column="1" Margin="0,0,16,0" Padding="8,5"/>
+
+                <TextBlock Grid.Column="2" Text="Mesec:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
+                <ComboBox x:Name="ComboMesec" Grid.Column="3" Margin="0,0,16,0" Padding="8,5"/>
+
+                <TextBlock Grid.Column="4" Text="Vrednost boda (RSD):" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
+                <TextBox x:Name="TxtVrednostBoda" Grid.Column="5" Text="1860.34" Margin="0,0,16,0" VerticalAlignment="Center"/>
+
+                <TextBlock Grid.Column="6" Text="Fond časova:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
+                <TextBox x:Name="TxtFondCasova" Grid.Column="7" Text="176" VerticalAlignment="Center" LostFocus="TxtFondCasova_LostFocus"/>
+            </Grid>
+        </Border>
+
+        <!-- ── DATAGRID ────────────────────────────────────────────── -->
+        <Border Grid.Row="2" Style="{StaticResource Card}" Margin="16,4,16,12" Padding="0">
+            <DataGrid x:Name="GridRadniciSati" 
+                      AutoGenerateColumns="False" 
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      BorderThickness="0"
+                      SelectionMode="Single"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="Horizontal">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Br." Binding="{Binding BrojRadnika}" IsReadOnly="True" Width="45"/>
+                    <DataGridTextColumn Header="Ime i Prezime" Binding="{Binding ImeIPrezime}" IsReadOnly="True" Width="*"/>
+                    <DataGridTextColumn Header="Koeficijent" Binding="{Binding Koeficijent, StringFormat=N4}" IsReadOnly="True" Width="90"/>
+                    <DataGridTextColumn Header="Redovni sati" Binding="{Binding RedovniSati, UpdateSourceTrigger=PropertyChanged}" Width="100"/>
+                    <DataGridTextColumn Header="Bolovanje" Binding="{Binding BolovanjeSati, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
+                    <DataGridTextColumn Header="Prekovremeni" Binding="{Binding PrekovremeneSati, UpdateSourceTrigger=PropertyChanged}" Width="100"/>
+                    <DataGridTextColumn Header="Godišnji odmor" Binding="{Binding GodisnjiOdmorSati, UpdateSourceTrigger=PropertyChanged}" Width="110"/>
+                    <DataGridTextColumn Header="Državni praznik" Binding="{Binding DrzavniPraznikSati, UpdateSourceTrigger=PropertyChanged}" Width="110"/>
+                    <DataGridTextColumn Header="Noćni rad" Binding="{Binding NocniSati, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
+                    <DataGridTextColumn Header="Prosek (12m)" Binding="{Binding Prosek, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}" Width="100"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- ── ACTIONS ─────────────────────────────────────────────── -->
+        <Border Grid.Row="3" Background="#F3F4F6" Padding="20,12" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0">
+            <Grid>
+                <TextBlock x:Name="TxtObavestenje" Text="Unesite sate i potvrdite obračun." VerticalAlignment="Center" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="🔄 Resetuj sate" x:Name="BtnResetuj" Style="{StaticResource NavButton}" Width="130" Margin="0,0,12,0" Click="BtnResetuj_Click"/>
+                    <Button Content="Otkaži" Style="{StaticResource NavButton}" Width="100" Margin="0,0,12,0" Click="BtnOtkazi_Click"/>
+                    <Button Content="🧮  Izračunaj i sačuvaj" Style="{StaticResource PrimaryButton}" Padding="16,8" Click="BtnIzracunaj_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

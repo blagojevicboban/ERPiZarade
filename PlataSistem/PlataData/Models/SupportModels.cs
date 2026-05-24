@@ -1,0 +1,98 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace PlataData.Models;
+
+/// <summary>Kredit ili obustava — port KREDIT.DBF</summary>
+[Table("Krediti")]
+public class Kredit
+{
+    [Key] public int Id { get; set; }
+    [ForeignKey(nameof(Radnik))] public int RadnikId { get; set; }
+
+    [MaxLength(60)] public string Opis { get; set; } = "";
+
+    [Column(TypeName = "decimal(14,2)")] public decimal UkupanIznos { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal MesecnaRata { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal OstatakDuga { get; set; }
+
+    public int BrojRata { get; set; }
+    public int PlateneRate { get; set; }
+    public DateTime DatumPocetka { get; set; }
+    public DateTime? DatumZavrsetka { get; set; }
+    public bool Aktivan { get; set; } = true;
+
+    public Radnik Radnik { get; set; } = null!;
+}
+
+/// <summary>Radni sati — port RAD_SATI.DBF</summary>
+[Table("RadniSati")]
+public class RadniSat
+{
+    [Key] public int Id { get; set; }
+    [ForeignKey(nameof(Radnik))] public int RadnikId { get; set; }
+    public int Godina { get; set; }
+    public int Mesec { get; set; }
+
+    public int RedovniSati { get; set; }
+    public int BolovanjeSati { get; set; }
+    public int PrekovremeneSati { get; set; }
+    public int GodisnjiOdmorSati { get; set; }
+    public int DrzavniPraznikSati { get; set; }
+    public int NocniSati { get; set; }
+
+    [Column(TypeName = "decimal(14,4)")]
+    public decimal Prosek { get; set; }
+
+    public Radnik Radnik { get; set; } = null!;
+}
+
+/// <summary>Poreske stope i razredi — port POREZI.DBF + RAZREDI.DBF</summary>
+[Table("PoreskeStope")]
+public class PoreznaStopa
+{
+    [Key] public int Id { get; set; }
+    public int RedniBroj { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal GranjaOd { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal GranicaDo { get; set; }
+    [Column(TypeName = "decimal(6,4)")] public decimal Stopa { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal FiksniIznos { get; set; }
+    public int GodisnjuVazenja { get; set; }
+    public int MesecVazenja { get; set; }
+}
+
+/// <summary>Kategorije radnika — port KATEGORI.DBF</summary>
+[Table("Kategorije")]
+public class Kategorija
+{
+    [Key] public int Id { get; set; }
+    [MaxLength(10)] public string Sifra { get; set; } = "";
+    [MaxLength(60)] public string Naziv { get; set; } = "";
+    [Column(TypeName = "decimal(8,4)")] public decimal Koeficijent { get; set; }
+    [Column(TypeName = "decimal(6,4)")] public decimal StopaPio { get; set; }
+    [Column(TypeName = "decimal(6,4)")] public decimal StopaZdravstvo { get; set; }
+}
+
+/// <summary>Samodoprinosi — port SAMODOP.DBF</summary>
+[Table("Samodoprinosi")]
+public class Samodoprinosi
+{
+    [Key] public int Id { get; set; }
+    [ForeignKey(nameof(Radnik))] public int RadnikId { get; set; }
+    public int Godina { get; set; }
+    public int Mesec { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal Iznos { get; set; }
+    [MaxLength(60)] public string Opis { get; set; } = "";
+    public Radnik Radnik { get; set; } = null!;
+}
+
+/// <summary>Normativ bodova/sati — port NORMATIV.DBF</summary>
+[Table("Normativi")]
+public class Normativ
+{
+    [Key] public int Id { get; set; }
+    [MaxLength(20)] public string Sifra { get; set; } = "";
+    [MaxLength(60)] public string Naziv { get; set; } = "";
+    [Column(TypeName = "decimal(10,4)")] public decimal VrednostBoda { get; set; }
+    public char Tip { get; set; } = 'P'; // P=procenat, L=linearno, S=stimulacija, B=bodovi, C=casovi
+}

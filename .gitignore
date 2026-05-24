@@ -1,5 +1,40 @@
-﻿################################################################################
-# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
-################################################################################
+# ==============================================================================
+# .gitignore za ObracunZarada (Clipper DOS + .NET Core C# WPF)
+# ==============================================================================
 
+# ─── Razvojno okruženje i korisnička podešavanja ──────────────────────────────
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# ─── .NET / C# kompajlirani izlazi i paketi ───────────────────────────────────
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+bld/
+[Bb]in/
+[Oo]bj/
+publish_output/
+ReleasePackage/
+PlataSistem_Instalacija.zip
+
+# ─── SQLite baze podataka (sadrže stvarne i osetljive podatke o zaradama) ──────
+*.db
+*.db-shm
+*.db-wal
+
+# ─── Ignoriši Clipper DOS folder u potpunosti ─────────────────────────────────
+PLATA/
 /PLATA
+
+# ─── Ostali privremeni i bekap fajlovi ────────────────────────────────────────
+*.bak
+*.tmp
+*.log
+*.zip
+*.rar
+*.arj

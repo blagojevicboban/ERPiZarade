@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="PlataApp/PlataApp.csproj" />
+  <Project Path="PlataData/PlataData.csproj" />
+  <Project Path="PlataMigration/PlataMigration.csproj" />
+</Solution>

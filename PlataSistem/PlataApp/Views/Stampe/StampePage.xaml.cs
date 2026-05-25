@@ -195,11 +195,22 @@ public partial class StampePage : Page
                     odbici = odbici.Where(s => rjRadniciIds.Contains(s.RadnikId)).ToList();
                 }
 
+                // Učitaj doprinose poslodavca za ovaj mesec/godinu
+                var doprPoslodavca = db.DoprinosiPoslodavca
+                    .Where(d => d.Godina == godina && d.Mesec == mesec)
+                    .ToList();
+
+                if (targetRj.HasValue)
+                {
+                    var rjRadniciIds = obracuni.Select(o => o.RadnikId).ToHashSet();
+                    doprPoslodavca = doprPoslodavca.Where(d => rjRadniciIds.Contains(d.RadnikId)).ToList();
+                }
+
                 Document.Create(container =>
                 {
                     container.Page(page =>
                     {
-                        var doc = new RekapitulacijaDocument(obracuni, godina, mesec, rjFilter, odbici);
+                        var doc = new RekapitulacijaDocument(obracuni, godina, mesec, rjFilter, odbici, doprPoslodavca);
                         doc.Build(page);
                     });
                 }).GeneratePdf(sfd.FileName);

@@ -12,6 +12,7 @@ public class RekapitulacijaDocument
 {
     private readonly List<ObracunPlate> _obracuni;
     private readonly List<Samodoprinosi> _odbici;
+    private readonly List<DoprinosiPoslodavca> _doprPoslodavca;
     private readonly int _godina;
     private readonly int _mesec;
     private readonly string _rjFilter;
@@ -25,13 +26,15 @@ public class RekapitulacijaDocument
     private const decimal StopaZdrP     =  5.150m;
 
     public RekapitulacijaDocument(List<ObracunPlate> obracuni, int godina, int mesec, string rjFilter,
-                                   List<Samodoprinosi>? odbici = null)
+                                   List<Samodoprinosi>? odbici = null,
+                                   List<DoprinosiPoslodavca>? doprPoslodavca = null)
     {
         _obracuni = obracuni;
         _odbici   = odbici ?? new List<Samodoprinosi>();
         _godina   = godina;
         _mesec    = mesec;
         _rjFilter = rjFilter;
+        _doprPoslodavca = doprPoslodavca ?? new List<DoprinosiPoslodavca>();
     }
 
     public void Build(PageDescriptor page)
@@ -99,9 +102,23 @@ public class RekapitulacijaDocument
         decimal sumZaIsplatu       = sumZaradaBezPorDop - sumUkOdbici;
 
         // Doprinosi poslodavca
-        decimal sumPioP  = _obracuni.Sum(o => o.DoprinosPioPoslodavac);
-        decimal sumZdrP  = _obracuni.Sum(o => o.DoprinosZdravstvoPoslodavac);
-        decimal sumNezP  = _obracuni.Sum(o => o.DoprinosNezaposlenostPoslodavac);
+        decimal sumPioP  = 0m;
+        decimal sumZdrP  = 0m;
+        decimal sumNezP  = 0m;
+
+        if (_doprPoslodavca.Any())
+        {
+            // Use detailed employer contributions from DoprinosiPoslodavca table
+            sumPioP = _doprPoslodavca.Sum(d => d.Zar1);
+            sumZdrP = _doprPoslodavca.Sum(d => d.Zar2);
+            sumNezP = _doprPoslodavca.Sum(d => d.Zar3);
+        }
+        else
+        {
+            sumPioP  = _obracuni.Sum(o => o.DoprinosPioPoslodavac);
+            sumZdrP  = _obracuni.Sum(o => o.DoprinosZdravstvoPoslodavac);
+            sumNezP  = _obracuni.Sum(o => o.DoprinosNezaposlenostPoslodavac);
+        }
 
         // Masa za isplatu
         decimal masaCeoObr  = sumZarada + sumPioP + sumZdrP + sumNezP;

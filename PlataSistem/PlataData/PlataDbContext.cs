@@ -20,6 +20,7 @@ public class PlataDbContext : DbContext
     public DbSet<Doprinos> Doprinosi => Set<Doprinos>();
     public DbSet<Firma> Firme => Set<Firma>();
     public DbSet<PlatniRazred> PlatniRazredi => Set<PlatniRazred>();
+    public DbSet<DoprinosiPoslodavca> DoprinosiPoslodavca => Set<DoprinosiPoslodavca>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -60,6 +61,16 @@ public class PlataDbContext : DbContext
         // Indeks: brza pretraga radnika po BrojRadnika
         modelBuilder.Entity<Radnik>()
             .HasIndex(r => r.BrojRadnika);
+
+        // Radnik → DoprinosiPoslodavca (1:N)
+        modelBuilder.Entity<DoprinosiPoslodavca>()
+            .HasOne(dp => dp.Radnik)
+            .WithMany()
+            .HasForeignKey(dp => dp.RadnikId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<DoprinosiPoslodavca>()
+            .HasIndex(dp => new { dp.RadnikId, dp.Godina, dp.Mesec });
     }
 
     /// <summary>
@@ -72,6 +83,30 @@ public class PlataDbContext : DbContext
         optionsBuilder.UseSqlite($"Data Source={dbPath}");
         var ctx = new PlataDbContext(optionsBuilder.Options);
         ctx.Database.EnsureCreated();
+
+        // Bezbedno kreiranje tabele DoprinosiPoslodavca ako ne postoji
+        try
+        {
+            ctx.Database.ExecuteSqlRaw(@"
+                CREATE TABLE IF NOT EXISTS DoprinosiPoslodavca (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    RadnikId INTEGER NOT NULL,
+                    Godina INTEGER NOT NULL,
+                    Mesec INTEGER NOT NULL,
+                    Zar1 DECIMAL(14,2) DEFAULT 0, Zar2 DECIMAL(14,2) DEFAULT 0, Zar3 DECIMAL(14,2) DEFAULT 0, Zar4 DECIMAL(14,2) DEFAULT 0, Zar5 DECIMAL(14,2) DEFAULT 0, Zar6 DECIMAL(14,2) DEFAULT 0, Zar7 DECIMAL(14,2) DEFAULT 0, Zar8 DECIMAL(14,2) DEFAULT 0, Zar9 DECIMAL(14,2) DEFAULT 0,
+                    Bol1 DECIMAL(14,2) DEFAULT 0, Bol2 DECIMAL(14,2) DEFAULT 0, Bol3 DECIMAL(14,2) DEFAULT 0, Bol4 DECIMAL(14,2) DEFAULT 0, Bol5 DECIMAL(14,2) DEFAULT 0, Bol6 DECIMAL(14,2) DEFAULT 0, Bol7 DECIMAL(14,2) DEFAULT 0, Bol8 DECIMAL(14,2) DEFAULT 0, Bol9 DECIMAL(14,2) DEFAULT 0,
+                    Nak1 DECIMAL(14,2) DEFAULT 0, Nak2 DECIMAL(14,2) DEFAULT 0, Nak3 DECIMAL(14,2) DEFAULT 0, Nak4 DECIMAL(14,2) DEFAULT 0, Nak5 DECIMAL(14,2) DEFAULT 0, Nak6 DECIMAL(14,2) DEFAULT 0, Nak7 DECIMAL(14,2) DEFAULT 0, Nak8 DECIMAL(14,2) DEFAULT 0, Nak9 DECIMAL(14,2) DEFAULT 0,
+                    Nep1 DECIMAL(14,2) DEFAULT 0, Nep2 DECIMAL(14,2) DEFAULT 0, Nep3 DECIMAL(14,2) DEFAULT 0, Nep4 DECIMAL(14,2) DEFAULT 0, Nep5 DECIMAL(14,2) DEFAULT 0, Nep6 DECIMAL(14,2) DEFAULT 0, Nep7 DECIMAL(14,2) DEFAULT 0, Nep8 DECIMAL(14,2) DEFAULT 0, Nep9 DECIMAL(14,2) DEFAULT 0,
+                    B60F1 DECIMAL(14,2) DEFAULT 0, B60F2 DECIMAL(14,2) DEFAULT 0, B60F3 DECIMAL(14,2) DEFAULT 0, B60F4 DECIMAL(14,2) DEFAULT 0, B60F5 DECIMAL(14,2) DEFAULT 0, B60F6 DECIMAL(14,2) DEFAULT 0, B60F7 DECIMAL(14,2) DEFAULT 0, B60F8 DECIMAL(14,2) DEFAULT 0, B60F9 DECIMAL(14,2) DEFAULT 0,
+                    B601 DECIMAL(14,2) DEFAULT 0, B602 DECIMAL(14,2) DEFAULT 0, B603 DECIMAL(14,2) DEFAULT 0, B604 DECIMAL(14,2) DEFAULT 0, B605 DECIMAL(14,2) DEFAULT 0, B606 DECIMAL(14,2) DEFAULT 0, B607 DECIMAL(14,2) DEFAULT 0, B608 DECIMAL(14,2) DEFAULT 0, B609 DECIMAL(14,2) DEFAULT 0,
+                    Inv1 DECIMAL(14,2) DEFAULT 0, Inv2 DECIMAL(14,2) DEFAULT 0, Inv3 DECIMAL(14,2) DEFAULT 0, Inv4 DECIMAL(14,2) DEFAULT 0, Inv5 DECIMAL(14,2) DEFAULT 0, Inv6 DECIMAL(14,2) DEFAULT 0, Inv7 DECIMAL(14,2) DEFAULT 0, Inv8 DECIMAL(14,2) DEFAULT 0, Inv9 DECIMAL(14,2) DEFAULT 0,
+                    Por1 DECIMAL(14,2) DEFAULT 0, Por2 DECIMAL(14,2) DEFAULT 0, Por3 DECIMAL(14,2) DEFAULT 0, Por4 DECIMAL(14,2) DEFAULT 0, Por5 DECIMAL(14,2) DEFAULT 0, Por6 DECIMAL(14,2) DEFAULT 0, Por7 DECIMAL(14,2) DEFAULT 0, Por8 DECIMAL(14,2) DEFAULT 0, Por9 DECIMAL(14,2) DEFAULT 0,
+                    FOREIGN KEY (RadnikId) REFERENCES Radnici(Id) ON DELETE RESTRICT
+                );
+                CREATE INDEX IF NOT EXISTS IX_DoprinosiPoslodavca_RadnikId_Godina_Mesec ON DoprinosiPoslodavca (RadnikId, Godina, Mesec);
+            ");
+        }
+        catch { }
 
         // Bezbedno dodavanje kolona u SQLite bez migracija
         try
@@ -91,7 +126,8 @@ public class PlataDbContext : DbContext
             "NetoZar", "NetoNerd", "NetoGOd", "NetoTo", "NetoReg",
             "Neto", "NetoBol", "NetoB100", "NetoPlac", "NetoPlZ",
             "NetoDrza", "NetoNocni", "NetoVezba", "NetoPrek", "NetoTer",
-            "KorDod", "KorDod1", "Kumul", "NetoNede"
+            "KorDod", "KorDod1", "Kumul", "NetoNede",
+            "LicniOdbitak"   // DBF: umanjenje = licni odbitak (SAMODOP.PRG: sum_umanj)
         };
         foreach (var col in newCols)
         {

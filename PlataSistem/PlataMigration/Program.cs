@@ -92,6 +92,7 @@ if (clearTables)
         Console.Write("Čišćenje starih podataka iz tabela... ");
         db.Database.ExecuteSqlRaw("DELETE FROM RadniSati;");
         db.Database.ExecuteSqlRaw("DELETE FROM Samodoprinosi;");
+        try { db.Database.ExecuteSqlRaw("DELETE FROM DoprinosiPoslodavca;"); } catch { }
         db.Database.ExecuteSqlRaw("DELETE FROM ObracuniPlata;");
         db.Database.ExecuteSqlRaw("DELETE FROM Radnici;");
         db.Database.ExecuteSqlRaw("DELETE FROM Porezi;");
@@ -470,6 +471,15 @@ var doprinosDbf = Path.Combine(dbfDir, "DOPRINOS.DBF");
 await ImportDoprinosiDbf(doprinoiDbf, "DOPRINOI.DBF (istorija)", isHistory: true);
 await ImportDoprinosiDbf(doprinosDbf, "DOPRINOS.DBF (aktivni/tekući)", isHistory: false);
 
+// ══════════════════════════════════════════════════════════════════
+// UVOZ POSL_OBR.DBF I POSLOBRI.DBF (detaljni doprinosi poslodavca)
+// ══════════════════════════════════════════════════════════════════
+var poslobriDbf = Path.Combine(dbfDir, "POSLOBRI.DBF");
+var poslobrDbf = Path.Combine(dbfDir, "POSL_OBR.DBF");
+
+await ImportDoprinosiPoslodavcaDbf(poslobriDbf, "POSLOBRI.DBF (istorija)", aktivnaGodina, aktivniMesec);
+await ImportDoprinosiPoslodavcaDbf(poslobrDbf, "POSL_OBR.DBF (tekući)", aktivnaGodina, aktivniMesec);
+
 
 
 // ── Reusable uvoz obračuna ──
@@ -534,8 +544,12 @@ async Task ImportObracuniDbf(string dbfPath, string label, int defaultGodina, in
                 DoprinosPioRadnik = GetDecimal(reader, columns, "DOP_ZAR1", "PIO"),
                 DoprinosZdravstvoRadnik     = GetDecimal(reader, columns, "DOP_ZAR2"),
                 DoprinosNezaposlenostRadnik = GetDecimal(reader, columns, "DOP_ZAR3"),
+                DoprinosPioPoslodavac           = GetDecimal(reader, columns, "DOP_ZAR4"),
+                DoprinosZdravstvoPoslodavac     = GetDecimal(reader, columns, "DOP_ZAR5"),
+                DoprinosNezaposlenostPoslodavac = GetDecimal(reader, columns, "DOP_ZAR8", "DOP_ZAR9"),
                 PorezNaDohodak    = GetDecimal(reader, columns, "UKUP_POR", "POREZ_IZ"),
                 PoreskaOsnovica   = GetDecimal(reader, columns, "BRUTO_POR"),
+                LicniOdbitak      = GetDecimal(reader, columns, "UMANJENJE"),
                 Samodoprinosi     = GetDecimal(reader, columns, "SAMODOP1") +
                                     GetDecimal(reader, columns, "SAMODOP2") +
                                     GetDecimal(reader, columns, "SAMODOP3") +
@@ -1010,6 +1024,7 @@ Console.WriteLine($"  Obračuna:  {await db.ObracuniPlata.CountAsync()}");
 Console.WriteLine($"  Radnih sati: {await db.RadniSati.CountAsync()}");
 Console.WriteLine($"  Poreza:    {await db.Porezi.CountAsync()}");
 Console.WriteLine($"  Doprinosa: {await db.Doprinosi.CountAsync()}");
+Console.WriteLine($"  Dop. poslodavca (detaljno): {await db.DoprinosiPoslodavca.CountAsync()}");
 Console.WriteLine($"  Baza:      {sqliteDb}");
 Console.WriteLine($"  Veličina:  {new FileInfo(sqliteDb).Length / 1024} KB");
 Console.WriteLine("══════════════════════════════════════════");
@@ -1164,60 +1179,275 @@ async Task ImportRazrediDbf(string dbfPath)
         return;
     }
 
-    Console.Write($"\nUvoz RAZREDI.DBF ... ");
-    int cnt = 0;
+    // Lista putanja koje ćemo pokušati (uključujući backup kopiju RAZREDI1.DBF)
+    var pathsToTry = new List<string> { dbfPath };
+    var dir = Path.GetDirectoryName(dbfPath);
+    if (!string.IsNullOrEmpty(dir))
+    {
+        var backupPath = Path.Combine(dir, "RAZREDI1.DBF");
+        if (File.Exists(backupPath))
+        {
+            pathsToTry.Add(backupPath);
+        }
+    }
+
+    bool success = false;
+    foreach (var path in pathsToTry)
+    {
+        string currentPath = path;
+        string tempDbfPath = "";
+        Console.Write($"\nUvoz {Path.GetFileName(currentPath)} ... ");
+        int cnt = 0;
+
+        try
+        {
+            tempDbfPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".dbf");
+            File.Copy(currentPath, tempDbfPath, true);
+            currentPath = tempDbfPath;
+        }
+        catch (Exception ex)
+        {
+            tempDbfPath = "";
+            // Nastavi direktno čitanje
+        }
+
+        try
+        {
+            var options = new DbfDataReaderOptions { Encoding = cp852, SkipDeletedRecords = true };
+            using var reader = new DbfDataReader.DbfDataReader(currentPath, options);
+            var columns = Enumerable.Range(0, reader.FieldCount)
+                                    .Select(i => reader.GetName(i).ToUpper().Trim()).ToList();
+
+            if (reader.Read())
+            {
+                var r = new PlatniRazred();
+                r.R1 = GetDecimal(reader, columns, "R1");
+                r.R2 = GetDecimal(reader, columns, "R2");
+                r.R3 = GetDecimal(reader, columns, "R3");
+                r.R4 = GetDecimal(reader, columns, "R4");
+                r.R5 = GetDecimal(reader, columns, "R5");
+                r.R6 = GetDecimal(reader, columns, "R6");
+                r.R7 = GetDecimal(reader, columns, "R7");
+                r.R8 = GetDecimal(reader, columns, "R8");
+                r.R9 = GetDecimal(reader, columns, "R9");
+
+                r.P1 = GetDecimal(reader, columns, "P1");
+                r.P2 = GetDecimal(reader, columns, "P2");
+                r.P3 = GetDecimal(reader, columns, "P3");
+                r.P4 = GetDecimal(reader, columns, "P4");
+                r.P5 = GetDecimal(reader, columns, "P5");
+                r.P6 = GetDecimal(reader, columns, "P6");
+                r.P7 = GetDecimal(reader, columns, "P7");
+                r.P8 = GetDecimal(reader, columns, "P8");
+                r.P9 = GetDecimal(reader, columns, "P9");
+
+                // Upsert: ako postoji zapis, zameniti; inače dodati
+                var existing = await db.PlatniRazredi.FirstOrDefaultAsync();
+                if (existing != null)
+                {
+                    existing.R1 = r.R1; existing.R2 = r.R2; existing.R3 = r.R3; existing.R4 = r.R4; existing.R5 = r.R5; existing.R6 = r.R6; existing.R7 = r.R7; existing.R8 = r.R8; existing.R9 = r.R9;
+                    existing.P1 = r.P1; existing.P2 = r.P2; existing.P3 = r.P3; existing.P4 = r.P4; existing.P5 = r.P5; existing.P6 = r.P6; existing.P7 = r.P7; existing.P8 = r.P8; existing.P9 = r.P9;
+                    await db.SaveChangesAsync();
+                }
+                else
+                {
+                    db.PlatniRazredi.Add(r);
+                    await db.SaveChangesAsync();
+                }
+
+                cnt = 1;
+            }
+
+            Console.WriteLine($"\r  [OK] Uspešno uvezeno iz {Path.GetFileName(path)}");
+            success = true;
+            break;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"\r  [GREŠKA] Neuspešan uvoz iz {Path.GetFileName(path)}: {ex.Message}");
+        }
+        finally
+        {
+            if (!string.IsNullOrEmpty(tempDbfPath) && File.Exists(tempDbfPath))
+            {
+                try { File.Delete(tempDbfPath); } catch { }
+            }
+        }
+    }
+
+    if (!success)
+    {
+        Console.WriteLine("\n[!] UPOZORENJE: Neuspešan uvoz platnih razreda iz svih raspoloživih DBF fajlova. Koristiće se podrazumevane vrednosti.");
+    }
+}
+
+
+async Task ImportDoprinosiPoslodavcaDbf(string dbfPath, string label, int defaultGodina, int defaultMesec)
+{
+    if (!File.Exists(dbfPath))
+    {
+        Console.WriteLine($"[!] Nema {label} na putanji: {dbfPath}");
+        return;
+    }
+
+    Console.Write($"\nUvoz {label} ... ");
+    int cnt = 0, skipped = 0;
+
+    // Kopiramo fajl na privremenu lokaciju da izbegnemo zaključavanje u Clipperu
+    string tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".dbf");
+    try
+    {
+        File.Copy(dbfPath, tempPath, true);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[!] Greška pri kopiranju {dbfPath} na privremenu lokaciju: {ex.Message}");
+        tempPath = dbfPath; // fallback na direktno čitanje
+    }
 
     try
     {
         var options = new DbfDataReaderOptions { Encoding = cp852, SkipDeletedRecords = true };
-        using var reader = new DbfDataReader.DbfDataReader(dbfPath, options);
+        using var reader = new DbfDataReader.DbfDataReader(tempPath, options);
         var columns = Enumerable.Range(0, reader.FieldCount)
                                 .Select(i => reader.GetName(i).ToUpper().Trim()).ToList();
 
-        if (reader.Read())
+        var batch = new List<DoprinosiPoslodavca>();
+
+        while (reader.Read())
         {
-            var r = new PlatniRazred();
-            r.R1 = GetDecimal(reader, columns, "R1");
-            r.R2 = GetDecimal(reader, columns, "R2");
-            r.R3 = GetDecimal(reader, columns, "R3");
-            r.R4 = GetDecimal(reader, columns, "R4");
-            r.R5 = GetDecimal(reader, columns, "R5");
-            r.R6 = GetDecimal(reader, columns, "R6");
-            r.R7 = GetDecimal(reader, columns, "R7");
-            r.R8 = GetDecimal(reader, columns, "R8");
-            r.R9 = GetDecimal(reader, columns, "R9");
-
-            r.P1 = GetDecimal(reader, columns, "P1");
-            r.P2 = GetDecimal(reader, columns, "P2");
-            r.P3 = GetDecimal(reader, columns, "P3");
-            r.P4 = GetDecimal(reader, columns, "P4");
-            r.P5 = GetDecimal(reader, columns, "P5");
-            r.P6 = GetDecimal(reader, columns, "P6");
-            r.P7 = GetDecimal(reader, columns, "P7");
-            r.P8 = GetDecimal(reader, columns, "P8");
-            r.P9 = GetDecimal(reader, columns, "P9");
-
-            // Upsert: ako postoji zapis, zameniti; inače dodati
-            var existing = await db.PlatniRazredi.FirstOrDefaultAsync();
-            if (existing != null)
+            try
             {
-                existing.R1 = r.R1; existing.R2 = r.R2; existing.R3 = r.R3; existing.R4 = r.R4; existing.R5 = r.R5; existing.R6 = r.R6; existing.R7 = r.R7; existing.R8 = r.R8; existing.R9 = r.R9;
-                existing.P1 = r.P1; existing.P2 = r.P2; existing.P3 = r.P3; existing.P4 = r.P4; existing.P5 = r.P5; existing.P6 = r.P6; existing.P7 = r.P7; existing.P8 = r.P8; existing.P9 = r.P9;
-                await db.SaveChangesAsync();
-            }
-            else
-            {
-                db.PlatniRazredi.Add(r);
-                await db.SaveChangesAsync();
-            }
+                int brRadnika = GetInt(reader, columns, "RED_BROJ");
+                
+                int godina = columns.Contains("GODINA") ? GetInt(reader, columns, "GODINA") : defaultGodina;
+                int mesec = columns.Contains("MESEC") ? GetInt(reader, columns, "MESEC") : defaultMesec;
 
-            cnt = 1;
+                if (godina <= 0) godina = defaultGodina;
+                if (mesec <= 0) mesec = defaultMesec;
+
+                if (!uvezeniRadnikIds.Contains(brRadnika))
+                {
+                    skipped++;
+                    continue;
+                }
+
+                // Brisanje eventualnih postojećih zapisa za tog radnika u istom mesecu/godini
+                var postojeci = await db.DoprinosiPoslodavca
+                    .FirstOrDefaultAsync(o => o.RadnikId == brRadnika && o.Godina == godina && o.Mesec == mesec);
+                if (postojeci != null)
+                {
+                    db.DoprinosiPoslodavca.Remove(postojeci);
+                }
+
+                var dp = new DoprinosiPoslodavca
+                {
+                    RadnikId = brRadnika,
+                    Godina = godina,
+                    Mesec = mesec,
+
+                    Zar1 = GetDecimal(reader, columns, "ZAR1"),
+                    Zar2 = GetDecimal(reader, columns, "ZAR2"),
+                    Zar3 = GetDecimal(reader, columns, "ZAR3"),
+                    Zar4 = GetDecimal(reader, columns, "ZAR4"),
+                    Zar5 = GetDecimal(reader, columns, "ZAR5"),
+                    Zar6 = GetDecimal(reader, columns, "ZAR6"),
+                    Zar7 = GetDecimal(reader, columns, "ZAR7"),
+                    Zar8 = GetDecimal(reader, columns, "ZAR8"),
+                    Zar9 = GetDecimal(reader, columns, "ZAR9"),
+
+                    Bol1 = GetDecimal(reader, columns, "BOL1"),
+                    Bol2 = GetDecimal(reader, columns, "BOL2"),
+                    Bol3 = GetDecimal(reader, columns, "BOL3"),
+                    Bol4 = GetDecimal(reader, columns, "BOL4"),
+                    Bol5 = GetDecimal(reader, columns, "BOL5"),
+                    Bol6 = GetDecimal(reader, columns, "BOL6"),
+                    Bol7 = GetDecimal(reader, columns, "BOL7"),
+                    Bol8 = GetDecimal(reader, columns, "BOL8"),
+                    Bol9 = GetDecimal(reader, columns, "BOL9"),
+
+                    Nak1 = GetDecimal(reader, columns, "NAK1"),
+                    Nak2 = GetDecimal(reader, columns, "NAK2"),
+                    Nak3 = GetDecimal(reader, columns, "NAK3"),
+                    Nak4 = GetDecimal(reader, columns, "NAK4"),
+                    Nak5 = GetDecimal(reader, columns, "NAK5"),
+                    Nak6 = GetDecimal(reader, columns, "NAK6"),
+                    Nak7 = GetDecimal(reader, columns, "NAK7"),
+                    Nak8 = GetDecimal(reader, columns, "NAK8"),
+                    Nak9 = GetDecimal(reader, columns, "NAK9"),
+
+                    Nep1 = GetDecimal(reader, columns, "NEP1"),
+                    Nep2 = GetDecimal(reader, columns, "NEP2"),
+                    Nep3 = GetDecimal(reader, columns, "NEP3"),
+                    Nep4 = GetDecimal(reader, columns, "NEP4"),
+                    Nep5 = GetDecimal(reader, columns, "NEP5"),
+                    Nep6 = GetDecimal(reader, columns, "NEP6"),
+                    Nep7 = GetDecimal(reader, columns, "NEP7"),
+                    Nep8 = GetDecimal(reader, columns, "NEP8"),
+                    Nep9 = GetDecimal(reader, columns, "NEP9"),
+
+                    B60F1 = GetDecimal(reader, columns, "B60F1"),
+                    B60F2 = GetDecimal(reader, columns, "B60F2"),
+                    B60F3 = GetDecimal(reader, columns, "B60F3"),
+                    B60F4 = GetDecimal(reader, columns, "B60F4"),
+                    B60F5 = GetDecimal(reader, columns, "B60F5"),
+                    B60F6 = GetDecimal(reader, columns, "B60F6"),
+                    B60F7 = GetDecimal(reader, columns, "B60F7"),
+                    B60F8 = GetDecimal(reader, columns, "B60F8"),
+                    B60F9 = GetDecimal(reader, columns, "B60F9"),
+
+                    B601 = GetDecimal(reader, columns, "B601"),
+                    B602 = GetDecimal(reader, columns, "B602"),
+                    B603 = GetDecimal(reader, columns, "B603"),
+                    B604 = GetDecimal(reader, columns, "B604"),
+                    B605 = GetDecimal(reader, columns, "B605"),
+                    B606 = GetDecimal(reader, columns, "B606"),
+                    B607 = GetDecimal(reader, columns, "B607"),
+                    B608 = GetDecimal(reader, columns, "B608"),
+                    B609 = GetDecimal(reader, columns, "B609"),
+
+                    Inv1 = GetDecimal(reader, columns, "INV1"),
+                    Inv2 = GetDecimal(reader, columns, "INV2"),
+                    Inv3 = GetDecimal(reader, columns, "INV3"),
+                    Inv4 = GetDecimal(reader, columns, "INV4"),
+                    Inv5 = GetDecimal(reader, columns, "INV5"),
+                    Inv6 = GetDecimal(reader, columns, "INV6"),
+                    Inv7 = GetDecimal(reader, columns, "INV7"),
+                    Inv8 = GetDecimal(reader, columns, "INV8"),
+                    Inv9 = GetDecimal(reader, columns, "INV9"),
+
+                    Por1 = GetDecimal(reader, columns, "POR1"),
+                    Por2 = GetDecimal(reader, columns, "POR2"),
+                    Por3 = GetDecimal(reader, columns, "POR3"),
+                    Por4 = GetDecimal(reader, columns, "POR4"),
+                    Por5 = GetDecimal(reader, columns, "POR5"),
+                    Por6 = GetDecimal(reader, columns, "POR6"),
+                    Por7 = GetDecimal(reader, columns, "POR7"),
+                    Por8 = GetDecimal(reader, columns, "POR8"),
+                    Por9 = GetDecimal(reader, columns, "POR9")
+                };
+
+                db.DoprinosiPoslodavca.Add(dp);
+                cnt++;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[!] Greška kod uvoza reda: {ex.Message}");
+            }
         }
 
-        Console.WriteLine($"\r  [OK] Uvezeno {cnt} zapisa iz RAZREDI.DBF");
+        await db.SaveChangesAsync();
+        Console.WriteLine($"\r  [OK] Uvezeno {cnt} zapisa o doprinosima poslodavca iz {label} (preskočeno: {skipped})");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"\r  [GREŠKA] Neuspesan uvoz RAZREDI.DBF: {ex.Message}");
+        Console.WriteLine($"\r  [GREŠKA] Neuspešan uvoz {label}: {ex.Message}");
+    }
+    finally
+    {
+        if (tempPath != dbfPath && File.Exists(tempPath))
+        {
+            try { File.Delete(tempPath); } catch { }
+        }
     }
 }

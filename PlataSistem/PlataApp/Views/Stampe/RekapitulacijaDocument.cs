@@ -11,203 +11,376 @@ namespace PlataApp.Views.Stampe;
 public class RekapitulacijaDocument
 {
     private readonly List<ObracunPlate> _obracuni;
+    private readonly List<Samodoprinosi> _odbici;
     private readonly int _godina;
     private readonly int _mesec;
     private readonly string _rjFilter;
 
-    public RekapitulacijaDocument(List<ObracunPlate> obracuni, int godina, int mesec, string rjFilter)
+    // Stope (fiksne kao u DOPRINOS.DBF za tekuci mesec)
+    private const decimal StopaPorez    = 10.000m;
+    private const decimal StopaPioR     = 14.000m;
+    private const decimal StopaZdrR     =  5.150m;
+    private const decimal StopaNezR     =  0.750m;
+    private const decimal StopaPioP     = 10.000m;
+    private const decimal StopaZdrP     =  5.150m;
+
+    public RekapitulacijaDocument(List<ObracunPlate> obracuni, int godina, int mesec, string rjFilter,
+                                   List<Samodoprinosi>? odbici = null)
     {
         _obracuni = obracuni;
-        _godina = godina;
-        _mesec = mesec;
+        _odbici   = odbici ?? new List<Samodoprinosi>();
+        _godina   = godina;
+        _mesec    = mesec;
         _rjFilter = rjFilter;
     }
 
     public void Build(PageDescriptor page)
     {
         page.Size(PageSizes.A4);
-        page.Margin(1.0f, Unit.Centimetre);
+        page.Margin(1.2f, Unit.Centimetre);
         page.PageColor(Colors.White);
-        page.DefaultTextStyle(x => x.FontSize(9).FontFamily("Calibri"));
+        page.DefaultTextStyle(x => x.FontSize(8.5f).FontFamily("Courier New"));
 
-        // Header
-        page.Header().Row(row =>
+        // ── Izračunavanja (odgovaraju SAMODOP.PRG: procedure rekapitulacija()) ───────────
+
+        // Bruto zarada (neto_zar u OBRACUN.DBF)
+        decimal sumBrutoZarada   = _obracuni.Sum(o => o.NetoZar);
+        decimal sumBrutoBol      = _obracuni.Sum(o => o.NetoBol + o.NetoB100);
+        decimal sumBrutoPlac     = _obracuni.Sum(o => o.NetoPlac);   // plac. odsustvo sankcije
+        decimal sumBrutoPlZ      = _obracuni.Sum(o => o.NetoPlZ);    // plac. odsustvo po zakonu
+        decimal sumBrutoNerd     = _obracuni.Sum(o => o.NetoNerd);   // drzavni praznik
+        decimal sumBrutoGOd      = _obracuni.Sum(o => o.NetoGOd);    // godisnji odmor
+        decimal sumBrutoMin      = _obracuni.Sum(o => o.BrutoMinuliRad);
+        decimal sumBrutoDrza     = _obracuni.Sum(o => o.NetoDrza);   // rad na drz. praznik
+        decimal sumBrutoNocni    = _obracuni.Sum(o => o.NetoNocni);
+        decimal sumBrutoPrek     = _obracuni.Sum(o => o.NetoPrek);
+        decimal sumBrutoNede     = _obracuni.Sum(o => o.NetoNede);   // nedeljom
+        decimal sumBrutoTO       = _obracuni.Sum(o => o.NetoTo);     // topli obrok
+        decimal sumBrutoReg      = _obracuni.Sum(o => o.NetoReg);    // regres
+        decimal sumBrutoTer      = _obracuni.Sum(o => o.NetoTer);    // terenski
+        decimal sumBrutoStim     = _obracuni.Sum(o => o.BrutoStimulacija); // varijabila
+        decimal sumKorDod        = _obracuni.Sum(o => o.KorDod);
+        decimal sumKorDod1       = _obracuni.Sum(o => o.KorDod1);
+
+        // Zarada (sum_neto = neto u OBRACUN)
+        decimal sumZarada        = _obracuni.Sum(o => o.Neto);
+        decimal sumDodPorez      = 0m;  // pos_por — nema zasebno u modelu, tretiramo kao 0
+        decimal sumUkupNeto      = sumZarada - sumDodPorez;
+
+        // Porez i osnovice
+        decimal sumPorez         = _obracuni.Sum(o => o.PorezNaDohodak);
+        // Umanjenje = licni odbitak = DBF polje 'umanjenje' (SAMODOP.PRG: sum_umanj)
+        decimal sumUmanjenje     = _obracuni.Sum(o => o.LicniOdbitak);
+        // Bruto osnovica za doprinose = Zarada (Neto), vidi BB.TXT red 39
+        decimal sumBrOs          = sumZarada;
+        decimal sumBrPIOOs       = sumZarada; // ista osnova za PIO (BB.TXT red 41)
+
+        // Odbici: samodoprinosi i krediti po tipu
+        var odbiciGrupisani = _odbici
+            .GroupBy(o => o.Opis)
+            .Select(g => (Naziv: g.Key, Iznos: g.Sum(x => x.Iznos)))
+            .Where(g => g.Iznos > 0)
+            .ToList();
+
+        decimal sumSamDop  = _obracuni.Sum(o => o.Samodoprinosi);   // ukupni samodoprinosi
+        decimal sumKred    = _obracuni.Sum(o => o.KreditObustava);  // ukupni krediti
+        decimal sumUkOdbici = sumSamDop + sumKred;
+
+        // Neto za isplatu
+        decimal sumNetoZaIsp = sumUkupNeto - sumUkOdbici;
+
+        // Doprinosi radnika
+        decimal sumPioR  = _obracuni.Sum(o => o.DoprinosPioRadnik);
+        decimal sumZdrR  = _obracuni.Sum(o => o.DoprinosZdravstvoRadnik);
+        decimal sumNezR  = _obracuni.Sum(o => o.DoprinosNezaposlenostRadnik);
+        decimal sumDopR  = sumPioR + sumZdrR + sumNezR;
+
+        decimal sumZaradaBezPorDop = sumZarada - sumPorez - sumDopR;
+        decimal sumZaIsplatu       = sumZaradaBezPorDop - sumUkOdbici;
+
+        // Doprinosi poslodavca
+        decimal sumPioP  = _obracuni.Sum(o => o.DoprinosPioPoslodavac);
+        decimal sumZdrP  = _obracuni.Sum(o => o.DoprinosZdravstvoPoslodavac);
+        decimal sumNezP  = _obracuni.Sum(o => o.DoprinosNezaposlenostPoslodavac);
+
+        // Masa za isplatu
+        decimal masaCeoObr  = sumZarada + sumPioP + sumZdrP + sumNezP;
+        decimal masaIsplac  = 0m;  // akontacije = 0 (BB.TXT)
+        decimal masaOstalo  = masaCeoObr - masaIsplac;
+
+        // Firma info (iz prvog obracuna ili hardcoded)
+        string imeKor  = "PSSS PIROT DOO PIROT";
+        string imeMes  = new[] {"januar","februar","mart","april","maj","jun",
+                                 "jul","avgust","septembar","oktobar","novembar","decembar"}[_mesec - 1];
+
+        // ── HEADER ──────────────────────────────────────────────────────────────────────
+        page.Header().Column(hdr =>
         {
-            row.RelativeItem().Column(col =>
+            hdr.Item().Row(row =>
             {
-                col.Item().Text("ZAVOD ZA POLJOPRIVREDU PIROT").Bold().FontSize(12).FontColor(Colors.Indigo.Darken4);
-                col.Item().Text("PIB: 100224119 • Matični broj: 07198305").FontSize(8).FontColor(Colors.Grey.Darken1);
-                col.Item().Text($"MESEČNA REKAPITULACIJA ZARADA").Bold().FontSize(11).FontColor(Colors.Indigo.Medium);
-                col.Item().Text($"Obračunski period: {_mesec:D2}/{_godina} • Filter RJ: {_rjFilter}").FontSize(8).FontColor(Colors.Grey.Darken2);
+                row.RelativeItem().Column(c =>
+                {
+                    c.Item().Text($"Datum stampe : {DateTime.Now:dd.MM.yyyy}").FontSize(8).FontFamily("Courier New");
+                });
+                row.RelativeItem().AlignCenter().Column(c =>
+                {
+                    c.Item().Text(imeKor).Bold().FontSize(9).FontFamily("Courier New");
+                });
             });
-            row.ConstantItem(150).AlignRight().Column(col =>
+            hdr.Item().AlignCenter().PaddingTop(3)
+                .Text($"R E K A P I T U L A C I J A  za  {imeMes} {_godina}")
+                .Bold().FontSize(9).FontFamily("Courier New");
+            hdr.Item().PaddingTop(2)
+                .Text(new string('_', 109))
+                .FontSize(7.5f).FontFamily("Courier New");
+            hdr.Item().PaddingTop(1).Row(row =>
             {
-                col.Item().Text($"Datum štampe: {DateTime.Now:dd.MM.yyyy}").FontSize(8).FontColor(Colors.Grey.Darken1);
-                col.Item().Text("Zbirni izveštaj").Bold().FontSize(9).FontColor(Colors.Indigo.Darken4);
+                row.RelativeItem();
+                row.ConstantItem(72).AlignRight().Text("OBRACUN").FontSize(8.5f).FontFamily("Courier New");
+                row.ConstantItem(72).AlignRight().Text("AKONTACIJE").FontSize(8.5f).FontFamily("Courier New");
+                row.ConstantItem(72).AlignRight().Text("RAZLIKA").FontSize(8.5f).FontFamily("Courier New");
             });
         });
 
-        // Content
-        page.Content().PaddingVertical(0.4f, Unit.Centimetre).Column(col =>
+        // ── CONTENT ─────────────────────────────────────────────────────────────────────
+        page.Content().PaddingVertical(0.2f, Unit.Centimetre).Column(col =>
         {
-            // Sum data from SQLite obracuni
-            int totalRadnici = _obracuni.Count;
-            int totalHours = _obracuni.Sum(o => o.RedovniSati + o.BolovanjeSati + o.PrekovremeneSati + o.GodisnjioOdmorSati);
-
-            decimal grandBruto = _obracuni.Sum(o => o.BrutoZarada + o.BrutoBolovanje);
-            decimal sumBrutoBolovanje = _obracuni.Sum(o => o.BrutoBolovanje);
-            decimal sumBrutoMinuliRad = _obracuni.Sum(o => o.BrutoMinuliRad);
-            decimal sumBrutoStimulacija = _obracuni.Sum(o => o.BrutoStimulacija);
-
-            decimal sumBrutoNaknade = _obracuni.Sum(o =>
+            void Row(string opis, decimal obracun, decimal akont = 0m, bool bold = false,
+                     string? bgColor = null)
             {
-                decimal naknade = o.BrutoNaknade;
-                if (naknade == (o.BrutoZarada + o.BrutoBolovanje))
+                decimal razlika = obracun - akont;
+                col.Item().Row(row =>
                 {
-                    return 0m;
-                }
-                return naknade;
+                    // Opis (max 52 znaka)
+                    row.RelativeItem().Background(bgColor ?? Colors.White)
+                        .Text(opis)
+                        .Style(bold
+                            ? TextStyle.Default.Bold().FontSize(8.5f).FontFamily("Courier New")
+                            : TextStyle.Default.FontSize(8.5f).FontFamily("Courier New"));
+
+
+                    // OBRACUN
+                    row.ConstantItem(72).Background(bgColor ?? Colors.White)
+                        .AlignRight()
+                        .Text($"{obracun:N2}")
+                        .Style(bold
+                            ? TextStyle.Default.Bold().FontSize(8.5f).FontFamily("Courier New")
+                            : TextStyle.Default.FontSize(8.5f).FontFamily("Courier New"));
+
+                    // AKONTACIJE
+                    row.ConstantItem(72).Background(bgColor ?? Colors.White)
+                        .AlignRight()
+                        .Text($"{akont:N2}")
+                        .FontSize(8.5f).FontFamily("Courier New");
+
+                    // RAZLIKA
+                    row.ConstantItem(72).Background(bgColor ?? Colors.White)
+                        .AlignRight()
+                        .Text($"{razlika:N2}")
+                        .Style(bold
+                            ? TextStyle.Default.Bold().FontSize(8.5f).FontFamily("Courier New")
+                            : TextStyle.Default.FontSize(8.5f).FontFamily("Courier New"));
+                });
+            }
+
+            // ── ZARADE ──────────────────────────────────────────────────────────────────
+            Row("Bruto zarada.........................................", sumBrutoZarada);
+            Row("Bruto naknada - bolovanje do 30 dana.................", sumBrutoBol);
+            Row("Bruto naknada - placeno odsustvo - sankcije..........", sumBrutoPlac);
+            Row("Bruto naknada - placeno odsustvo - po zakonu.........", sumBrutoPlZ);
+            Row("Bruto naknada - drzavni praznik......................", sumBrutoNerd);
+            Row("Bruto naknada - godisnji odmor.......................", sumBrutoGOd);
+            Row("Bruto dodatak - minuli rad...........................", sumBrutoMin);
+            Row("Bruto dodatak - rad na drzavni praznik...............", sumBrutoDrza);
+            Row("Bruto dodatak - nocni rad............................", sumBrutoNocni);
+            Row("Bruto dodatak - prekovremeni rad.....................", sumBrutoPrek);
+            Row("Bruto dodatak - rad nedeljom.........................", sumBrutoNede);
+            if (sumBrutoTO   != 0) Row("Bruto dodatak - topli obrok..........................", sumBrutoTO);
+            if (sumBrutoReg  != 0) Row("Bruto dodatak - regres za god. odmor.................", sumBrutoReg);
+            if (sumBrutoTer  != 0) Row("Bruto dodatak - terenski dodatak.....................", sumBrutoTer);
+            if (sumBrutoStim != 0) Row("Bruto naknada - varijabila...........................", sumBrutoStim);
+            if (sumKorDod    != 0) Row("Bruto korektivni dodatak ............................", sumKorDod);
+            if (sumKorDod1   != 0) Row("Bruto korektivni dodatak 1 ..........................", sumKorDod1);
+
+            Row("Zarada ..............................................",
+                sumZarada, bold: true, bgColor: Colors.Grey.Lighten4);
+            Row("Dodatni porez........................................", sumDodPorez);
+            Row("Ukupan neto..........................................",
+                sumUkupNeto, bold: true, bgColor: Colors.Grey.Lighten4);
+
+            // ── ODBICI (samodoprinosi i krediti po imenu) ────────────────────────────────
+            if (odbiciGrupisani.Count > 0)
+            {
+                foreach (var (naziv, iznos) in odbiciGrupisani)
+                    Row(TruncPad(naziv, 45), iznos);
+            }
+            else if (sumUkOdbici != 0)
+            {
+                if (sumSamDop != 0) Row("Samodoprinosi........................................", sumSamDop);
+                if (sumKred   != 0) Row("Krediti..............................................", sumKred);
+            }
+
+            Row("Neto  za isplatu.....................................",
+                sumNetoZaIsp, bold: true, bgColor: Colors.Indigo.Lighten5);
+
+            col.Item().PaddingTop(4);
+
+            // ── REFUNDACIJE / INVALIDI / BOL > 30 ───────────────────────────────────────
+            Row("Bruto naknada - invalidi II kategorije...............", 0m);
+            Row("Umanjenje poreza na invalidninu .....................", 0m);
+            Row("Bruto naknada ukupno - invalidi II kategorije........", 0m);
+            col.Item().PaddingTop(2);
+            Row("Bruto naknada - porodiljsko bolovanje................", 0m);
+            col.Item().PaddingTop(2);
+            Row("Bruto naknada - bolovanje preko 30 dana..............", 0m);
+            Row("Umanjenje poreza na bolovanje preko 30 dana..........", 0m);
+            Row("Bruto naknada - bolovanje preko 30 dana ukupno.......", 0m);
+
+            Row("Umanjenje poreske osnovice...........................", sumUmanjenje);
+            col.Item().PaddingTop(2);
+
+            // Porez sa stopom (stopa u opisu, kao u BB.TXT)
+            Row($"Porez..........................{StopaPorez,9:F3} % .....", sumPorez);
+            col.Item().PaddingTop(2);
+
+            Row("Bruto osnovica za obracun doprinosa ........... .....", sumBrOs);
+            col.Item().PaddingTop(2);
+            Row("Bruto osnovica za obracun doprinosa PIO........ .....", sumBrPIOOs);
+            col.Item().PaddingTop(2);
+
+            // ── DOPRINOSI RADNIKA ────────────────────────────────────────────────────────
+            Row($"Dop.-penzijsko - zarada ...........{StopaPioR,9:F3} % .....", sumPioR);
+            Row("Dop.-penzijsko  UKUPNO ..............................",
+                sumPioR, bold: true, bgColor: Colors.Grey.Lighten5);
+
+            Row($"Dop.-zdravstveno - zarada .........{StopaZdrR,9:F3} % .....", sumZdrR);
+            Row("Dop.-zdravstveno  UKUPNO ............................",
+                sumZdrR, bold: true, bgColor: Colors.Grey.Lighten5);
+
+            Row($"Dop.-nezaposlenost - zarada .......{StopaNezR,9:F3} % .....", sumNezR);
+            Row("Dop.-nezaposlenost  UKUPNO ..........................",
+                sumNezR, bold: true, bgColor: Colors.Grey.Lighten5);
+
+            // UKUPNO SOCIJALNI DOPRINOSI – poseban layout
+            col.Item().Background(Colors.Grey.Lighten3).Row(row =>
+            {
+                row.RelativeItem()
+                    .Text("  UKUPNO SOCIJALNI DOPRINOSI")
+                    .Bold().FontSize(8.5f).FontFamily("Courier New");
+
+                row.ConstantItem(72).AlignRight()
+                    .Text($"{sumDopR:N2}")
+                    .Bold().FontSize(8.5f).FontFamily("Courier New");
+                row.ConstantItem(72).AlignRight()
+                    .Text($"{0m:N2}")
+                    .FontSize(8.5f).FontFamily("Courier New");
+                row.ConstantItem(72).AlignRight()
+                    .Text($"{sumDopR:N2}")
+                    .Bold().FontSize(8.5f).FontFamily("Courier New");
+            });
+            col.Item().PaddingTop(2);
+
+            Row("Zarada bez poreza i doprinosa .......................",
+                sumZaradaBezPorDop, bold: true);
+            col.Item().PaddingTop(2);
+            if (sumZaIsplatu != 0)
+                Row("Za isplatu ..........................................", sumZaIsplatu, bold: true);
+
+            // ── SEPARATOR ───────────────────────────────────────────────────────────────
+            col.Item().PaddingTop(6)
+                .Text(new string('_', 109)).FontSize(7.5f).FontFamily("Courier New");
+            col.Item().PaddingTop(2).AlignCenter()
+                .Text("DOPRINOSI NA TERET POSLODAVCA")
+                .Bold().FontSize(9).FontFamily("Courier New");
+            col.Item()
+                .Text(new string('_', 109)).FontSize(7.5f).FontFamily("Courier New");
+            col.Item().PaddingTop(2);
+
+            // ── DOPRINOSI POSLODAVCA ─────────────────────────────────────────────────────
+            Row($"Dop.-penzijsko - zarada ...........{StopaPioP,9:F3} % .....", sumPioP);
+            Row("Dop.-penzijsko  UKUPNO ..............................",
+                sumPioP, bold: true, bgColor: Colors.Grey.Lighten5);
+
+            Row($"Dop.-zdravstveno - zarada .........{StopaZdrP,9:F3} % .....", sumZdrP);
+            Row("Dop.-zdravstveno  UKUPNO ............................",
+                sumZdrP, bold: true, bgColor: Colors.Grey.Lighten5);
+
+            if (sumNezP != 0)
+            {
+                Row("Dop.-nezaposlenost  UKUPNO ..........................",
+                    sumNezP, bold: true, bgColor: Colors.Grey.Lighten5);
+            }
+
+            // ── UKUPNA MASA ──────────────────────────────────────────────────────────────
+            col.Item().PaddingTop(6)
+                .Text(new string('_', 109)).FontSize(7.5f).FontFamily("Courier New");
+            col.Item().PaddingTop(2).AlignCenter()
+                .Text("UKUPNA MASA ZA ISPLATU")
+                .Bold().FontSize(9).FontFamily("Courier New");
+            col.Item()
+                .Text(new string('_', 109)).FontSize(7.5f).FontFamily("Courier New");
+            col.Item().PaddingTop(2);
+
+            col.Item().Row(row =>
+            {
+                row.RelativeItem()
+                    .Text("MASA ZA CEO OBRACUN")
+                    .Bold().FontSize(8.5f).FontFamily("Courier New");
+                row.ConstantItem(110).AlignRight()
+                    .Text($"{masaCeoObr:N2}")
+                    .Bold().FontSize(8.5f).FontFamily("Courier New");
+            });
+            col.Item().Row(row =>
+            {
+                row.RelativeItem()
+                    .Text("ISPLACENI DEO")
+                    .FontSize(8.5f).FontFamily("Courier New");
+                row.ConstantItem(110).AlignRight()
+                    .Text($"{masaIsplac:N2}")
+                    .FontSize(8.5f).FontFamily("Courier New");
+            });
+            col.Item().Row(row =>
+            {
+                row.RelativeItem()
+                    .Text("OSTALO ZA ISPLATU")
+                    .Bold().FontSize(8.5f).FontFamily("Courier New");
+                row.ConstantItem(110).AlignRight()
+                    .Text($"{masaOstalo:N2}")
+                    .Bold().FontSize(8.5f).FontFamily("Courier New");
             });
 
-            decimal sumBrutoRedovna = grandBruto - sumBrutoBolovanje - sumBrutoMinuliRad - sumBrutoStimulacija - sumBrutoNaknade;
+            col.Item().PaddingTop(20);
 
-            decimal sumPoreskaOsn = _obracuni.Sum(o => o.PoreskaOsnovica);
-            decimal sumPorez = _obracuni.Sum(o => o.PorezNaDohodak);
-
-            decimal sumPioRadnik = _obracuni.Sum(o => o.DoprinosPioRadnik);
-            decimal sumZdrRadnik = _obracuni.Sum(o => o.DoprinosZdravstvoRadnik);
-            decimal sumNezRadnik = _obracuni.Sum(o => o.DoprinosNezaposlenostRadnik);
-            decimal totalDoprinosiRadnik = sumPioRadnik + sumZdrRadnik + sumNezRadnik;
-
-            decimal totalNeto1 = grandBruto - sumPorez - totalDoprinosiRadnik;
-
-            decimal sumKrediti = _obracuni.Sum(o => o.KreditObustava);
-            decimal sumSamodoprinosi = _obracuni.Sum(o => o.Samodoprinosi);
-            decimal sumOstaliOdbici = _obracuni.Sum(o => o.OstaliOdbici);
-            decimal totalObustave = sumKrediti + sumSamodoprinosi + sumOstaliOdbici;
-
-            decimal grandNetoZaIsplatu = _obracuni.Sum(o => o.NetoIsplata);
-
-            decimal sumPioPoslodavac = _obracuni.Sum(o => o.DoprinosPioPoslodavac);
-            decimal sumZdrPoslodavac = _obracuni.Sum(o => o.DoprinosZdravstvoPoslodavac);
-            decimal sumNezPoslodavac = _obracuni.Sum(o => o.DoprinosNezaposlenostPoslodavac);
-            decimal totalDoprinosiPoslodavac = sumPioPoslodavac + sumZdrPoslodavac + sumNezPoslodavac;
-
-            decimal grandBruto2 = grandBruto + totalDoprinosiPoslodavac;
-
-            // Statistička traka (Key Metrics)
-            col.Item().Border(0.5f).BorderColor(Colors.Grey.Lighten1).Background(Colors.Grey.Lighten4).Padding(8).Row(row =>
-            {
-                row.RelativeItem().Column(c =>
-                {
-                    c.Item().Text("BROJ OBRAČUNATIH RADNIKA").FontSize(7.5f).Bold().FontColor(Colors.Grey.Darken2);
-                    c.Item().Text($"{totalRadnici} zaposlenih").FontSize(11).Bold();
-                });
-                row.RelativeItem().Column(c =>
-                {
-                    c.Item().Text("UKUPNO ODRAĐENIH ČASOVA").FontSize(7.5f).Bold().FontColor(Colors.Grey.Darken2);
-                    c.Item().Text($"{totalHours:N0} sati").FontSize(11).Bold();
-                });
-            });
-
-            col.Item().PaddingTop(12).Table(table =>
-            {
-                table.ColumnsDefinition(columns =>
-                {
-                    columns.RelativeColumn();
-                    columns.ConstantColumn(120);
-                });
-
-                // Header
-                table.Header(header =>
-                {
-                    header.Cell().Background(Colors.Indigo.Darken4).Padding(4).Text("Opis finansijske stavke / rashoda").Bold().FontColor(Colors.White).FontSize(9);
-                    header.Cell().Background(Colors.Indigo.Darken4).Padding(4).AlignRight().Text("Iznos u RSD").Bold().FontColor(Colors.White).FontSize(9);
-                });
-
-                void AddRow(string desc, decimal value, bool bold = false, string? bgColor = null)
-                {
-                    var cellDesc = table.Cell();
-                    IContainer containerDesc = bgColor != null ? cellDesc.Background(bgColor) : cellDesc;
-                    containerDesc.Padding(3.5f).Text(desc).Style(bold ? TextStyle.Default.Bold().FontSize(9) : TextStyle.Default.FontSize(9));
-
-                    var cellVal = table.Cell();
-                    IContainer containerVal = bgColor != null ? cellVal.Background(bgColor) : cellVal;
-                    containerVal.Padding(3.5f).AlignRight().Text($"{value:N2}").Style(bold ? TextStyle.Default.Bold().FontSize(9) : TextStyle.Default.FontSize(9));
-                }
-
-                // 1. Bruto
-                table.Cell().ColumnSpan(2).PaddingTop(6).Text("1. BRUTO RASHODI ZARADA ZAPOSLENIH").Bold().FontSize(9.5f).FontColor(Colors.Indigo.Darken3);
-                AddRow("Bruto zarada zaposlenih (redovan rad i godišnji)", sumBrutoRedovna);
-                if (sumBrutoMinuliRad > 0) AddRow("Bruto naknada za minuli rad", sumBrutoMinuliRad);
-                if (sumBrutoBolovanje > 0) AddRow("Bruto naknada za bolovanje do 30 dana", sumBrutoBolovanje);
-                if (sumBrutoNaknade > 0) AddRow("Uvećanja zarade (prekovremeni, noćni, praznici)", sumBrutoNaknade);
-                if (sumBrutoStimulacija > 0) AddRow("Varijabila / Stimulacija", sumBrutoStimulacija);
-                AddRow("UKUPNA BRUTO ZARADA (1)", grandBruto, bold: true, bgColor: Colors.Grey.Lighten3);
-
-                // 2. Osnovice i porezi
-                table.Cell().ColumnSpan(2).PaddingTop(8).Text("2. POREZ NA DOHODAK").Bold().FontSize(9.5f).FontColor(Colors.Indigo.Darken3);
-                AddRow("Poreska osnovica (Bruto minus lično oslobođenje)", sumPoreskaOsn);
-                AddRow("Porez na dohodak građana (stopa 10%)", sumPorez, bold: true);
-
-                // 3. Doprinosi zaposlenog
-                table.Cell().ColumnSpan(2).PaddingTop(8).Text("3. OBAVEZNI SOC. DOPRINOSI NA TERET ZAPOSLENOG").Bold().FontSize(9.5f).FontColor(Colors.Indigo.Darken3);
-                AddRow("Doprinos za PIO (stopa 14.00%)", sumPioRadnik);
-                AddRow("Doprinos za zdravstvo (stopa 5.15%)", sumZdrRadnik);
-                AddRow("Doprinos za nezaposlenost (stopa 0.75%)", sumNezRadnik);
-                AddRow("UKUPNI DOPRINOSI NA TERET ZAPOSLENOG (2)", totalDoprinosiRadnik, bold: true, bgColor: Colors.Grey.Lighten4);
-
-                // 4. Neto 1
-                table.Cell().ColumnSpan(2).PaddingTop(8).Text("4. NETO ZARADA ZAPOSLENOG").Bold().FontSize(9.5f).FontColor(Colors.Indigo.Darken3);
-                AddRow("Neto 1 zarada (Bruto - Porez - Doprinosi zaposlenog)", totalNeto1, bold: true);
-
-                // 5. Odbici
-                table.Cell().ColumnSpan(2).PaddingTop(8).Text("5. OBUSTAVE I ODBICI OD NETO ZARADE").Bold().FontSize(9.5f).FontColor(Colors.Indigo.Darken3);
-                if (sumKrediti > 0) AddRow("Obustave po osnovu kredita i admin. zabrana", sumKrediti);
-                if (sumSamodoprinosi > 0) AddRow("Opštinski samodoprinosi zaposlenih", sumSamodoprinosi);
-                if (sumOstaliOdbici > 0) AddRow("Ostali odbici / obustave", sumOstaliOdbici);
-                AddRow("UKUPNE OBUSTAVE ZAPOSLENIH (3)", totalObustave, bold: true, bgColor: Colors.Grey.Lighten4);
-
-                // 6. Neto za isplatu
-                table.Cell().ColumnSpan(2).PaddingTop(8).Text("6. FINALNA ISPLATA ZAPOSLENIMA").Bold().FontSize(9.5f).FontColor(Colors.Indigo.Darken3);
-                AddRow("NETO ZARADA ZA ISPLATU (Konačni neto = Neto 1 - Obustave)", grandNetoZaIsplatu, bold: true, bgColor: Colors.Indigo.Lighten5);
-
-                // 7. Doprinosi poslodavca
-                table.Cell().ColumnSpan(2).PaddingTop(8).Text("7. OBAVEZNI SOC. DOPRINOSI NA TERET POSLODAVCA").Bold().FontSize(9.5f).FontColor(Colors.Indigo.Darken3);
-                AddRow("Doprinos za PIO (stopa 10.00%)", sumPioPoslodavac);
-                AddRow("Doprinos za zdravstvo (stopa 5.15%)", sumZdrPoslodavac);
-                if (sumNezPoslodavac > 0) AddRow("Doprinos za nezaposlenost (stopa 0.00%)", sumNezPoslodavac);
-                AddRow("UKUPNI DOPRINOSI NA TERET POSLODAVCA (4)", totalDoprinosiPoslodavac, bold: true, bgColor: Colors.Grey.Lighten4);
-
-                // 8. Bruto 2
-                table.Cell().ColumnSpan(2).PaddingTop(10).Text("8. UKUPAN FINANSIJSKI RASHOD PREDUZEĆA (BRUTO 2)").Bold().FontSize(10).FontColor(Colors.Indigo.Darken3);
-                AddRow("UKUPNI RASHOD ZAVODA (Bruto 2 = Bruto 1 + Doprinosi Poslodavca)", grandBruto2, bold: true, bgColor: Colors.Grey.Lighten2);
-            });
-
-            // Potpisi
-            col.Item().PaddingTop(35).Row(row =>
+            // ── POTPISI ──────────────────────────────────────────────────────────────────
+            col.Item().PaddingTop(10).Row(row =>
             {
                 row.RelativeItem().Column(c =>
                 {
                     c.Item().LineHorizontal(0.5f).LineColor(Colors.Grey.Medium);
-                    c.Item().PaddingTop(2).Text("Šef računovodstva").AlignCenter().FontSize(8).FontColor(Colors.Grey.Darken2);
+                    c.Item().PaddingTop(2).Text("Šef računovodstva")
+                        .AlignCenter().FontSize(8).FontFamily("Courier New").FontColor(Colors.Grey.Darken2);
                 });
-                row.ConstantItem(120);
+                row.ConstantItem(80);
                 row.RelativeItem().Column(c =>
                 {
                     c.Item().LineHorizontal(0.5f).LineColor(Colors.Grey.Medium);
-                    c.Item().PaddingTop(2).Text("Direktor / Ovlašćeno lice").AlignCenter().FontSize(8).FontColor(Colors.Grey.Darken2);
+                    c.Item().PaddingTop(2).Text("Direktor / Ovlašćeno lice")
+                        .AlignCenter().FontSize(8).FontFamily("Courier New").FontColor(Colors.Grey.Darken2);
                 });
             });
         });
 
-        // Footer
+        // ── FOOTER ──────────────────────────────────────────────────────────────────────
         page.Footer().AlignCenter().Text(text =>
         {
-            text.Span("Zavod za poljoprivredu Pirot • Zbirna rekapitulacija zarada • Stranica ").FontSize(8).FontColor(Colors.Grey.Darken1);
+            text.Span("Rekapitulacija zarada  •  Stranica ")
+                .FontSize(8).FontFamily("Courier New").FontColor(Colors.Grey.Darken1);
             text.CurrentPageNumber().FontSize(8).FontColor(Colors.Grey.Darken1);
             text.Span(" od ").FontSize(8).FontColor(Colors.Grey.Darken1);
             text.TotalPages().FontSize(8).FontColor(Colors.Grey.Darken1);
         });
     }
+
+    private static string TruncPad(string s, int len)
+        => s.Length > len ? s[..len] : s.PadRight(len, '.');
 }

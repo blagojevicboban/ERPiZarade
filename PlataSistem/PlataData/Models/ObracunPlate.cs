@@ -120,6 +120,10 @@ public class ObracunPlate
     [Column(TypeName = "decimal(14,2)")]
     public decimal PoreskaOsnovica { get; set; }
 
+    /// <summary>DBF polje 'umanjenje' = licni odbitak (SAMODOP.PRG: sum_umanj)</summary>
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal LicniOdbitak { get; set; }
+
     // ── ODBICI ─────────────────────────────────────────────
     [Column(TypeName = "decimal(14,2)")]
     public decimal KreditObustava { get; set; }

@@ -184,11 +184,22 @@ public partial class StampePage : Page
             {
                 vm.StatusText = "Generisanje rekapitulacije...";
                 
+                // Učitaj odbice (samodoprinosi + krediti) po imenima za dinamički prikaz
+                var odbici = db.Samodoprinosi
+                    .Where(s => s.Godina == godina && s.Mesec == mesec)
+                    .ToList();
+
+                if (targetRj.HasValue)
+                {
+                    var rjRadniciIds = obracuni.Select(o => o.RadnikId).ToHashSet();
+                    odbici = odbici.Where(s => rjRadniciIds.Contains(s.RadnikId)).ToList();
+                }
+
                 Document.Create(container =>
                 {
                     container.Page(page =>
                     {
-                        var doc = new RekapitulacijaDocument(obracuni, godina, mesec, rjFilter);
+                        var doc = new RekapitulacijaDocument(obracuni, godina, mesec, rjFilter, odbici);
                         doc.Build(page);
                     });
                 }).GeneratePdf(sfd.FileName);

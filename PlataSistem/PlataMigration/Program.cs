@@ -61,10 +61,12 @@ else
 }
 
 // ── Kreiramo SQLite bazu ───────────────────────────────────────────
+bool clearTables = false;
 if (File.Exists(sqliteDb))
 {
     Console.Write($"Baza već postoji. Obrišem i počnem ispočetka? (da/ne): ");
-    if (Console.ReadLine()?.Trim().ToLower() == "da")
+    var response = Console.ReadLine()?.Trim().ToLower();
+    if (response == "da")
     {
         try
         {
@@ -73,14 +75,37 @@ if (File.Exists(sqliteDb))
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[GREŠKA] Ne mogu obrisati staru bazu: {ex.Message}");
-            return 1;
+            Console.WriteLine($"[!] Upozorenje: Ne mogu obrisati fajl baze (verovatno je zaključan): {ex.Message}");
+            Console.WriteLine("    Pokušaću da očistim postojeće tabele u bazi...");
+            clearTables = true;
         }
     }
 }
 
 using var db = PlataDbContext.Create(sqliteDb);
-Console.WriteLine("[OK] SQLite baza kreirana.\n");
+Console.WriteLine("[OK] SQLite baza otvorena.\n");
+
+if (clearTables)
+{
+    try
+    {
+        Console.Write("Čišćenje starih podataka iz tabela... ");
+        db.Database.ExecuteSqlRaw("DELETE FROM RadniSati;");
+        db.Database.ExecuteSqlRaw("DELETE FROM Samodoprinosi;");
+        db.Database.ExecuteSqlRaw("DELETE FROM ObracuniPlata;");
+        db.Database.ExecuteSqlRaw("DELETE FROM Radnici;");
+        db.Database.ExecuteSqlRaw("DELETE FROM Porezi;");
+        db.Database.ExecuteSqlRaw("DELETE FROM Doprinosi;");
+        db.Database.ExecuteSqlRaw("DELETE FROM Firme;");
+        await db.SaveChangesAsync();
+        Console.WriteLine("[OK]");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[GREŠKA] Neuspešno čišćenje tabela: {ex.Message}");
+        return 1;
+    }
+}
 
 // ══════════════════════════════════════════════════════════════════
 // UVOZ RADNICI.DBF (aktivni radnici)
@@ -88,6 +113,20 @@ Console.WriteLine("[OK] SQLite baza kreirana.\n");
 // ══════════════════════════════════════════════════════════════════
 var radniciDbf = Path.Combine(dbfDir, "RADNICI.DBF");
 var uvezeniRadnikIds = new HashSet<int>();
+
+try
+{
+    var existingIds = await db.Radnici.Select(r => r.Id).ToListAsync();
+    foreach (var eid in existingIds)
+    {
+        uvezeniRadnikIds.Add(eid);
+    }
+    if (existingIds.Count > 0)
+    {
+        Console.WriteLine($"[INFO] Već postoji {existingIds.Count} radnika u bazi.");
+    }
+}
+catch { }
 
 if (File.Exists(radniciDbf))
 {
@@ -113,29 +152,54 @@ if (File.Exists(radniciDbf))
 
             int idZaRadnika = redBroj > 0 ? redBroj : fizickaPos;
 
-            var radnik = new Radnik
+            var postojeciRadnik = await db.Radnici.FindAsync(idZaRadnika);
+            if (postojeciRadnik != null)
             {
-                Id               = idZaRadnika,
-                BrojRadnika      = idZaRadnika,
-                ImeIPrezime      = string.IsNullOrWhiteSpace(imeIPrezime)
-                                   ? $"[Bivši zaposleni #{idZaRadnika}]"
-                                   : imeIPrezime,
-                MaticniBroj      = GetString(reader, columns, "MAT_BROJ", "MAT_BR"),
-                Jmbg             = GetString(reader, columns, "JMBG") is string j && !string.IsNullOrWhiteSpace(j)
+                postojeciRadnik.ImeIPrezime = string.IsNullOrWhiteSpace(imeIPrezime)
+                                   ? postojeciRadnik.ImeIPrezime
+                                   : imeIPrezime;
+                postojeciRadnik.MaticniBroj = GetString(reader, columns, "MAT_BROJ", "MAT_BR");
+                postojeciRadnik.Jmbg = GetString(reader, columns, "JMBG") is string j && !string.IsNullOrWhiteSpace(j)
                                    ? j.Trim()
-                                   : (GetString(reader, columns, "MAT_BROJ", "MAT_BR") is string m && m.Trim().Length == 13 ? m.Trim() : ""),
-                Koeficijent      = GetDecimal(reader, columns, "KOEFIC", "KOEFICIJE", "KOEF"),
-                OsnovnaPlata     = GetDecimal(reader, columns, "MIN_PLATA", "OSNOVA", "OSN_PLATA"),
-                BankovniRacun    = GetString(reader, columns, "BROJ_TR", "ZIRO", "RACUN"),
-                NazivBanke       = GetIntAsString(reader, columns, "BANKA"),
-                Radno_Mesto      = GetString(reader, columns, "RADNO_M", "RADNO_MES"),
-                BrojRadneJedinice= GetInt(reader, columns, "RAD_JED"),
-                Kategorija       = GetString(reader, columns, "RAZRED", "KAT", "KATEGORIJ"),
-                Aktivan          = GetString(reader, columns, "AKTIVAN").ToUpper() == "DA",
-                DatumZaposlenja  = GetDate(reader, columns, "MIN_RAD"),
-            };
+                                   : (GetString(reader, columns, "MAT_BROJ", "MAT_BR") is string m && m.Trim().Length == 13 ? m.Trim() : "");
+                postojeciRadnik.Koeficijent = GetDecimal(reader, columns, "KOEFIC", "KOEFICIJE", "KOEF");
+                postojeciRadnik.OsnovnaPlata = GetDecimal(reader, columns, "MIN_PLATA", "OSNOVA", "OSN_PLATA");
+                postojeciRadnik.BankovniRacun = GetString(reader, columns, "BROJ_TR", "ZIRO", "RACUN");
+                postojeciRadnik.NazivBanke = GetIntAsString(reader, columns, "BANKA");
+                postojeciRadnik.Radno_Mesto = GetString(reader, columns, "RADNO_M", "RADNO_MES");
+                postojeciRadnik.BrojRadneJedinice = GetInt(reader, columns, "RAD_JED");
+                postojeciRadnik.Kategorija = GetString(reader, columns, "RAZRED", "KAT", "KATEGORIJ");
+                postojeciRadnik.Aktivan = GetString(reader, columns, "AKTIVAN").ToUpper() == "DA";
+                postojeciRadnik.DatumZaposlenja = GetDate(reader, columns, "MIN_RAD");
 
-            db.Radnici.Add(radnik);
+                db.Radnici.Update(postojeciRadnik);
+            }
+            else
+            {
+                var radnik = new Radnik
+                {
+                    Id               = idZaRadnika,
+                    BrojRadnika      = idZaRadnika,
+                    ImeIPrezime      = string.IsNullOrWhiteSpace(imeIPrezime)
+                                       ? $"[Bivši zaposleni #{idZaRadnika}]"
+                                       : imeIPrezime,
+                    MaticniBroj      = GetString(reader, columns, "MAT_BROJ", "MAT_BR"),
+                    Jmbg             = GetString(reader, columns, "JMBG") is string j && !string.IsNullOrWhiteSpace(j)
+                                       ? j.Trim()
+                                       : (GetString(reader, columns, "MAT_BROJ", "MAT_BR") is string m && m.Trim().Length == 13 ? m.Trim() : ""),
+                    Koeficijent      = GetDecimal(reader, columns, "KOEFIC", "KOEFICIJE", "KOEF"),
+                    OsnovnaPlata     = GetDecimal(reader, columns, "MIN_PLATA", "OSNOVA", "OSN_PLATA"),
+                    BankovniRacun    = GetString(reader, columns, "BROJ_TR", "ZIRO", "RACUN"),
+                    NazivBanke       = GetIntAsString(reader, columns, "BANKA"),
+                    Radno_Mesto      = GetString(reader, columns, "RADNO_M", "RADNO_MES"),
+                    BrojRadneJedinice= GetInt(reader, columns, "RAD_JED"),
+                    Kategorija       = GetString(reader, columns, "RAZRED", "KAT", "KATEGORIJ"),
+                    Aktivan          = GetString(reader, columns, "AKTIVAN").ToUpper() == "DA",
+                    DatumZaposlenja  = GetDate(reader, columns, "MIN_RAD"),
+                };
+                db.Radnici.Add(radnik);
+            }
+
             await db.SaveChangesAsync();
             uvezeniRadnikIds.Add(idZaRadnika);
             cnt++;
@@ -147,7 +211,7 @@ if (File.Exists(radniciDbf))
         }
     }
 
-    Console.WriteLine($"  [OK] Uvezeno {cnt} aktivnih radnika koristeći RED_BROJ kao ID (preskočeno: {skipped})");
+    Console.WriteLine($"  [OK] Uvezeno/ažurirano {cnt} aktivnih radnika (preskočeno: {skipped})");
 }
 else
 {
@@ -213,13 +277,32 @@ if (File.Exists(radniciiDbf))
         int histCnt = 0;
         foreach (var entry in historicalProfiles.OrderBy(k => k.Key))
         {
-            db.Radnici.Add(entry.Value.radnik);
+            var postojeciRadnik = await db.Radnici.FindAsync(entry.Key);
+            if (postojeciRadnik != null)
+            {
+                postojeciRadnik.ImeIPrezime = entry.Value.radnik.ImeIPrezime;
+                postojeciRadnik.MaticniBroj = entry.Value.radnik.MaticniBroj;
+                postojeciRadnik.Jmbg = entry.Value.radnik.Jmbg;
+                postojeciRadnik.Koeficijent = entry.Value.radnik.Koeficijent;
+                postojeciRadnik.OsnovnaPlata = entry.Value.radnik.OsnovnaPlata;
+                postojeciRadnik.BankovniRacun = entry.Value.radnik.BankovniRacun;
+                postojeciRadnik.NazivBanke = entry.Value.radnik.NazivBanke;
+                postojeciRadnik.Radno_Mesto = entry.Value.radnik.Radno_Mesto;
+                postojeciRadnik.BrojRadneJedinice = entry.Value.radnik.BrojRadneJedinice;
+                postojeciRadnik.Kategorija = entry.Value.radnik.Kategorija;
+                postojeciRadnik.DatumZaposlenja = entry.Value.radnik.DatumZaposlenja;
+                db.Radnici.Update(postojeciRadnik);
+            }
+            else
+            {
+                db.Radnici.Add(entry.Value.radnik);
+            }
             await db.SaveChangesAsync();
             uvezeniRadnikIds.Add(entry.Key);
             histCnt++;
         }
 
-        Console.WriteLine($"Pronađeno i uvezeno {histCnt} bivših radnika sa stvarnim profilima.");
+        Console.WriteLine($"Pronađeno i uvezeno/ažurirano {histCnt} bivših radnika.");
     }
     catch (Exception ex)
     {
@@ -235,7 +318,7 @@ else
 // SKENIRANJE OBRACUNA ZA FALLBACK GHOST RADNIKE
 // Ukoliko postoji neki obračun za radnika koji ne postoji ni u RADNICI ni u RADNICII.
 // ══════════════════════════════════════════════════════════════════
-Console.Write("\nSkeniranje OBRACUNI.DBF i OBRACUN.DBF za preostale ghost zaposlene... ");
+Console.Write("\nSkeniranje OBRACUNI.DBF i OBRACUN.DBF for preostale ghost zaposlene... ");
 {
     var missingPos = new HashSet<int>();
 
@@ -272,19 +355,23 @@ Console.Write("\nSkeniranje OBRACUNI.DBF i OBRACUN.DBF za preostale ghost zaposl
     int ghostCnt = 0;
     foreach (var pos in missingPos.OrderBy(p => p))
     {
-        var ghost = new Radnik
+        var postojeciRadnik = await db.Radnici.FindAsync(pos);
+        if (postojeciRadnik == null)
         {
-            Id          = pos,
-            BrojRadnika = pos,
-            ImeIPrezime = $"[Bivši zaposleni #{pos}]",
-            Aktivan     = false,
-        };
-        db.Radnici.Add(ghost);
-        await db.SaveChangesAsync();
+            var ghost = new Radnik
+            {
+                Id          = pos,
+                BrojRadnika = pos,
+                ImeIPrezime = $"[Bivši zaposleni #{pos}]",
+                Aktivan     = false,
+            };
+            db.Radnici.Add(ghost);
+            await db.SaveChangesAsync();
+        }
         uvezeniRadnikIds.Add(pos);
         ghostCnt++;
     }
-    Console.WriteLine($"Kreirano {ghostCnt} dodatnih ghost zapisa.");
+    Console.WriteLine($"Kreirano/ažurirano {ghostCnt} dodatnih ghost zapisa.");
 }
 
 // ── Popunjavanje rečnika naziva samodoprinosa/obustava iz SAMODOP.DBF i SAMODOPI.DBF ──
@@ -348,6 +435,15 @@ await ImportObracuniDbf(obracuniDbf, "OBRACUNI.DBF (istorija)", aktivnaGodina, a
 await ImportObracuniDbf(obracunDbf, "OBRACUN.DBF (aktivni/tekući)", aktivnaGodina, aktivniMesec);
 
 // ══════════════════════════════════════════════════════════════════
+// UVOZ RAD_SATI.DBF I RADSATII.DBF (radni sati)
+// ══════════════════════════════════════════════════════════════════
+var radsatiiDbf = Path.Combine(dbfDir, "RADSATII.DBF");
+var radsatiDbf = Path.Combine(dbfDir, "RAD_SATI.DBF");
+
+await ImportRadSatiDbf(radsatiiDbf, "RADSATII.DBF (istorija)", aktivnaGodina, aktivniMesec);
+await ImportRadSatiDbf(radsatiDbf, "RAD_SATI.DBF (aktivni/tekući)", aktivnaGodina, aktivniMesec);
+
+// ══════════════════════════════════════════════════════════════════
 // UVOZ POREZA (sistemski parametri i stope)
 // ══════════════════════════════════════════════════════════════════
 var poreziiDbf = Path.Combine(dbfDir, "POREZII.DBF");
@@ -361,6 +457,9 @@ await ImportPoreziDbf(poreziDbf, "POREZI.DBF (aktivni/tekući)", isHistory: fals
 // ══════════════════════════════════════════════════════════════════
 var korisnicDbf = Path.Combine(dbfDir, "KORISNIC.DBF");
 await ImportKorisnicDbf(korisnicDbf);
+
+var razrediDbf = Path.Combine(dbfDir, "RAZREDI.DBF");
+await ImportRazrediDbf(razrediDbf);
 
 // ══════════════════════════════════════════════════════════════════
 // UVOZ DOPRINOSA (sistemske stope doprinosa)
@@ -448,6 +547,30 @@ async Task ImportObracuniDbf(string dbfPath, string label, int defaultGodina, in
                 RedovniSati       = GetInt(reader, columns, "RADN_SATI"),
                 BolovanjeSati     = GetInt(reader, columns, "BOL_DO_60"),
                 PrekovremeneSati  = GetInt(reader, columns, "PREKOVREME"),
+                GodisnjioOdmorSati = GetInt(reader, columns, "GOD_ODM"),
+                DrzavniPraznikSati = GetInt(reader, columns, "NERDRZAVNI", "DRZAVNI"),
+                NocniSati          = GetInt(reader, columns, "NOCNI"),
+                BrutoMinuliRad    = GetDecimal(reader, columns, "MIN_RAD_IZ"),
+                Prosek            = GetDecimal(reader, columns, "PROSEK"),
+                NetoZar           = GetDecimal(reader, columns, "NETO_ZAR"),
+                NetoNerd          = GetDecimal(reader, columns, "NETO_NERD"),
+                NetoGOd           = GetDecimal(reader, columns, "NETO_G_OD"),
+                NetoTo            = GetDecimal(reader, columns, "NETO_TO"),
+                NetoReg           = GetDecimal(reader, columns, "NETO_REG"),
+                Neto              = GetDecimal(reader, columns, "NETO"),
+                NetoBol           = GetDecimal(reader, columns, "NETO_BOL"),
+                NetoB100          = GetDecimal(reader, columns, "NETO_B100"),
+                NetoPlac          = GetDecimal(reader, columns, "NETO_PLAC"),
+                NetoPlZ           = GetDecimal(reader, columns, "NETO_PL_Z"),
+                NetoDrza          = GetDecimal(reader, columns, "NETO_DRZA"),
+                NetoNocni         = GetDecimal(reader, columns, "NETO_NOCNI"),
+                NetoVezba         = GetDecimal(reader, columns, "NETO_VEZBA"),
+                NetoPrek          = GetDecimal(reader, columns, "NETO_PREK"),
+                NetoTer           = GetDecimal(reader, columns, "NETO_TER"),
+                KorDod            = GetDecimal(reader, columns, "KOR_DOD"),
+                KorDod1           = GetDecimal(reader, columns, "KOR_DOD1"),
+                Kumul             = GetDecimal(reader, columns, "KUMUL"),
+                NetoNede          = GetDecimal(reader, columns, "NETO_NEDE"),
                 DatumObracuna     = new DateTime(godina, mesec, 1)
             });
 
@@ -565,6 +688,140 @@ async Task ImportObracuniDbf(string dbfPath, string label, int defaultGodina, in
         }
     }
     Console.WriteLine($"\r  [OK] Uvezeno {cnt} obračuna iz {label} (preskočeno: {skipped})");
+}
+
+async Task ImportRadSatiDbf(string dbfPath, string label, int defaultGodina, int defaultMesec)
+{
+    if (!File.Exists(dbfPath))
+    {
+        Console.WriteLine($"[!] Nema {label} na putanji: {dbfPath}");
+        return;
+    }
+
+    Console.Write($"\nUvoz {label} ... ");
+    int cnt = 0, skipped = 0;
+
+    var options = new DbfDataReaderOptions { Encoding = cp852, SkipDeletedRecords = true };
+    using var reader = new DbfDataReader.DbfDataReader(dbfPath, options);
+    var columns = Enumerable.Range(0, reader.FieldCount)
+                            .Select(i => reader.GetName(i).ToUpper().Trim()).ToList();
+
+    Console.WriteLine($"\n  Kolone: {string.Join(", ", columns)}");
+
+    var batch = new List<RadniSat>();
+
+    while (reader.Read())
+    {
+        try
+        {
+            int brRadnika = GetInt(reader, columns, "RED_BROJ");
+            if (brRadnika <= 0) continue;
+
+            int godina = columns.Contains("GODINA") ? GetInt(reader, columns, "GODINA") : defaultGodina;
+            int mesec = columns.Contains("MESEC") ? GetInt(reader, columns, "MESEC") : defaultMesec;
+
+            if (godina <= 0) godina = defaultGodina;
+            if (mesec <= 0) mesec = defaultMesec;
+
+            // Provera postojanja radnika
+            if (!uvezeniRadnikIds.Contains(brRadnika))
+            {
+                skipped++;
+                continue;
+            }
+
+            // Deduplikacija po radniku, godini i mesecu
+            var postojeci = await db.RadniSati
+                .AnyAsync(r => r.RadnikId == brRadnika && r.Godina == godina && r.Mesec == mesec);
+            if (postojeci)
+            {
+                skipped++;
+                continue;
+            }
+
+            batch.Add(new RadniSat
+            {
+                RadnikId           = brRadnika,
+                Godina             = godina,
+                Mesec              = mesec,
+                RedovniSati        = GetInt(reader, columns, "RADN_SATI"),
+                BolovanjeSati      = GetInt(reader, columns, "BOLOVDO60"),
+                PrekovremeneSati   = GetInt(reader, columns, "PREKOVREME"),
+                GodisnjiOdmorSati  = GetInt(reader, columns, "GOD_ODM"),
+                DrzavniPraznikSati = GetInt(reader, columns, "NERDRZAVNI"),
+                NocniSati          = GetInt(reader, columns, "NOCNI"),
+                Prosek             = GetDecimal(reader, columns, "PROSEK")
+            });
+
+            cnt++;
+            if (batch.Count >= 500)
+            {
+                try
+                {
+                    db.RadniSati.AddRange(batch);
+                    await db.SaveChangesAsync();
+                }
+                catch
+                {
+                    db.ChangeTracker.Clear();
+                    foreach (var r in batch)
+                    {
+                        try
+                        {
+                            var postojeciPojedinacni = await db.RadniSati
+                                .AnyAsync(x => x.RadnikId == r.RadnikId && x.Godina == r.Godina && x.Mesec == r.Mesec);
+                            if (!postojeciPojedinacni)
+                            {
+                                db.RadniSati.Add(r);
+                                await db.SaveChangesAsync();
+                            }
+                            else
+                            {
+                                skipped++;
+                                cnt--;
+                            }
+                        }
+                        catch { db.ChangeTracker.Clear(); skipped++; cnt--; }
+                    }
+                }
+                batch.Clear();
+                Console.Write($"\r  Uvezeno: {cnt}...  ");
+            }
+        }
+        catch { skipped++; }
+    }
+
+    if (batch.Count > 0)
+    {
+        try
+        {
+            db.RadniSati.AddRange(batch);
+            await db.SaveChangesAsync();
+        }
+        catch
+        {
+            db.ChangeTracker.Clear();
+            foreach (var r in batch)
+            {
+                try
+                {
+                    var postojeciPojedinacni = await db.RadniSati
+                        .AnyAsync(x => x.RadnikId == r.RadnikId && x.Godina == r.Godina && x.Mesec == r.Mesec);
+                    if (!postojeciPojedinacni)
+                    {
+                        db.RadniSati.Add(r);
+                        await db.SaveChangesAsync();
+                    }
+                    else
+                    {
+                        skipped++;
+                    }
+                }
+                catch { db.ChangeTracker.Clear(); skipped++; }
+            }
+        }
+    }
+    Console.WriteLine($"\r  [OK] Uvezeno {cnt} zapisa o radnim satima iz {label} (preskočeno: {skipped})");
 }
 
 // ── Reusable uvoz poreskih parametara ──
@@ -750,6 +1007,7 @@ Console.WriteLine("  REZULTAT MIGRACIJE");
 Console.WriteLine("══════════════════════════════════════════");
 Console.WriteLine($"  Radnika:   {await db.Radnici.CountAsync()}");
 Console.WriteLine($"  Obračuna:  {await db.ObracuniPlata.CountAsync()}");
+Console.WriteLine($"  Radnih sati: {await db.RadniSati.CountAsync()}");
 Console.WriteLine($"  Poreza:    {await db.Porezi.CountAsync()}");
 Console.WriteLine($"  Doprinosa: {await db.Doprinosi.CountAsync()}");
 Console.WriteLine($"  Baza:      {sqliteDb}");
@@ -877,5 +1135,89 @@ async Task ImportKorisnicDbf(string dbfPath)
     catch (Exception ex)
     {
         Console.WriteLine($"\r  [GREŠKA] Neuspešan uvoz KORISNIC.DBF: {ex.Message}");
+    }
+}
+
+async Task ImportRazrediDbf(string dbfPath)
+{
+    if (!File.Exists(dbfPath))
+    {
+        // Pokušaj u roditeljskom folderu ako je prosleđen poddirektorijum (kao npr. KOR28)
+        var dirName = Path.GetDirectoryName(dbfPath);
+        if (!string.IsNullOrEmpty(dirName))
+        {
+            var parent = Directory.GetParent(dirName);
+            if (parent != null)
+            {
+                var fallbackPath = Path.Combine(parent.FullName, "RAZREDI.DBF");
+                if (File.Exists(fallbackPath))
+                {
+                    dbfPath = fallbackPath;
+                }
+            }
+        }
+    }
+
+    if (!File.Exists(dbfPath))
+    {
+        Console.WriteLine($"[!] Nema RAZREDI.DBF na putanji: {dbfPath}");
+        return;
+    }
+
+    Console.Write($"\nUvoz RAZREDI.DBF ... ");
+    int cnt = 0;
+
+    try
+    {
+        var options = new DbfDataReaderOptions { Encoding = cp852, SkipDeletedRecords = true };
+        using var reader = new DbfDataReader.DbfDataReader(dbfPath, options);
+        var columns = Enumerable.Range(0, reader.FieldCount)
+                                .Select(i => reader.GetName(i).ToUpper().Trim()).ToList();
+
+        if (reader.Read())
+        {
+            var r = new PlatniRazred();
+            r.R1 = GetDecimal(reader, columns, "R1");
+            r.R2 = GetDecimal(reader, columns, "R2");
+            r.R3 = GetDecimal(reader, columns, "R3");
+            r.R4 = GetDecimal(reader, columns, "R4");
+            r.R5 = GetDecimal(reader, columns, "R5");
+            r.R6 = GetDecimal(reader, columns, "R6");
+            r.R7 = GetDecimal(reader, columns, "R7");
+            r.R8 = GetDecimal(reader, columns, "R8");
+            r.R9 = GetDecimal(reader, columns, "R9");
+
+            r.P1 = GetDecimal(reader, columns, "P1");
+            r.P2 = GetDecimal(reader, columns, "P2");
+            r.P3 = GetDecimal(reader, columns, "P3");
+            r.P4 = GetDecimal(reader, columns, "P4");
+            r.P5 = GetDecimal(reader, columns, "P5");
+            r.P6 = GetDecimal(reader, columns, "P6");
+            r.P7 = GetDecimal(reader, columns, "P7");
+            r.P8 = GetDecimal(reader, columns, "P8");
+            r.P9 = GetDecimal(reader, columns, "P9");
+
+            // Upsert: ako postoji zapis, zameniti; inače dodati
+            var existing = await db.PlatniRazredi.FirstOrDefaultAsync();
+            if (existing != null)
+            {
+                existing.R1 = r.R1; existing.R2 = r.R2; existing.R3 = r.R3; existing.R4 = r.R4; existing.R5 = r.R5; existing.R6 = r.R6; existing.R7 = r.R7; existing.R8 = r.R8; existing.R9 = r.R9;
+                existing.P1 = r.P1; existing.P2 = r.P2; existing.P3 = r.P3; existing.P4 = r.P4; existing.P5 = r.P5; existing.P6 = r.P6; existing.P7 = r.P7; existing.P8 = r.P8; existing.P9 = r.P9;
+                await db.SaveChangesAsync();
+            }
+            else
+            {
+                db.PlatniRazredi.Add(r);
+                await db.SaveChangesAsync();
+            }
+
+            cnt = 1;
+        }
+
+        Console.WriteLine($"\r  [OK] Uvezeno {cnt} zapisa iz RAZREDI.DBF");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"\r  [GREŠKA] Neuspesan uvoz RAZREDI.DBF: {ex.Message}");
     }
 }

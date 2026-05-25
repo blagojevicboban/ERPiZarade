@@ -96,3 +96,33 @@ public class Normativ
     [Column(TypeName = "decimal(10,4)")] public decimal VrednostBoda { get; set; }
     public char Tip { get; set; } = 'P'; // P=procenat, L=linearno, S=stimulacija, B=bodovi, C=casovi
 }
+
+/// <summary>Platni razredi (najnize bruto osnovice za stepene strucne spreme) - port RAZREDI.DBF</summary>
+[Table("PlatniRazredi")]
+public class PlatniRazred
+{
+    [Key]
+    public int Id { get; set; }
+
+    // Normalni doprinosi
+    [Column(TypeName = "decimal(14,2)")] public decimal R1 { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal R2 { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal R3 { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal R4 { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal R5 { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal R6 { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal R7 { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal R8 { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal R9 { get; set; }
+
+    // Doprinosi za PIO
+    [Column(TypeName = "decimal(14,2)")] public decimal P1 { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal P2 { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal P3 { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal P4 { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal P5 { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal P6 { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal P7 { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal P8 { get; set; }
+    [Column(TypeName = "decimal(14,2)")] public decimal P9 { get; set; }
+}

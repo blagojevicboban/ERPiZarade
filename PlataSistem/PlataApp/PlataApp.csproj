@@ -11,8 +11,8 @@
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
     <PackageReference Include="QuestPDF" Version="2026.5.0" />
-    <PackageReference Include="DbfDataReader" Version="1.1.0" />
   </ItemGroup>
+
 
   <ItemGroup>
     <ProjectReference Include="..\PlataData\PlataData.csproj" />

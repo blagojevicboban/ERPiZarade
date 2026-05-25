@@ -357,34 +357,84 @@ public partial class ListiciPage : Page
                     table.Cell().PaddingVertical(1).AlignRight().Text($"{val:N2}").Style(bold ? TextStyle.Default.Bold().FontSize(8) : TextStyle.Default.FontSize(8));
                 }
 
-                decimal totalBruto = o.BrutoZarada + o.BrutoBolovanje;
-                decimal naknade = o.BrutoNaknade;
-                if (naknade == totalBruto)
-                {
-                    naknade = 0; // Ignore duplicate migrated total in BrutoNaknade column
-                }
-                decimal baseBruto = totalBruto - o.BrutoBolovanje - naknade - o.BrutoMinuliRad - o.BrutoStimulacija;
+                decimal totalBruto = o.BrutoZarada;
 
-                // Bruto delovi
-                if (baseBruto > 0)
+                // Bruto delovi (iz DBF kolona)
+                if (o.NetoZar > 0)
                 {
-                    AddRow("Bruto zarada (redovan rad)", baseBruto);
+                    AddRow("Bruto zarada (redovan rad)", o.NetoZar);
                 }
                 if (o.BrutoMinuliRad > 0)
                 {
                     AddRow($"Bruto naknada - minuli rad ({minuliRadPercent:F2}%)", o.BrutoMinuliRad);
                 }
-                if (o.BrutoBolovanje > 0)
+                if (o.NetoBol > 0)
                 {
-                    AddRow("Bruto naknada - bolovanje do 30 dana", o.BrutoBolovanje);
+                    AddRow("Bruto naknada - bolovanje do 30 dana", o.NetoBol);
                 }
-                if (naknade > 0)
+                if (o.NetoB100 > 0)
                 {
-                    AddRow("Bruto naknada - prekovremeni, noćni, praznici", naknade);
+                    AddRow("Bruto naknada - bolovanje 100%", o.NetoB100);
                 }
-                if (o.BrutoStimulacija > 0)
+                if (o.NetoPlac > 0)
                 {
-                    AddRow("Varijabila / Stimulacija", o.BrutoStimulacija);
+                    AddRow("Bruto naknada - plaćeno odsustvo", o.NetoPlac);
+                }
+                if (o.NetoPlZ > 0)
+                {
+                    AddRow("Bruto naknada - plaćeno odsustvo zakonski", o.NetoPlZ);
+                }
+                if (o.NetoNerd > 0)
+                {
+                    AddRow("Bruto naknada - neradni državni praznik", o.NetoNerd);
+                }
+                if (o.NetoDrza > 0)
+                {
+                    AddRow("Bruto naknada - rad na državni praznik", o.NetoDrza);
+                }
+                if (o.NetoGOd > 0)
+                {
+                    AddRow("Bruto naknada - godišnji odmor", o.NetoGOd);
+                }
+                if (o.NetoNocni > 0)
+                {
+                    AddRow("Bruto naknada - noćni rad", o.NetoNocni);
+                }
+                if (o.NetoVezba > 0)
+                {
+                    AddRow("Bruto naknada - vojna vežba", o.NetoVezba);
+                }
+                if (o.NetoPrek > 0)
+                {
+                    AddRow("Bruto naknada - prekovremeni rad", o.NetoPrek);
+                }
+                if (o.NetoTo > 0)
+                {
+                    AddRow("Bruto dodatak - topli obrok", o.NetoTo);
+                }
+                if (o.NetoReg > 0)
+                {
+                    AddRow("Bruto dodatak - regres", o.NetoReg);
+                }
+                if (o.NetoTer > 0)
+                {
+                    AddRow("Bruto dodatak - terenski dodatak", o.NetoTer);
+                }
+                if (o.KorDod > 0)
+                {
+                    AddRow("Bruto dodatak - korektivni dodatak", o.KorDod);
+                }
+                if (o.KorDod1 > 0)
+                {
+                    AddRow("Bruto dodatak - korektivni dodatak 1", o.KorDod1);
+                }
+                if (o.Kumul > 0)
+                {
+                    AddRow("Kumulativ", o.Kumul);
+                }
+                if (o.NetoNede > 0)
+                {
+                    AddRow("Bruto naknada - rad nedeljom", o.NetoNede);
                 }
 
                 // Linija razdvajanja
@@ -392,6 +442,7 @@ public partial class ListiciPage : Page
 
                 // Ukupno Bruto
                 AddRow("UKUPNA BRUTO ZARADA", totalBruto, bold: true);
+
 
                 // Osnovica i porez
                 AddRow("Osnovica za obračun doprinosa", totalBruto);

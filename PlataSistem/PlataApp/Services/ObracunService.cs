@@ -131,19 +131,57 @@ public class ObracunService
         decimal poreskaOsnovica = Math.Max(0, totalBruto - scaledExemption);
         decimal porez = poreskaOsnovica * taxRate;
 
-        // 6. Social security contributions bases on Employee class
-        decimal razredLimit = minBase;
+        // 6. Social security contributions bases on Employee class (platni razredi - minimum gross bases)
+        decimal razredLimitNormal = minBase;
+        decimal razredLimitPio = minBase;
+
+        var platniRazredi = _db.PlatniRazredi.FirstOrDefault();
+
         if (int.TryParse(radnik.Kategorija, out int razredVal))
         {
-            if (razredVal == 9) razredLimit = 0m;
+            if (razredVal == 9)
+            {
+                razredLimitNormal = 0m;
+                razredLimitPio = 0m;
+            }
+            else if (razredVal >= 1 && razredVal <= 8 && platniRazredi != null)
+            {
+                // Dynamic lookup matching Clipper: R{step} and P{step}
+                razredLimitNormal = razredVal switch
+                {
+                    1 => platniRazredi.R1,
+                    2 => platniRazredi.R2,
+                    3 => platniRazredi.R3,
+                    4 => platniRazredi.R4,
+                    5 => platniRazredi.R5,
+                    6 => platniRazredi.R6,
+                    7 => platniRazredi.R7,
+                    8 => platniRazredi.R8,
+                    _ => minBase
+                };
+
+                razredLimitPio = razredVal switch
+                {
+                    1 => platniRazredi.P1,
+                    2 => platniRazredi.P2,
+                    3 => platniRazredi.P3,
+                    4 => platniRazredi.P4,
+                    5 => platniRazredi.P5,
+                    6 => platniRazredi.P6,
+                    7 => platniRazredi.P7,
+                    8 => platniRazredi.P8,
+                    _ => minBase
+                };
+            }
         }
         else if (radnik.Kategorija == "9")
         {
-            razredLimit = 0m;
+            razredLimitNormal = 0m;
+            razredLimitPio = 0m;
         }
 
-        decimal granica = razredLimit * workFactor;
-        decimal granicaPIO = razredLimit * workFactor;
+        decimal granica = razredLimitNormal * workFactor;
+        decimal granicaPIO = razredLimitPio * workFactor;
 
         decimal brutoOsn = totalBruto;
         decimal brutPioOsn = totalBruto;
@@ -247,33 +285,13 @@ public class ObracunService
 
         // Fetch samodoprinosi details
         decimal samodoprinosiIznos = 0m;
-        var generated = new List<Samodoprinosi>();
         
-        // Attempt to calculate dynamically from Clipper DBFs if they exist
-        string dbfDir = @"C:\PLATA\KOR28";
-        if (Directory.Exists(dbfDir))
+        var activeSamodoprinosi = _db.Samodoprinosi
+            .Where(s => s.RadnikId == radnik.Id && s.Godina == godina && s.Mesec == mesec)
+            .ToList();
+        foreach (var s in activeSamodoprinosi)
         {
-            // Dynamically calculate from DBF assignments and catalog definitions
-            decimal netoBase = totalBruto - (dopPioRadnik + dopZdrRadnik + dopNezRadnik + porez) - kreditiObustava;
-            samodoprinosiIznos = CalculateDynamicSamodoprinosi(radnik.Id, godina, mesec, netoBase, out generated);
-            
-            // Re-write to SQLite to keep it synced
-            var oldSam = _db.Samodoprinosi
-                .Where(s => s.RadnikId == radnik.Id && s.Godina == godina && s.Mesec == mesec)
-                .ToList();
-            _db.Samodoprinosi.RemoveRange(oldSam);
-            _db.Samodoprinosi.AddRange(generated);
-        }
-        else
-        {
-            // Fallback: Read existing records from SQLite
-            var activeSamodoprinosi = _db.Samodoprinosi
-                .Where(s => s.RadnikId == radnik.Id && s.Godina == godina && s.Mesec == mesec)
-                .ToList();
-            foreach (var s in activeSamodoprinosi)
-            {
-                samodoprinosiIznos += s.Iznos;
-            }
+            samodoprinosiIznos += s.Iznos;
         }
 
         // 8. Net salary calculation
@@ -401,144 +419,4 @@ public class ObracunService
         return 0m;
     }
 
-    private decimal CalculateDynamicSamodoprinosi(int radnikId, int godina, int mesec, decimal netoBase, out List<Samodoprinosi> generated)
-    {
-        generated = new List<Samodoprinosi>();
-        decimal sum = 0m;
-        
-        string dbfDir = @"C:\PLATA\KOR28";
-        string radSamPath = Path.Combine(dbfDir, "RAD_SAM.DBF");
-        string radSamiPath = Path.Combine(dbfDir, "RAD_SAMI.DBF");
-        string samodopPath = Path.Combine(dbfDir, "SAMODOP.DBF");
-        string samodopiPath = Path.Combine(dbfDir, "SAMODOPI.DBF");
-        
-        var assignedCodes = new List<int>();
-        
-        // 1. Try RAD_SAMI first (archive history)
-        if (File.Exists(radSamiPath))
-        {
-            try
-            {
-                var opts = new DbfDataReader.DbfDataReaderOptions { Encoding = Encoding.GetEncoding(852), SkipDeletedRecords = true };
-                using var reader = new DbfDataReader.DbfDataReader(radSamiPath, opts);
-                var cols = Enumerable.Range(0, reader.FieldCount).Select(i => reader.GetName(i).ToUpper().Trim()).ToList();
-                while (reader.Read())
-                {
-                    int rId = Convert.ToInt32(reader.GetValue(cols.IndexOf("RADNIK")));
-                    int god = Convert.ToInt32(reader.GetValue(cols.IndexOf("GODINA")));
-                    int mes = Convert.ToInt32(reader.GetValue(cols.IndexOf("MESEC")));
-                    if (rId == radnikId && god == godina && mes == mesec)
-                    {
-                        assignedCodes.Add(Convert.ToInt32(reader.GetValue(cols.IndexOf("SAMODOPRIN"))));
-                    }
-                }
-            }
-            catch {}
-        }
-        
-        // If not found in archive, try active RAD_SAM
-        if (assignedCodes.Count == 0 && File.Exists(radSamPath))
-        {
-            try
-            {
-                var opts = new DbfDataReader.DbfDataReaderOptions { Encoding = Encoding.GetEncoding(852), SkipDeletedRecords = true };
-                using var reader = new DbfDataReader.DbfDataReader(radSamPath, opts);
-                var cols = Enumerable.Range(0, reader.FieldCount).Select(i => reader.GetName(i).ToUpper().Trim()).ToList();
-                while (reader.Read())
-                {
-                    int rId = Convert.ToInt32(reader.GetValue(cols.IndexOf("RADNIK")));
-                    if (rId == radnikId)
-                    {
-                        assignedCodes.Add(Convert.ToInt32(reader.GetValue(cols.IndexOf("SAMODOPRIN"))));
-                    }
-                }
-            }
-            catch {}
-        }
-        
-        if (assignedCodes.Count == 0) return 0m;
-        
-        // 2. Load catalog definitions for these codes
-        var catalog = new Dictionary<int, (string Name, decimal Percent, decimal Linear)>();
-        
-        // Read SAMODOP
-        if (File.Exists(samodopPath))
-        {
-            try
-            {
-                var opts = new DbfDataReader.DbfDataReaderOptions { Encoding = Encoding.GetEncoding(852), SkipDeletedRecords = true };
-                using var reader = new DbfDataReader.DbfDataReader(samodopPath, opts);
-                var cols = Enumerable.Range(0, reader.FieldCount).Select(i => reader.GetName(i).ToUpper().Trim()).ToList();
-                while (reader.Read())
-                {
-                    int code = Convert.ToInt32(reader.GetValue(cols.IndexOf("RED_BROJ")));
-                    if (assignedCodes.Contains(code))
-                    {
-                        string name = reader.GetString(cols.IndexOf("NAZIV")).Trim();
-                        decimal proc = reader.GetDecimal(cols.IndexOf("PROCENAT"));
-                        decimal lin = reader.GetDecimal(cols.IndexOf("LIZNOS"));
-                        catalog[code] = (name, proc, lin);
-                    }
-                }
-            }
-            catch {}
-        }
-        
-        // Read SAMODOPI (history) if not fully loaded
-        if (catalog.Count < assignedCodes.Count && File.Exists(samodopiPath))
-        {
-            try
-            {
-                var opts = new DbfDataReader.DbfDataReaderOptions { Encoding = Encoding.GetEncoding(852), SkipDeletedRecords = true };
-                using var reader = new DbfDataReader.DbfDataReader(samodopiPath, opts);
-                var cols = Enumerable.Range(0, reader.FieldCount).Select(i => reader.GetName(i).ToUpper().Trim()).ToList();
-                while (reader.Read())
-                {
-                    int code = Convert.ToInt32(reader.GetValue(cols.IndexOf("RED_BROJ")));
-                    int god = Convert.ToInt32(reader.GetValue(cols.IndexOf("GODINA")));
-                    int mes = Convert.ToInt32(reader.GetValue(cols.IndexOf("MESEC")));
-                    if (assignedCodes.Contains(code) && god == godina && mes == mesec)
-                    {
-                        string name = reader.GetString(cols.IndexOf("NAZIV")).Trim();
-                        decimal proc = reader.GetDecimal(cols.IndexOf("PROCENAT"));
-                        decimal lin = reader.GetDecimal(cols.IndexOf("LIZNOS"));
-                        catalog[code] = (name, proc, lin);
-                    }
-                }
-            }
-            catch {}
-        }
-        
-        // 3. Calculate dynamic amounts
-        foreach (int code in assignedCodes)
-        {
-            if (catalog.TryGetValue(code, out var def))
-            {
-                decimal iznos = 0m;
-                if (def.Percent > 0)
-                {
-                    iznos = Math.Round(netoBase * def.Percent / 100m, 2);
-                }
-                else
-                {
-                    iznos = def.Linear;
-                }
-                
-                if (iznos > 0)
-                {
-                    sum += iznos;
-                    generated.Add(new Samodoprinosi
-                    {
-                        RadnikId = radnikId,
-                        Godina = godina,
-                        Mesec = mesec,
-                        Iznos = iznos,
-                        Opis = def.Name
-                    });
-                }
-            }
-        }
-        
-        return sum;
-    }
 }

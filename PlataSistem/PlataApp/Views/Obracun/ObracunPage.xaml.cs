@@ -74,139 +74,346 @@ public partial class ObracunPage : Page
             container.Page(page =>
             {
                 page.Size(PageSizes.A4);
-                page.Margin(2, Unit.Centimetre);
+                page.Margin(1.2f, Unit.Centimetre);
                 page.PageColor(Colors.White);
-                page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Calibri"));
+                page.DefaultTextStyle(x => x.FontSize(9).FontFamily("Calibri"));
+
+                // Dekodiranje stepena / kategorije
+                string stepenText = "-";
+                if (int.TryParse(o.Radnik.Kategorija, out int razred) && razred >= 1 && razred <= 8)
+                {
+                    string[] razred_c = {
+                        "I ili II stepen",
+                        "III stepen",
+                        "IV stepen",
+                        "V stepen",
+                        "VI stepen",
+                        "VII1 stepen",
+                        "VII2 stepen",
+                        "VIII stepen"
+                    };
+                    stepenText = razred_c[razred - 1];
+                }
+                else if (!string.IsNullOrWhiteSpace(o.Radnik.Kategorija))
+                {
+                    stepenText = o.Radnik.Kategorija;
+                }
+
+                // Rekonstrukcija vrednosti boda i formule: bod - min_plata% = neto_bod
+                decimal bod = 1860.34m; // Standardna vrednost boda
+                decimal minPlataPercent = 0m;
+                if (o.Radnik.OsnovnaPlata > 0 && o.Radnik.OsnovnaPlata <= 100)
+                {
+                    minPlataPercent = o.Radnik.OsnovnaPlata;
+                }
+                decimal netoBod = bod * (1 - minPlataPercent / 100);
+
+                // Računanje godina staža za minuli rad
+                int yearsOfTenure = 0;
+                if (o.Radnik.DatumZaposlenja.HasValue)
+                {
+                    var obracunDate = new DateTime(o.Godina, o.Mesec, 1);
+                    yearsOfTenure = (int)((obracunDate - o.Radnik.DatumZaposlenja.Value).TotalDays / 365.0);
+                    if (yearsOfTenure < 0) yearsOfTenure = 0;
+                    if (yearsOfTenure > 99) yearsOfTenure = 99;
+                }
+                decimal minuliRadPercent = yearsOfTenure * 0.40m;
 
                 // Header
                 page.Header().Row(row =>
                 {
                     row.RelativeItem().Column(col =>
                     {
-                        col.Item().Text("ZAVOD ZA POLJOPRIVREDU").Bold().FontSize(14).FontColor(Colors.Indigo.Darken4);
-                        col.Item().Text("PIROT").FontSize(10).FontColor(Colors.Grey.Darken1);
-                        col.Item().Text("Obračunski listić (Platni listić) za: " + $"{o.Mesec:D2}/{o.Godina}").Bold().FontSize(12).FontColor(Colors.Indigo.Medium);
+                        col.Item().Text("ZAVOD ZA POLJOPRIVREDU").Bold().FontSize(12).FontColor(Colors.Indigo.Darken4);
+                        col.Item().Text("PIROT (PIB: 100224119, MB: 07198305)").FontSize(8).FontColor(Colors.Grey.Darken1);
+                        col.Item().Text($"OBRAČUN ZARADE za {o.Mesec:D2}/{o.Godina}").Bold().FontSize(11).FontColor(Colors.Indigo.Medium);
                     });
                     
-                    row.ConstantItem(80).AlignRight().AlignMiddle().Column(col =>
+                    row.ConstantItem(180).AlignRight().Column(col =>
                     {
-                        col.Item().Text("v1.0.0").FontSize(8).FontColor(Colors.Grey.Lighten1);
+                        col.Item().Text($"Datum štampe: {DateTime.Now:dd.MM.yyyy}").FontSize(8).FontColor(Colors.Grey.Darken1);
+                        col.Item().Text("ZAVOD ZA POLJOPRIVREDU PIROT").Bold().FontSize(8).FontColor(Colors.Indigo.Darken4);
                     });
                 });
 
                 // Content
-                page.Content().PaddingVertical(1, Unit.Centimetre).Column(col =>
+                page.Content().PaddingVertical(0.4f, Unit.Centimetre).Column(col =>
                 {
                     // 1. Podaci o radniku
-                    col.Item().Border(1).BorderColor(Colors.Grey.Lighten2).Background(Colors.Grey.Lighten4).Padding(10).Row(row =>
+                    col.Item().Border(0.5f).BorderColor(Colors.Grey.Lighten1).Background(Colors.Grey.Lighten4).Padding(6).Row(row =>
                     {
                         row.RelativeItem().Column(c =>
                         {
                             c.Item().Text("Zaposleni:").Bold().FontSize(8).FontColor(Colors.Grey.Darken1);
-                            c.Item().Text(o.Radnik.ImeIPrezime).Bold().FontSize(12);
-                            c.Item().Text($"Radno mesto: {o.Radnik.Radno_Mesto ?? "Nije definisano"}").FontSize(9);
+                            c.Item().Text(o.Radnik.ImeIPrezime).Bold().FontSize(10);
+                            c.Item().Text($"Radno mesto: {o.Radnik.Radno_Mesto ?? "Nije definisano"} (Red. br: {o.Radnik.BrojRadnika})").FontSize(8);
+                            if (stepenText != "-")
+                            {
+                                c.Item().Text($"Stepen stručne spreme: {stepenText}").FontSize(8);
+                            }
                         });
                         row.RelativeItem().Column(c =>
                         {
-                            c.Item().Text("JMBG:").Bold().FontSize(8).FontColor(Colors.Grey.Darken1);
-                            c.Item().Text(o.Radnik.Jmbg ?? "-").FontSize(10);
-                            c.Item().Text($"Tekući račun: {o.Radnik.BankovniRacun ?? "-"}").FontSize(9);
+                            c.Item().Text("Detalji obračuna:").Bold().FontSize(8).FontColor(Colors.Grey.Darken1);
+                            c.Item().Text($"JMBG: {o.Radnik.Jmbg ?? "-"}").FontSize(8);
+                            c.Item().Text($"Bankovni račun: {o.Radnik.BankovniRacun ?? "-"}").FontSize(8);
+                            c.Item().Text($"Koeficijent: {o.Radnik.Koeficijent:N2}").FontSize(8);
+                        });
+                        row.RelativeItem().Column(c =>
+                        {
+                            c.Item().Text("Bodovna formula:").Bold().FontSize(8).FontColor(Colors.Grey.Darken1);
+                            c.Item().Text($"Bod: {bod:N2} - {minPlataPercent:N2}% = {netoBod:N2}").FontSize(8);
+                            c.Item().Text($"Godine staža: {yearsOfTenure} ({minuliRadPercent:F2}%)").FontSize(8);
                         });
                     });
 
-                    col.Item().PaddingTop(15).Text("EVIDENCIJA ČASOVA").Bold().FontSize(10).FontColor(Colors.Indigo.Darken4);
-                    col.Item().LineHorizontal(1).LineColor(Colors.Indigo.Darken4);
+                    // 2. Evidencija časova
+                    col.Item().PaddingTop(8).Text("EVIDENCIJA ČASOVA").Bold().FontSize(9).FontColor(Colors.Indigo.Darken4);
+                    col.Item().LineHorizontal(0.5f).LineColor(Colors.Indigo.Darken4);
 
-                    // Tabela sati
-                    col.Item().PaddingTop(5).Table(table =>
+                    col.Item().PaddingTop(3).Table(table =>
                     {
                         table.ColumnsDefinition(columns =>
                         {
                             columns.RelativeColumn();
-                            columns.ConstantColumn(80);
-                            columns.ConstantColumn(80);
+                            columns.ConstantColumn(100);
                         });
 
-                        // Header
                         table.Header(header =>
                         {
-                            header.Cell().Text("Opis").Bold();
-                            header.Cell().AlignRight().Text("Časovi").Bold();
-                            header.Cell().AlignRight().Text("Bruto iznos (RSD)").Bold();
+                            header.Cell().Text("Opis vrste rada / odsustva").Bold().FontSize(8);
+                            header.Cell().AlignRight().Text("Ostvareni časovi").Bold().FontSize(8);
                         });
 
-                        // Rows
-                        table.Cell().Text("Redovan rad (efektivni sati)");
-                        table.Cell().AlignRight().Text($"{o.RedovniSati}");
-                        table.Cell().AlignRight().Text($"{o.BrutoZarada:N2}");
+                        table.Cell().Text("Redovan rad (sati po vremenu)").FontSize(8);
+                        table.Cell().AlignRight().Text($"{o.RedovniSati:N2}").FontSize(8);
 
                         if (o.BolovanjeSati > 0)
                         {
-                            table.Cell().Text("Bolovanje");
-                            table.Cell().AlignRight().Text($"{o.BolovanjeSati}");
-                            table.Cell().AlignRight().Text($"{o.BrutoBolovanje:N2}");
+                            table.Cell().Text("Radni sati - bolovanje do 30 dana").FontSize(8);
+                            table.Cell().AlignRight().Text($"{o.BolovanjeSati:N2}").FontSize(8);
                         }
 
                         if (o.PrekovremeneSati > 0)
                         {
-                            table.Cell().Text("Prekovremeni rad");
-                            table.Cell().AlignRight().Text($"{o.PrekovremeneSati}");
-                            table.Cell().AlignRight().Text($"{o.BrutoNaknade:N2}");
+                            table.Cell().Text("Radni sati - prekovremeni, noćni, praznici").FontSize(8);
+                            table.Cell().AlignRight().Text($"{o.PrekovremeneSati:N2}").FontSize(8);
                         }
 
                         if (o.GodisnjioOdmorSati > 0)
                         {
-                            table.Cell().Text("Godišnji odmor");
-                            table.Cell().AlignRight().Text($"{o.GodisnjioOdmorSati}");
-                            table.Cell().AlignRight().Text("0,00");
+                            table.Cell().Text("Godišnji odmor").FontSize(8);
+                            table.Cell().AlignRight().Text($"{o.GodisnjioOdmorSati:N2}").FontSize(8);
                         }
+
+                        // Ukupno časova
+                        int ukupnoSati = o.RedovniSati + o.BolovanjeSati + o.PrekovremeneSati + o.GodisnjioOdmorSati;
+                        table.Cell().BorderTop(0.5f).BorderColor(Colors.Grey.Lighten1).PaddingVertical(2).Text("Ukupno radnih časova").Bold().FontSize(8);
+                        table.Cell().BorderTop(0.5f).BorderColor(Colors.Grey.Lighten1).PaddingVertical(2).AlignRight().Text($"{ukupnoSati:N2}").Bold().FontSize(8);
                     });
 
-                    col.Item().PaddingTop(15).Text("FINANSIJSKI OBRAČUN").Bold().FontSize(10).FontColor(Colors.Indigo.Darken4);
-                    col.Item().LineHorizontal(1).LineColor(Colors.Indigo.Darken4);
+                    // 3. Finansijski obračun
+                    col.Item().PaddingTop(8).Text("FINANSIJSKI OBRAČUN").Bold().FontSize(9).FontColor(Colors.Indigo.Darken4);
+                    col.Item().LineHorizontal(0.5f).LineColor(Colors.Indigo.Darken4);
 
-                    col.Item().PaddingTop(5).Table(table =>
+                    col.Item().PaddingTop(3).Table(table =>
                     {
                         table.ColumnsDefinition(columns =>
                         {
                             columns.RelativeColumn();
-                            columns.ConstantColumn(120);
+                            columns.ConstantColumn(90);
+                            columns.ConstantColumn(90);
+                            columns.ConstantColumn(90);
                         });
 
+                        table.Header(header =>
+                        {
+                            header.Cell().Text("Opis finansijske stavke / Osnovica").Bold().FontSize(8);
+                            header.Cell().AlignRight().Text("UKUPNO").Bold().FontSize(8);
+                            header.Cell().AlignRight().Text("PRIM. AKONT.").Bold().FontSize(8);
+                            header.Cell().AlignRight().Text("ZA ISPLATU").Bold().FontSize(8);
+                        });
+
+                        void AddRow(string desc, decimal val, bool bold = false)
+                        {
+                            table.Cell().PaddingVertical(1).Text(desc).Style(bold ? TextStyle.Default.Bold().FontSize(8) : TextStyle.Default.FontSize(8));
+                            table.Cell().PaddingVertical(1).AlignRight().Text($"{val:N2}").Style(bold ? TextStyle.Default.Bold().FontSize(8) : TextStyle.Default.FontSize(8));
+                            table.Cell().PaddingVertical(1).AlignRight().Text("0,00").Style(bold ? TextStyle.Default.Bold().FontSize(8) : TextStyle.Default.FontSize(8));
+                            table.Cell().PaddingVertical(1).AlignRight().Text($"{val:N2}").Style(bold ? TextStyle.Default.Bold().FontSize(8) : TextStyle.Default.FontSize(8));
+                        }
+
+                        decimal totalBruto = o.BrutoZarada;
+
+                        // Bruto delovi (iz DBF kolona)
+                        if (o.NetoZar > 0)
+                        {
+                            AddRow("Bruto zarada (redovan rad)", o.NetoZar);
+                        }
+                        if (o.BrutoMinuliRad > 0)
+                        {
+                            AddRow($"Bruto naknada - minuli rad ({minuliRadPercent:F2}%)", o.BrutoMinuliRad);
+                        }
+                        if (o.NetoBol > 0)
+                        {
+                            AddRow("Bruto naknada - bolovanje do 30 dana", o.NetoBol);
+                        }
+                        if (o.NetoB100 > 0)
+                        {
+                            AddRow("Bruto naknada - bolovanje 100%", o.NetoB100);
+                        }
+                        if (o.NetoPlac > 0)
+                        {
+                            AddRow("Bruto naknada - plaćeno odsustvo", o.NetoPlac);
+                        }
+                        if (o.NetoPlZ > 0)
+                        {
+                            AddRow("Bruto naknada - plaćeno odsustvo zakonski", o.NetoPlZ);
+                        }
+                        if (o.NetoNerd > 0)
+                        {
+                            AddRow("Bruto naknada - neradni državni praznik", o.NetoNerd);
+                        }
+                        if (o.NetoDrza > 0)
+                        {
+                            AddRow("Bruto naknada - rad na državni praznik", o.NetoDrza);
+                        }
+                        if (o.NetoGOd > 0)
+                        {
+                            AddRow("Bruto naknada - godišnji odmor", o.NetoGOd);
+                        }
+                        if (o.NetoNocni > 0)
+                        {
+                            AddRow("Bruto naknada - noćni rad", o.NetoNocni);
+                        }
+                        if (o.NetoVezba > 0)
+                        {
+                            AddRow("Bruto naknada - vojna vežba", o.NetoVezba);
+                        }
+                        if (o.NetoPrek > 0)
+                        {
+                            AddRow("Bruto naknada - prekovremeni rad", o.NetoPrek);
+                        }
+                        if (o.NetoTo > 0)
+                        {
+                            AddRow("Bruto dodatak - topli obrok", o.NetoTo);
+                        }
+                        if (o.NetoReg > 0)
+                        {
+                            AddRow("Bruto dodatak - regres", o.NetoReg);
+                        }
+                        if (o.NetoTer > 0)
+                        {
+                            AddRow("Bruto dodatak - terenski dodatak", o.NetoTer);
+                        }
+                        if (o.KorDod > 0)
+                        {
+                            AddRow("Bruto dodatak - korektivni dodatak", o.KorDod);
+                        }
+                        if (o.KorDod1 > 0)
+                        {
+                            AddRow("Bruto dodatak - korektivni dodatak 1", o.KorDod1);
+                        }
+                        if (o.Kumul > 0)
+                        {
+                            AddRow("Kumulativ", o.Kumul);
+                        }
+                        if (o.NetoNede > 0)
+                        {
+                            AddRow("Bruto naknada - rad nedeljom", o.NetoNede);
+                        }
+
+                        // Linija razdvajanja
+                        table.Cell().ColumnSpan(4).PaddingVertical(1).LineHorizontal(0.5f).LineColor(Colors.Grey.Lighten1);
+
+                        // Ukupno Bruto
+                        AddRow("UKUPNA BRUTO ZARADA", totalBruto, bold: true);
+
+
+                        // Osnovica i porez
+                        AddRow("Osnovica za obračun doprinosa", totalBruto);
+                        if (o.PorezNaDohodak > 0)
+                        {
+                            AddRow("Porez na dohodak građana (stopa 10.00%)", o.PorezNaDohodak);
+                        }
+
+                        // Doprinosi zaposlenog
+                        if (o.DoprinosPioRadnik > 0)
+                        {
+                            decimal pioRate = o.Radnik.StopaPio > 0 ? o.Radnik.StopaPio * 100 : 14.00m;
+                            AddRow($"Doprinos za PIO (stopa {pioRate:F2}%)", o.DoprinosPioRadnik);
+                        }
+                        if (o.DoprinosZdravstvoRadnik > 0)
+                        {
+                            decimal zdrRate = o.Radnik.StopaZdravstvo > 0 ? o.Radnik.StopaZdravstvo * 100 : 5.15m;
+                            AddRow($"Doprinos za zdravstvo (stopa {zdrRate:F2}%)", o.DoprinosZdravstvoRadnik);
+                        }
+                        if (o.DoprinosNezaposlenostRadnik > 0)
+                        {
+                            decimal nezRate = o.Radnik.StopaNezaposlenost > 0 ? o.Radnik.StopaNezaposlenost * 100 : 0.75m;
+                            AddRow($"Doprinos za nezaposlenost (stopa {nezRate:F2}%)", o.DoprinosNezaposlenostRadnik);
+                        }
+
+                        // Neto 1
                         decimal ukupniDoprinosi = o.DoprinosPioRadnik + o.DoprinosZdravstvoRadnik + o.DoprinosNezaposlenostRadnik;
+                        decimal neto1 = totalBruto - o.PorezNaDohodak - ukupniDoprinosi;
+                        AddRow("Zarada zaposlenog umanjena za por. i dop.", neto1, bold: true);
 
-                        table.Cell().Text("1. BRUTO ZARADA (ukupno)");
-                        table.Cell().AlignRight().Text($"{(o.BrutoZarada + o.BrutoBolovanje + o.BrutoNaknade):N2}").Bold();
+                        // Odbici / obustave
+                        if (o.KreditObustava > 0)
+                        {
+                            AddRow("Obustave po osnovu kredita i admin. zabrana", o.KreditObustava);
+                        }
+                        // Dinamičko učitavanje pojedinačnih stavki samodoprinosa / obustava iz SQLite
+                        var detailedSam = new List<Samodoprinosi>();
+                        try
+                        {
+                            using var dbDetails = PlataData.PlataDbContext.Create(PlataApp.AppConfig.DbPath);
+                            detailedSam = dbDetails.Samodoprinosi
+                                .Where(s => s.RadnikId == o.RadnikId && s.Godina == o.Godina && s.Mesec == o.Mesec)
+                                .ToList();
+                        }
+                        catch {}
 
-                        table.Cell().Text("2. Porez na dohodak građana");
-                        table.Cell().AlignRight().Text($"{o.PorezNaDohodak:N2}").FontColor(Colors.Red.Darken2);
+                        if (detailedSam.Count > 0)
+                        {
+                            foreach (var s in detailedSam)
+                            {
+                                AddRow(s.Opis, s.Iznos);
+                            }
+                        }
+                        else if (o.Samodoprinosi > 0)
+                        {
+                            AddRow("Opštinski samodoprinosi", o.Samodoprinosi);
+                        }
+                        if (o.OstaliOdbici > 0)
+                        {
+                            AddRow("Ostali odbici / obustave", o.OstaliOdbici);
+                        }
 
-                        table.Cell().Text("3. Doprinosi za socijalno osiguranje (teret zaposlenog)");
-                        table.Cell().AlignRight().Text($"{ukupniDoprinosi:N2}").FontColor(Colors.Red.Darken2);
+                        // Linija razdvajanja
+                        table.Cell().ColumnSpan(4).PaddingVertical(1).LineHorizontal(0.5f).LineColor(Colors.Grey.Lighten1);
 
-                        table.Cell().Text("4. Ostali odbici i krediti");
-                        table.Cell().AlignRight().Text($"{o.KreditObustava:N2}");
+                        // Konačno za isplatu
+                        AddRow("ZA ISPLATU (Konačni neto)", o.NetoIsplata, bold: true);
 
-                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).PaddingVertical(5);
-                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).PaddingVertical(5);
-
-                        table.Cell().Text("ZA ISPLATU (Neto iznos)").Bold().FontSize(12);
-                        table.Cell().AlignRight().Text($"{o.NetoIsplata:N2}").Bold().FontSize(13).FontColor(Colors.Green.Darken3);
+                        // Bruto 2
+                        decimal bruto2 = totalBruto + o.DoprinosPioPoslodavac + o.DoprinosZdravstvoPoslodavac + o.DoprinosNezaposlenostPoslodavac;
+                        AddRow("Bruto 2 (Doprinosi na teret poslodavca)", bruto2);
                     });
 
                     // Potpisi
-                    col.Item().PaddingTop(50).Row(row =>
+                    col.Item().PaddingTop(25).Row(row =>
                     {
                         row.RelativeItem().Column(c =>
                         {
                             c.Item().LineHorizontal(0.5f).LineColor(Colors.Grey.Medium);
-                            c.Item().PaddingTop(3).Text("Potpis ovlašćenog lica").AlignCenter().FontSize(8);
+                            c.Item().PaddingTop(2).Text("Potpis ovlašćenog lica").AlignCenter().FontSize(7).FontColor(Colors.Grey.Darken2);
                         });
-                        row.ConstantItem(100);
+                        row.ConstantItem(150);
                         row.RelativeItem().Column(c =>
                         {
                             c.Item().LineHorizontal(0.5f).LineColor(Colors.Grey.Medium);
-                            c.Item().PaddingTop(3).Text("Potpis zaposlenog").AlignCenter().FontSize(8);
+                            c.Item().PaddingTop(2).Text("Potpis zaposlenog").AlignCenter().FontSize(7).FontColor(Colors.Grey.Darken2);
                         });
                     });
                 });
@@ -214,9 +421,10 @@ public partial class ObracunPage : Page
                 // Footer
                 page.Footer().AlignCenter().Text(text =>
                 {
-                    text.CurrentPageNumber();
-                    text.Span(" / ");
-                    text.TotalPages();
+                    text.Span("Stranica ").FontSize(8).FontColor(Colors.Grey.Darken1);
+                    text.CurrentPageNumber().FontSize(8).FontColor(Colors.Grey.Darken1);
+                    text.Span(" od ").FontSize(8).FontColor(Colors.Grey.Darken1);
+                    text.TotalPages().FontSize(8).FontColor(Colors.Grey.Darken1);
                 });
             });
         }).GeneratePdf(filePath);

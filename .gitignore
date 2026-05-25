@@ -30,7 +30,7 @@ PlataSistem_Instalacija.zip
 # ─── Ignoriši Clipper DOS folder u potpunosti ─────────────────────────────────
 PLATA/
 /PLATA
-
+/JEZ
 # ─── Ostali privremeni i bekap fajlovi ────────────────────────────────────────
 *.bak
 *.tmp

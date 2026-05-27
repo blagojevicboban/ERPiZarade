@@ -220,6 +220,11 @@ public partial class RadniSatiPage : Page
                     postojeciObracun.RadPraznikomSati = rs.RadPraznikomSati;
                     postojeciObracun.NocniRadPraznikomSati = rs.NocniRadPraznikomSati;
                     postojeciObracun.PlacenoOdsustvoSati = rs.PlacenoOdsustvoSati;
+                    postojeciObracun.NedeljaSati = rs.RadNedeljomSati;
+                    postojeciObracun.PlacenoZakonskiSatiLegacy = rs.PlacenoZakonskiSati;
+                    postojeciObracun.BolovanjePreko60SatiLegacy = rs.BolovanjePreko60Sati;
+                    postojeciObracun.PorodiljskoOdsustvoSatiLegacy = rs.PorodiljskoOdsustvoSati;
+                    postojeciObracun.Bolovanje100SatiLegacy = rs.Bolovanje100Sati;
 
                     postojeciObracun.Prosek = noviObracun.Prosek;
                     postojeciObracun.DatumObracuna = DateTime.Now;

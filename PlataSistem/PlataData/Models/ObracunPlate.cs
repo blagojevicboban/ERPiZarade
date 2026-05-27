@@ -160,6 +160,93 @@ public class ObracunPlate
     [MaxLength(200)]
     public string Napomena { get; set; } = "";
 
+    // ── DODATNO MIGRIRANE LEGACY KOLONE IZ OBRACUN.DBF / OBRACUNI.DBF ──
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal Koeficijent { get; set; }
+
+    public int MinuliRadGodine { get; set; }
+
+    [MaxLength(20)]
+    public string Kategorija { get; set; } = "";
+
+    public int BrojRadneJedinice { get; set; }
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal UkupnoRadnihSatiLegacy { get; set; }
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal FondSatiMesecni { get; set; }
+
+    [Column(TypeName = "decimal(14,5)")]
+    public decimal CenaSataRedovan { get; set; }
+
+    [Column(TypeName = "decimal(14,5)")]
+    public decimal CenaSataMinuliRad { get; set; }
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal DodaciLegacy { get; set; }
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal DodatakNaM1 { get; set; }
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal DodatakNaM2 { get; set; }
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal DodatakNaM3 { get; set; }
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal BrutoOsnovica { get; set; }
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal TopliObrokIznos { get; set; }
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal BrutoPioOsnovica { get; set; }
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal NetoNaknadeLegacy { get; set; }
+
+    [MaxLength(20)]
+    public string Operativni { get; set; } = "";
+
+    [MaxLength(20)]
+    public string Oznaka { get; set; } = "";
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal NedeljaSati { get; set; }
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal BolovanjePreko60SatiLegacy { get; set; }
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal PorodiljskoOdsustvoSatiLegacy { get; set; }
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal PlacenoOdsustvoSatiLegacy { get; set; }
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal PlacenoZakonskiSatiLegacy { get; set; }
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal Bolovanje100SatiLegacy { get; set; }
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal MinimalnaPlataOsnovica { get; set; }
+
+    public int SifraSamodoprinosa1 { get; set; }
+    public int SifraSamodoprinosa2 { get; set; }
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal PosebanPorez { get; set; }
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal NetoPorez { get; set; }
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal NetoBezPoreza { get; set; }
+
+
     // ── NOT MAPPED HELPERS FOR UI BINDINGS ────────────────
     [NotMapped]
     public int UkupnoSati => RedovniSati + BolovanjeSati + PrekovremeneSati + GodisnjioOdmorSati + DrzavniPraznikSati + NocniSati + SmenskiSati + RadPraznikomSati + NocniRadPraznikomSati + PlacenoOdsustvoSati;

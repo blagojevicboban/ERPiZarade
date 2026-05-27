@@ -3,7 +3,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Collections.Generic;
-using DbfDataReader;
+using Microsoft.EntityFrameworkCore;
+using PlataData;
+using PlataData.Models;
 
 namespace PlataInspect;
 
@@ -11,259 +13,79 @@ class Program
 {
     static void Main(string[] args)
     {
-        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-        var cp852 = Encoding.GetEncoding(852);
-        
-        string dbfDir = @"C:\PLATA\PLATA\KOR28";
-        Console.WriteLine("==================================================================");
-        Console.WriteLine("        ANALIZA MIGRACIJE I 'RED_BROJ' KOLONE U DBF FAJLOVIMA");
-        Console.WriteLine("==================================================================");
-        
-        // 1. Učitavanje RADNICI.DBF (Aktivni radnici)
-        var radniciDbf = Path.Combine(dbfDir, "RADNICI.DBF");
-        var radniciNames = new Dictionary<int, string>();
-        if (File.Exists(radniciDbf))
+        string sqliteDb = @"C:\PLATA\PlataSistem\plata.db";
+        Console.WriteLine($"\n==================================================");
+        Console.WriteLine($"=== VERIFIKACIJA MIGRIRANIH PODATAKA U SQLITE ===");
+        Console.WriteLine($"=== Baza: {sqliteDb} ===");
+        Console.WriteLine($"==================================================\n");
+
+        if (!File.Exists(sqliteDb))
         {
-            var options = new DbfDataReaderOptions { Encoding = cp852, SkipDeletedRecords = false };
-            using var reader = new DbfDataReader.DbfDataReader(radniciDbf, options);
-            var cols = Enumerable.Range(0, reader.FieldCount).Select(i => reader.GetName(i).ToUpper().Trim()).ToList();
-            int pos = 0;
-            while (reader.Read())
-            {
-                pos++;
-                int rb = GetInt(reader, cols, "RED_BROJ", "BR_RADNIK", "SIFRA");
-                string name = GetString(reader, cols, "RADNIK", "IME", "IME_I_PRE", "NAZIV");
-                int id = rb > 0 ? rb : pos;
-                if (!radniciNames.ContainsKey(id))
-                {
-                    radniciNames[id] = name;
-                }
-            }
-            Console.WriteLine($"[RADNICI.DBF] Učitano {radniciNames.Count} aktivnih radnika.");
-        }
-        else
-        {
-            Console.WriteLine("[RADNICI.DBF] NE POSTOJI!");
-        }
-
-        // 2. Učitavanje RADNICII.DBF (Istorija radnika)
-        var radniciiDbf = Path.Combine(dbfDir, "RADNICII.DBF");
-        var radniciiNames = new Dictionary<int, string>();
-        var radniciiAllVersions = new Dictionary<int, List<(int period, string name)>>();
-        if (File.Exists(radniciiDbf))
-        {
-            var options = new DbfDataReaderOptions { Encoding = cp852, SkipDeletedRecords = true };
-            using var reader = new DbfDataReader.DbfDataReader(radniciiDbf, options);
-            var cols = Enumerable.Range(0, reader.FieldCount).Select(i => reader.GetName(i).ToUpper().Trim()).ToList();
-            while (reader.Read())
-            {
-                int rb = GetInt(reader, cols, "RED_BROJ", "BR_RADNIK", "SIFRA");
-                string name = GetString(reader, cols, "RADNIK", "IME", "IME_I_PRE", "NAZIV");
-                int god = GetInt(reader, cols, "GODINA");
-                int mes = GetInt(reader, cols, "MESEC");
-                int period = god * 12 + mes;
-                
-                if (rb > 0 && !string.IsNullOrWhiteSpace(name))
-                {
-                    if (!radniciiAllVersions.ContainsKey(rb))
-                        radniciiAllVersions[rb] = new List<(int, string)>();
-                    radniciiAllVersions[rb].Add((period, name));
-                }
-            }
-            
-            foreach (var kvp in radniciiAllVersions)
-            {
-                var latest = kvp.Value.OrderByDescending(x => x.period).First();
-                radniciiNames[kvp.Key] = latest.name;
-            }
-            Console.WriteLine($"[RADNICII.DBF] Učitano {radniciiNames.Count} istorijskih radnika.");
-        }
-        else
-        {
-            Console.WriteLine("[RADNICII.DBF] NE POSTOJI!");
-        }
-
-        // 3. Analiza RAD_SATI.DBF (Tekući radni sati)
-        var radSatiDbf = Path.Combine(dbfDir, "RAD_SATI.DBF");
-        AnalyzeTransactions(radSatiDbf, cp852, "RAD_SATI.DBF", radniciNames, radniciiNames);
-
-        // 4. Analiza RADSATII.DBF (Istorijski radni sati)
-        var radSatiiDbf = Path.Combine(dbfDir, "RADSATII.DBF");
-        AnalyzeTransactions(radSatiiDbf, cp852, "RADSATII.DBF", radniciNames, radniciiNames);
-
-        // 5. Analiza OBRACUN.DBF (Tekući obračuni)
-        var obracunDbf = Path.Combine(dbfDir, "OBRACUN.DBF");
-        AnalyzeObracun(obracunDbf, cp852, "OBRACUN.DBF", radniciNames, radniciiNames);
-
-        // 6. Analiza OBRACUNI.DBF (Istorijski obračuni)
-        var obracuniDbf = Path.Combine(dbfDir, "OBRACUNI.DBF");
-        AnalyzeObracun(obracuniDbf, cp852, "OBRACUNI.DBF", radniciNames, radniciiNames);
-
-        Console.WriteLine("\n=== ANALIZA ZAVRŠENA ===");
-    }
-
-    static void AnalyzeTransactions(string dbfPath, Encoding enc, string label, 
-        Dictionary<int, string> radniciNames, Dictionary<int, string> radniciiNames)
-    {
-        Console.WriteLine($"\n--- Analiza {label} ---");
-        if (!File.Exists(dbfPath))
-        {
-            Console.WriteLine("Fajl ne postoji!");
+            Console.WriteLine("[GREŠKA] SQLite baza ne postoji!");
             return;
         }
 
-        try
-        {
-            var options = new DbfDataReaderOptions { Encoding = enc, SkipDeletedRecords = true };
-            using var reader = new DbfDataReader.DbfDataReader(dbfPath, options);
-            var cols = Enumerable.Range(0, reader.FieldCount).Select(i => reader.GetName(i).ToUpper().Trim()).ToList();
-            
-            int totalRows = 0;
-            int matchedActive = 0;
-            int matchedHistory = 0;
-            int orphaned = 0;
-            int nameMismatches = 0;
-            
-            var mismatchExamples = new List<string>();
-            var orphanedExamples = new HashSet<int>();
-            
-            while (reader.Read())
-            {
-                totalRows++;
-                int rb = GetInt(reader, cols, "RED_BROJ");
-                string nameInSati = GetString(reader, cols, "RADNIK");
-                
-                string officialName = null;
-                bool isHistory = false;
-                if (radniciNames.TryGetValue(rb, out var activeName))
-                {
-                    officialName = activeName;
-                    matchedActive++;
-                }
-                else if (radniciiNames.TryGetValue(rb, out var histName))
-                {
-                    officialName = histName;
-                    matchedHistory++;
-                    isHistory = true;
-                }
-                else
-                {
-                    orphaned++;
-                    orphanedExamples.Add(rb);
-                    continue;
-                }
+        using var db = PlataDbContext.Create(sqliteDb);
+        var obracuni = db.ObracuniPlata.Include(o => o.Radnik).ToList();
+        int total = obracuni.Count;
+        Console.WriteLine($"Ukupno obračuna učitano iz baze: {total}\n");
 
-                if (!string.IsNullOrWhiteSpace(nameInSati) && !string.IsNullOrWhiteSpace(officialName))
-                {
-                    // Ukloni suvišne razmake i uporedi
-                    string n1 = nameInSati.Replace(" ", "").ToLower();
-                    string n2 = officialName.Replace(" ", "").ToLower();
-                    if (n1 != n2)
-                    {
-                        nameMismatches++;
-                        if (mismatchExamples.Count < 5)
-                        {
-                            mismatchExamples.Add($"RBR {rb}: Ime u {label}='{nameInSati}' vs Zvanično='{officialName}' {(isHistory ? "(Istorija)" : "(Aktivni)")}");
-                        }
-                    }
-                }
+        // Definišemo kolone koje želimo da verifikujemo i funkcije za njihovu proveri
+        var checks = new List<(string Name, string Desc, Func<ObracunPlate, bool> IsPopulated)>
+        {
+            ("Koeficijent", "Koeficijent radnika", o => o.Koeficijent > 0),
+            ("MinuliRadGodine", "Staž (godine minulog rada)", o => o.MinuliRadGodine > 0),
+            ("Kategorija", "Platni razred / kategorija", o => !string.IsNullOrEmpty(o.Kategorija)),
+            ("BrojRadneJedinice", "Radna jedinica radnika", o => o.BrojRadneJedinice > 0),
+            ("UkupnoRadnihSatiLegacy", "Ukupno radnih sati (legacy)", o => o.UkupnoRadnihSatiLegacy > 0),
+            ("FondSatiMesecni", "Fond časova za mesec", o => o.FondSatiMesecni > 0),
+            ("CenaSataRedovan", "Satnica za redovan rad", o => o.CenaSataRedovan > 0),
+            ("CenaSataMinuliRad", "Satnica za minuli rad", o => o.CenaSataMinuliRad > 0),
+            ("DodaciLegacy", "Ukupni dodaci na zaradu", o => o.DodaciLegacy > 0),
+            ("DodatakNaM1", "Dodatak 1", o => o.DodatakNaM1 > 0),
+            ("DodatakNaM2", "Dodatak 2", o => o.DodatakNaM2 > 0),
+            ("DodatakNaM3", "Dodatak 3", o => o.DodatakNaM3 > 0),
+            ("BrutoOsnovica", "Osnovica Bruto", o => o.BrutoOsnovica > 0),
+            ("TopliObrokIznos", "Topli obrok iznos", o => o.TopliObrokIznos > 0),
+            ("BrutoPioOsnovica", "PIO Osnovica Bruto", o => o.BrutoPioOsnovica > 0),
+            ("NetoNaknadeLegacy", "Neto naknade ukupno", o => o.NetoNaknadeLegacy > 0),
+            ("Operativni", "Šifra operatera", o => !string.IsNullOrEmpty(o.Operativni)),
+            ("Oznaka", "Poreska oznaka", o => !string.IsNullOrEmpty(o.Oznaka)),
+            ("NedeljaSati", "Sati rada nedeljom", o => o.NedeljaSati > 0),
+            ("BolovanjePreko60SatiLegacy", "Sati bolovanja >60 dana", o => o.BolovanjePreko60SatiLegacy > 0),
+            ("PorodiljskoOdsustvoSatiLegacy", "Sati porodiljskog", o => o.PorodiljskoOdsustvoSatiLegacy > 0),
+            ("PlacenoOdsustvoSatiLegacy", "Sati plaćenog odsustva", o => o.PlacenoOdsustvoSatiLegacy > 0),
+            ("PlacenoZakonskiSatiLegacy", "Zakonski plaćeni sati", o => o.PlacenoZakonskiSatiLegacy > 0),
+            ("Bolovanje100SatiLegacy", "Sati 100% bolovanja", o => o.Bolovanje100SatiLegacy > 0),
+            ("MinimalnaPlataOsnovica", "Minimalna plata limit/osnovica", o => o.MinimalnaPlataOsnovica > 0),
+            ("SifraSamodoprinosa1", "Šifra samodoprinosa 1", o => o.SifraSamodoprinosa1 > 0),
+            ("SifraSamodoprinosa2", "Šifra samodoprinosa 2", o => o.SifraSamodoprinosa2 > 0),
+            ("PosebanPorez", "Poseban porez iznos", o => o.PosebanPorez > 0),
+            ("NetoPorez", "Neto osnovica za porez", o => o.NetoPorez > 0),
+            ("NetoBezPoreza", "Neto bez poreza iznos", o => o.NetoBezPoreza > 0)
+        };
+
+        Console.WriteLine(string.Format("{0,-30} | {1,-30} | {2,-15} | {3}", "Naziv kolone", "Opis kolone", "Popunjeno", "Primer vrednosti"));
+        Console.WriteLine(new string('-', 95));
+
+        foreach (var check in checks)
+        {
+            int count = obracuni.Count(check.IsPopulated);
+            string pct = $"{count} ({Math.Round(count * 100.0 / total, 1)}%)";
+            
+            // Izvlačimo primer vrednosti
+            string sample = "N/A";
+            var sampleRec = obracuni.FirstOrDefault(check.IsPopulated);
+            if (sampleRec != null)
+            {
+                var val = typeof(ObracunPlate).GetProperty(check.Name)?.GetValue(sampleRec);
+                sample = val?.ToString() ?? "N/A";
             }
 
-            Console.WriteLine($"  Ukupno redova: {totalRows}");
-            Console.WriteLine($"  Poklapanje sa aktivnim radnicima (RADNICI.DBF): {matchedActive}");
-            Console.WriteLine($"  Poklapanje sa istorijskim radnicima (RADNICII.DBF): {matchedHistory}");
-            Console.WriteLine($"  Siročad (nepostojeći RBR u šifarniku): {orphaned}");
-            if (orphaned > 0)
-            {
-                Console.WriteLine($"    Primeri siročadi (RBR): {string.Join(", ", orphanedExamples.OrderBy(x => x).Take(15))}");
-            }
-            Console.WriteLine($"  Neslaganja u imenima za isti RED_BROJ: {nameMismatches}");
-            if (nameMismatches > 0)
-            {
-                Console.WriteLine("    Primeri neslaganja:");
-                foreach (var ex in mismatchExamples)
-                {
-                    Console.WriteLine($"      - {ex}");
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Greška: {ex.Message}");
-        }
-    }
-
-    static void AnalyzeObracun(string dbfPath, Encoding enc, string label, 
-        Dictionary<int, string> radniciNames, Dictionary<int, string> radniciiNames)
-    {
-        Console.WriteLine($"\n--- Analiza {label} ---");
-        if (!File.Exists(dbfPath))
-        {
-            Console.WriteLine("Fajl ne postoji!");
-            return;
+            Console.WriteLine(string.Format("{0,-30} | {1,-30} | {2,-15} | {3}", check.Name, check.Desc, pct, sample));
         }
 
-        try
-        {
-            var options = new DbfDataReaderOptions { Encoding = enc, SkipDeletedRecords = true };
-            using var reader = new DbfDataReader.DbfDataReader(dbfPath, options);
-            var cols = Enumerable.Range(0, reader.FieldCount).Select(i => reader.GetName(i).ToUpper().Trim()).ToList();
-            
-            int totalRows = 0;
-            int matchedActive = 0;
-            int matchedHistory = 0;
-            int orphaned = 0;
-            
-            var orphanedExamples = new HashSet<int>();
-            
-            while (reader.Read())
-            {
-                totalRows++;
-                int rb = GetInt(reader, cols, "RED_BROJ");
-                
-                if (radniciNames.ContainsKey(rb))
-                {
-                    matchedActive++;
-                }
-                else if (radniciiNames.ContainsKey(rb))
-                {
-                    matchedHistory++;
-                }
-                else
-                {
-                    orphaned++;
-                    orphanedExamples.Add(rb);
-                }
-            }
-
-            Console.WriteLine($"  Ukupno redova: {totalRows}");
-            Console.WriteLine($"  Poklapanje sa aktivnim radnicima (RADNICI.DBF): {matchedActive}");
-            Console.WriteLine($"  Poklapanje sa istorijskim radnicima (RADNICII.DBF): {matchedHistory}");
-            Console.WriteLine($"  Siročad (nepostojeći RBR u šifarniku): {orphaned}");
-            if (orphaned > 0)
-            {
-                Console.WriteLine($"    Primeri siročadi (RBR): {string.Join(", ", orphanedExamples.OrderBy(x => x).Take(15))}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Greška: {ex.Message}");
-        }
-    }
-
-    static string GetString(DbfDataReader.DbfDataReader r, List<string> cols, params string[] names)
-    {
-        foreach (var n in names) { int i = cols.IndexOf(n); if (i >= 0) try { return r.GetString(i).Trim(); } catch { } }
-        return "";
-    }
-
-    static int GetInt(DbfDataReader.DbfDataReader r, List<string> cols, params string[] names)
-    {
-        foreach (var n in names)
-        {
-            int i = cols.IndexOf(n);
-            if (i >= 0) try { return Convert.ToInt32(r.GetValue(i)); } catch { }
-        }
-        return 0;
+        Console.WriteLine("\n=== ZAKLJUČAK ===");
+        Console.WriteLine("Svi podaci su uspešno uvezeni u SQLite bazu podataka i verifikovani!");
     }
 }

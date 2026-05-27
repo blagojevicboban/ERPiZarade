@@ -532,15 +532,26 @@ async Task ImportObracuniDbf(string dbfPath, string label, int defaultGodina, in
                 continue;
             }
 
+            decimal brutoZar = GetDecimal(reader, columns, "BRUTO_ZAR", "BRUTO");
+            decimal brutoNak = GetDecimal(reader, columns, "BRUTO_NAK");
+            decimal stimPercent = GetDecimal(reader, columns, "STIMULACIJ");
+            decimal calculatedStimAmount = 0m;
+            if (stimPercent != 0)
+            {
+                decimal brutoBase = brutoZar + brutoNak;
+                decimal baseWithoutStim = brutoBase / (1m + stimPercent / 100m);
+                calculatedStimAmount = Math.Round(brutoBase - baseWithoutStim, 2);
+            }
+
             batch.Add(new ObracunPlate
             {
                 RadnikId          = brRadnika, // Direktno mapiranje jer je Radnik.Id == brRadnika == RED_BROJ
                 Godina            = godina,
                 Mesec             = mesec,
-                BrutoZarada       = GetDecimal(reader, columns, "BRUTO_ZAR", "BRUTO"),
+                BrutoZarada       = brutoZar,
                 BrutoBolovanje    = GetDecimal(reader, columns, "BRUTO_BOL"),
-                BrutoNaknade      = GetDecimal(reader, columns, "BRUTO_NAK"),
-                BrutoStimulacija  = GetDecimal(reader, columns, "STIMULACIJ"),
+                BrutoNaknade      = brutoNak,
+                BrutoStimulacija  = calculatedStimAmount,
                 DoprinosPioRadnik = GetDecimal(reader, columns, "DOP_ZAR1", "PIO"),
                 DoprinosZdravstvoRadnik     = GetDecimal(reader, columns, "DOP_ZAR2"),
                 DoprinosNezaposlenostRadnik = GetDecimal(reader, columns, "DOP_ZAR3"),
@@ -585,6 +596,36 @@ async Task ImportObracuniDbf(string dbfPath, string label, int defaultGodina, in
                 KorDod1           = GetDecimal(reader, columns, "KOR_DOD1"),
                 Kumul             = GetDecimal(reader, columns, "KUMUL"),
                 NetoNede          = GetDecimal(reader, columns, "NETO_NEDE"),
+                Koeficijent       = GetDecimal(reader, columns, "KOEFIC"),
+                MinuliRadGodine   = GetInt(reader, columns, "MIN_RAD"),
+                Kategorija        = GetIntAsString(reader, columns, "RAZRED"),
+                BrojRadneJedinice = GetInt(reader, columns, "RAD_JED"),
+                UkupnoRadnihSatiLegacy = GetDecimal(reader, columns, "UK_R_SATI"),
+                FondSatiMesecni   = GetDecimal(reader, columns, "UKUP_CAS"),
+                CenaSataRedovan   = GetDecimal(reader, columns, "ZAR_PO_CAS"),
+                CenaSataMinuliRad = GetDecimal(reader, columns, "MIN_PO_CAS"),
+                DodaciLegacy      = GetDecimal(reader, columns, "DODACI"),
+                DodatakNaM1       = GetDecimal(reader, columns, "DOD_NA_M1"),
+                DodatakNaM2       = GetDecimal(reader, columns, "DOD_NA_M2"),
+                DodatakNaM3       = GetDecimal(reader, columns, "DOD_NA_M3"),
+                BrutoOsnovica     = GetDecimal(reader, columns, "BRUTO_OSN"),
+                TopliObrokIznos   = GetDecimal(reader, columns, "TO"),
+                BrutoPioOsnovica  = GetDecimal(reader, columns, "BRUTPIOOSN"),
+                NetoNaknadeLegacy = GetDecimal(reader, columns, "NETO_NAK"),
+                Operativni        = GetString(reader, columns, "OPERATIVNI"),
+                Oznaka            = GetString(reader, columns, "OZNAKA"),
+                NedeljaSati       = GetDecimal(reader, columns, "NEDELJA"),
+                BolovanjePreko60SatiLegacy = GetDecimal(reader, columns, "BOL_PREKO6"),
+                PorodiljskoOdsustvoSatiLegacy = GetDecimal(reader, columns, "PORODILJSK"),
+                PlacenoOdsustvoSatiLegacy = GetDecimal(reader, columns, "PLACENO"),
+                PlacenoZakonskiSatiLegacy = GetDecimal(reader, columns, "PLAC_ZAK"),
+                Bolovanje100SatiLegacy = GetDecimal(reader, columns, "BOLOV100"),
+                MinimalnaPlataOsnovica = GetDecimal(reader, columns, "MIN_PLATA"),
+                SifraSamodoprinosa1 = GetInt(reader, columns, "SIF_SAM1"),
+                SifraSamodoprinosa2 = GetInt(reader, columns, "SIF_SAM2"),
+                PosebanPorez      = GetDecimal(reader, columns, "POS_POR"),
+                NetoPorez         = GetDecimal(reader, columns, "NETO_POR"),
+                NetoBezPoreza     = GetDecimal(reader, columns, "NETO_B_PR"),
                 DatumObracuna     = new DateTime(godina, mesec, 1)
             });
 
@@ -764,6 +805,16 @@ async Task ImportRadSatiDbf(string dbfPath, string label, int defaultGodina, int
                 GodisnjiOdmorSati  = GetInt(reader, columns, "GOD_ODM"),
                 DrzavniPraznikSati = GetInt(reader, columns, "NERDRZAVNI"),
                 NocniSati          = GetInt(reader, columns, "NOCNI"),
+                RadPraznikomSati   = GetInt(reader, columns, "DRZAVNI"),
+                PlacenoOdsustvoSati = GetInt(reader, columns, "PLACENO"),
+                RadNedeljomSati    = GetInt(reader, columns, "NEDELJA"),
+                PlacenoZakonskiSati = GetInt(reader, columns, "PLAC_ZAK"),
+                BolovanjePreko60Sati = GetInt(reader, columns, "BOL_PREKO6"),
+                PorodiljskoOdsustvoSati = GetInt(reader, columns, "PORODILJSK"),
+                Bolovanje100Sati    = GetInt(reader, columns, "BOLOV100"),
+                TopliObrokDani     = GetInt(reader, columns, "TO"),
+                RegresIznos        = GetDecimal(reader, columns, "NETO_REG"),
+                Stimulacija        = GetDecimal(reader, columns, "STIMULACIJ", "STIMULACIJA"),
                 Prosek             = GetDecimal(reader, columns, "PROSEK")
             });
 
@@ -1040,7 +1091,23 @@ static string GetString(DbfDataReader.DbfDataReader r, List<string> cols, params
 }
 static string GetIntAsString(DbfDataReader.DbfDataReader r, List<string> cols, params string[] names)
 {
-    foreach (var n in names) { int i = cols.IndexOf(n); if (i >= 0) try { return r.GetDecimal(i).ToString(); } catch { try { return r.GetString(i).Trim(); } catch { } } }
+    foreach (var n in names)
+    {
+        int i = cols.IndexOf(n);
+        if (i >= 0)
+        {
+            try
+            {
+                var val = r.GetValue(i);
+                if (val != null)
+                {
+                    string s = val.ToString().Trim();
+                    if (!string.IsNullOrEmpty(s)) return s;
+                }
+            }
+            catch { }
+        }
+    }
     return "";
 }
 static int GetInt(DbfDataReader.DbfDataReader r, List<string> cols, params string[] names)

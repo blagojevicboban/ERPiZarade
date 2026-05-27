@@ -99,7 +99,10 @@ public class ObracunService
         decimal brutoPraznik = sati.DrzavniPraznikSati * (1m + procDrzav / 100m) * (hourlyBase + min_po_cas); // state holiday bonus + base
         decimal brutoNocni = sati.NocniSati * (1m + procNocni / 100m) * (hourlyBase + min_po_cas); // night shift bonus + base
 
-        decimal totalBruto = brutoRedovni + brutoBolovanje + brutoPrekovremeni + brutoGodisnji + brutoPraznik + brutoNocni + brutoMinuliRad;
+        // Obračun stimulacije (procentualni bonus na bazi redovnog rada i dodataka)
+        decimal brutoStimulacija = Math.Round((brutoRedovni + brutoPrekovremeni + brutoPraznik + brutoNocni) * (sati.Stimulacija / 100m), 2);
+
+        decimal totalBruto = brutoRedovni + brutoBolovanje + brutoPrekovremeni + brutoGodisnji + brutoPraznik + brutoNocni + brutoMinuliRad + brutoStimulacija;
 
         // 5. Tax parameters
         decimal taxRate = DefaultTaxRate;
@@ -330,8 +333,17 @@ public class ObracunService
             BrutoZarada = Math.Round(totalBruto - brutoBolovanje, 2),
             BrutoBolovanje = Math.Round(brutoBolovanje, 2),
             BrutoNaknade = Math.Round(brutoPrekovremeni + brutoPraznik + brutoNocni, 2),
-            BrutoStimulacija = 0m,
+            BrutoStimulacija = brutoStimulacija,
             BrutoMinuliRad = Math.Round(brutoMinuliRad, 2),
+            
+            // Legacy detaljne stavke koje su falile i resetovale se na 0
+            NetoZar = Math.Round(brutoRedovni, 2),
+            NetoNerd = Math.Round(brutoPraznik, 2),
+            NetoGOd = Math.Round(brutoGodisnji, 2),
+            NetoBol = Math.Round(brutoBolovanje, 2),
+            NetoNocni = Math.Round(brutoNocni, 2),
+            NetoPrek = Math.Round(brutoPrekovremeni, 2),
+            Neto = Math.Round(totalBruto, 2),
             
             DoprinosPioRadnik = Math.Round(dopPioRadnik, 2),
             DoprinosZdravstvoRadnik = Math.Round(dopZdrRadnik, 2),

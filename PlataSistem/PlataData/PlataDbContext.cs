@@ -124,17 +124,33 @@ public class PlataDbContext : DbContext
 
         try
         {
+            ctx.Database.ExecuteSqlRaw("ALTER TABLE RadniSati ADD COLUMN Stimulacija DECIMAL(14,2) DEFAULT 0;");
+        }
+        catch { /* Kolona vec postoji */ }
+
+        try
+        {
             ctx.Database.ExecuteSqlRaw("ALTER TABLE ObracuniPlata ADD COLUMN Prosek DECIMAL(14,4) DEFAULT 0;");
         }
         catch { /* Kolona vec postoji */ }
 
         // Nova polja za sate — RadniSati
-        string[] noviSatiKoloneRS = { "SmenskiSati", "RadPraznikomSati", "NocniRadPraznikomSati", "PlacenoOdsustvoSati" };
+        string[] noviSatiKoloneRS = { 
+            "SmenskiSati", "RadPraznikomSati", "NocniRadPraznikomSati", "PlacenoOdsustvoSati",
+            "RadNedeljomSati", "PlacenoZakonskiSati", "BolovanjePreko60Sati", "PorodiljskoOdsustvoSati", 
+            "Bolovanje100Sati", "TopliObrokDani"
+        };
         foreach (var col in noviSatiKoloneRS)
         {
             try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE RadniSati ADD COLUMN {col} INTEGER NOT NULL DEFAULT 0;"); }
             catch { /* Kolona već postoji */ }
         }
+
+        try
+        {
+            ctx.Database.ExecuteSqlRaw("ALTER TABLE RadniSati ADD COLUMN RegresIznos DECIMAL(14,2) DEFAULT 0;");
+        }
+        catch { /* Kolona vec postoji */ }
 
         // Nova polja za sate — ObracuniPlata
         string[] noviSatiKoloneOP = { "SmenskiSati", "RadPraznikomSati", "NocniRadPraznikomSati", "PlacenoOdsustvoSati" };
@@ -143,6 +159,8 @@ public class PlataDbContext : DbContext
             try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} INTEGER NOT NULL DEFAULT 0;"); }
             catch { /* Kolona već postoji */ }
         }
+
+
 
         // Bezbedno dodavanje detaljnih bruto kolona
         string[] newCols = {
@@ -161,6 +179,40 @@ public class PlataDbContext : DbContext
             catch { /* Kolona već postoji */ }
         }
 
+        // ── DODATNO MIGRIRANE LEGACY KOLONE IZ OBRACUN.DBF / OBRACUNI.DBF ──
+        string[] decimalColsOP = {
+            "Koeficijent", "UkupnoRadnihSatiLegacy", "FondSatiMesecni", "DodaciLegacy",
+            "DodatakNaM1", "DodatakNaM2", "DodatakNaM3", "BrutoOsnovica", "TopliObrokIznos",
+            "BrutoPioOsnovica", "NetoNaknadeLegacy", "NedeljaSati", "BolovanjePreko60SatiLegacy",
+            "PorodiljskoOdsustvoSatiLegacy", "PlacenoOdsustvoSatiLegacy", "PlacenoZakonskiSatiLegacy",
+            "Bolovanje100SatiLegacy", "MinimalnaPlataOsnovica", "PosebanPorez", "NetoPorez", "NetoBezPoreza"
+        };
+        foreach (var col in decimalColsOP)
+        {
+            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} DECIMAL(14,2) DEFAULT 0;"); }
+            catch { /* Kolona već postoji */ }
+        }
+
+        string[] decimal5ColsOP = { "CenaSataRedovan", "CenaSataMinuliRad" };
+        foreach (var col in decimal5ColsOP)
+        {
+            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} DECIMAL(14,5) DEFAULT 0;"); }
+            catch { /* Kolona već postoji */ }
+        }
+
+        string[] intColsOP = { "MinuliRadGodine", "BrojRadneJedinice", "SifraSamodoprinosa1", "SifraSamodoprinosa2" };
+        foreach (var col in intColsOP)
+        {
+            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} INTEGER DEFAULT 0;"); }
+            catch { /* Kolona već postoji */ }
+        }
+
+        string[] stringColsOP = { "Kategorija", "Operativni", "Oznaka" };
+        foreach (var col in stringColsOP)
+        {
+            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} TEXT DEFAULT '';"); }
+            catch { /* Kolona već postoji */ }
+        }
 
         // Automatsko kopiranje 13-cifrenog JMBG-a iz MaticniBroj u Jmbg ako je Jmbg prazan
         try

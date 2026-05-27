@@ -128,14 +128,100 @@
                           IsReadOnly="True"
                           CanUserAddRows="False"
                           CanUserDeleteRows="False"
-                          BorderThickness="0">
+                          BorderThickness="0"
+                          FrozenColumnCount="4">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="God." Binding="{Binding Godina}" Width="50"/>
                         <DataGridTextColumn Header="Mes." Binding="{Binding Mesec}" Width="45"/>
-                        <DataGridTextColumn Header="Radnik" Binding="{Binding Radnik.ImeIPrezime}" Width="*"/>
+                        <DataGridTextColumn Header="Br." Binding="{Binding Radnik.BrojRadnika}" Width="55"/>
+                        <DataGridTextColumn Header="Radnik" Binding="{Binding Radnik.ImeIPrezime}" Width="140"/>
                         <DataGridTextColumn Header="Neto za ispl." Binding="{Binding NetoIsplata, StringFormat=N2}" Width="110"/>
                         <DataGridTextColumn Header="Bruto" Binding="{Binding BrutoZarada, StringFormat=N2}" Width="100"/>
                         <DataGridTextColumn Header="Porez" Binding="{Binding PorezNaDohodak, StringFormat=N2}" Width="85"/>
+                        
+                        <!-- Sati -->
+                        <DataGridTextColumn Header="Redovni sati" Binding="{Binding RedovniSati}" Width="85"/>
+                        <DataGridTextColumn Header="Bolovanje sati" Binding="{Binding BolovanjeSati}" Width="90"/>
+                        <DataGridTextColumn Header="Prekovremeni sati" Binding="{Binding PrekovremeneSati}" Width="110"/>
+                        <DataGridTextColumn Header="Godišnji odmor sati" Binding="{Binding GodisnjioOdmorSati}" Width="120"/>
+                        <DataGridTextColumn Header="Državni praznik sati" Binding="{Binding DrzavniPraznikSati}" Width="120"/>
+                        <DataGridTextColumn Header="Noćni sati" Binding="{Binding NocniSati}" Width="80"/>
+                        <DataGridTextColumn Header="Smenski sati" Binding="{Binding SmenskiSati}" Width="90"/>
+                        <DataGridTextColumn Header="Rad praznikom sati" Binding="{Binding RadPraznikomSati}" Width="115"/>
+                        <DataGridTextColumn Header="Noćni praznik sati" Binding="{Binding NocniRadPraznikomSati}" Width="115"/>
+                        <DataGridTextColumn Header="Plaćeno odsustvo sati" Binding="{Binding PlacenoOdsustvoSati}" Width="130"/>
+                        <DataGridTextColumn Header="Rad nedeljom sati" Binding="{Binding NedeljaSati}" Width="110"/>
+                        <DataGridTextColumn Header="Bolovanje >60 sati" Binding="{Binding BolovanjePreko60SatiLegacy}" Width="115"/>
+                        <DataGridTextColumn Header="Porodiljsko sati" Binding="{Binding PorodiljskoOdsustvoSatiLegacy}" Width="100"/>
+                        <DataGridTextColumn Header="Plaćeno odsustvo legacy" Binding="{Binding PlacenoOdsustvoSatiLegacy}" Width="130"/>
+                        <DataGridTextColumn Header="Plaćeno zakonski sati" Binding="{Binding PlacenoZakonskiSatiLegacy}" Width="130"/>
+                        <DataGridTextColumn Header="Bolovanje 100% sati" Binding="{Binding Bolovanje100SatiLegacy}" Width="115"/>
+                        
+                        <!-- Bruto iznosi -->
+                        <DataGridTextColumn Header="Bruto Naknade" Binding="{Binding BrutoNaknade, StringFormat=N2}" Width="100"/>
+                        <DataGridTextColumn Header="Bruto Stimulacija" Binding="{Binding BrutoStimulacija, StringFormat=N2}" Width="110"/>
+                        <DataGridTextColumn Header="Bruto Minuli rad" Binding="{Binding BrutoMinuliRad, StringFormat=N2}" Width="110"/>
+                        
+                        <!-- Detaljni bruto delovi (Neto zarada/naknade) -->
+                        <DataGridTextColumn Header="Zarada (redovan)" Binding="{Binding NetoZar, StringFormat=N2}" Width="110"/>
+                        <DataGridTextColumn Header="Zarada (neradan)" Binding="{Binding NetoNerd, StringFormat=N2}" Width="110"/>
+                        <DataGridTextColumn Header="Neto Godišnji odmor" Binding="{Binding NetoGOd, StringFormat=N2}" Width="120"/>
+                        <DataGridTextColumn Header="Topli obrok" Binding="{Binding NetoTo, StringFormat=N2}" Width="100"/>
+                        <DataGridTextColumn Header="Regres" Binding="{Binding NetoReg, StringFormat=N2}" Width="100"/>
+                        <DataGridTextColumn Header="Neto" Binding="{Binding Neto, StringFormat=N2}" Width="90"/>
+                        <DataGridTextColumn Header="Neto Bolovanje" Binding="{Binding NetoBol, StringFormat=N2}" Width="100"/>
+                        <DataGridTextColumn Header="Neto Bolovanje 100%" Binding="{Binding NetoB100, StringFormat=N2}" Width="120"/>
+                        <DataGridTextColumn Header="Neto Plaćeno" Binding="{Binding NetoPlac, StringFormat=N2}" Width="100"/>
+                        <DataGridTextColumn Header="Neto Plaćeno zakonski" Binding="{Binding NetoPlZ, StringFormat=N2}" Width="130"/>
+                        <DataGridTextColumn Header="Neto Državni praznik" Binding="{Binding NetoDrza, StringFormat=N2}" Width="130"/>
+                        <DataGridTextColumn Header="Neto Noćni" Binding="{Binding NetoNocni, StringFormat=N2}" Width="100"/>
+                        <DataGridTextColumn Header="Neto Vežba" Binding="{Binding NetoVezba, StringFormat=N2}" Width="100"/>
+                        <DataGridTextColumn Header="Neto Prekovremeni" Binding="{Binding NetoPrek, StringFormat=N2}" Width="120"/>
+                        <DataGridTextColumn Header="Neto Terenski" Binding="{Binding NetoTer, StringFormat=N2}" Width="110"/>
+                        <DataGridTextColumn Header="Korekcija dodatak" Binding="{Binding KorDod, StringFormat=N2}" Width="115"/>
+                        <DataGridTextColumn Header="Korekcija dodatak 1" Binding="{Binding KorDod1, StringFormat=N2}" Width="125"/>
+                        <DataGridTextColumn Header="Kumul" Binding="{Binding Kumul, StringFormat=N2}" Width="90"/>
+                        <DataGridTextColumn Header="Neto Nedelja" Binding="{Binding NetoNede, StringFormat=N2}" Width="100"/>
+                        
+                        <!-- Doprinosi i porezi -->
+                        <DataGridTextColumn Header="PIO Radnik" Binding="{Binding DoprinosPioRadnik, StringFormat=N2}" Width="95"/>
+                        <DataGridTextColumn Header="Zdravstvo Radnik" Binding="{Binding DoprinosZdravstvoRadnik, StringFormat=N2}" Width="105"/>
+                        <DataGridTextColumn Header="Nezaposlenost Radnik" Binding="{Binding DoprinosNezaposlenostRadnik, StringFormat=N2}" Width="135"/>
+                        <DataGridTextColumn Header="PIO Poslodavac" Binding="{Binding DoprinosPioPoslodavac, StringFormat=N2}" Width="110"/>
+                        <DataGridTextColumn Header="Zdravstvo Poslodavac" Binding="{Binding DoprinosZdravstvoPoslodavac, StringFormat=N2}" Width="125"/>
+                        <DataGridTextColumn Header="Nezaposlenost Poslodavac" Binding="{Binding DoprinosNezaposlenostPoslodavac, StringFormat=N2}" Width="150"/>
+                        <DataGridTextColumn Header="Poreska osnovica" Binding="{Binding PoreskaOsnovica, StringFormat=N2}" Width="115"/>
+                        <DataGridTextColumn Header="Lični odbitak" Binding="{Binding LicniOdbitak, StringFormat=N2}" Width="100"/>
+                        <DataGridTextColumn Header="Kredit obustava" Binding="{Binding KreditObustava, StringFormat=N2}" Width="110"/>
+                        <DataGridTextColumn Header="Samodoprinosi" Binding="{Binding Samodoprinosi, StringFormat=N2}" Width="110"/>
+                        <DataGridTextColumn Header="Ostali odbici" Binding="{Binding OstaliOdbici, StringFormat=N2}" Width="100"/>
+                        
+                        <!-- Ostali legacy parametri -->
+                        <DataGridTextColumn Header="Koeficijent" Binding="{Binding Koeficijent, StringFormat=N2}" Width="95"/>
+                        <DataGridTextColumn Header="Staž (godine)" Binding="{Binding MinuliRadGodine}" Width="95"/>
+                        <DataGridTextColumn Header="Kategorija" Binding="{Binding Kategorija}" Width="85"/>
+                        <DataGridTextColumn Header="Radna jedinica" Binding="{Binding BrojRadneJedinice}" Width="105"/>
+                        <DataGridTextColumn Header="Radni sati (legacy)" Binding="{Binding UkupnoRadnihSatiLegacy}" Width="120"/>
+                        <DataGridTextColumn Header="Fond sati (mesec)" Binding="{Binding FondSatiMesecni}" Width="120"/>
+                        <DataGridTextColumn Header="Cena sata redovan" Binding="{Binding CenaSataRedovan, StringFormat=N4}" Width="125"/>
+                        <DataGridTextColumn Header="Cena sata staž" Binding="{Binding CenaSataMinuliRad, StringFormat=N4}" Width="110"/>
+                        <DataGridTextColumn Header="Dodaci (legacy)" Binding="{Binding DodaciLegacy, StringFormat=N2}" Width="110"/>
+                        <DataGridTextColumn Header="Dodatak 1" Binding="{Binding DodatakNaM1, StringFormat=N2}" Width="90"/>
+                        <DataGridTextColumn Header="Dodatak 2" Binding="{Binding DodatakNaM2, StringFormat=N2}" Width="90"/>
+                        <DataGridTextColumn Header="Dodatak 3" Binding="{Binding DodatakNaM3, StringFormat=N2}" Width="90"/>
+                        <DataGridTextColumn Header="Bruto osnovica" Binding="{Binding BrutoOsnovica, StringFormat=N2}" Width="110"/>
+                        <DataGridTextColumn Header="Topli obrok iznos" Binding="{Binding TopliObrokIznos, StringFormat=N2}" Width="115"/>
+                        <DataGridTextColumn Header="Osnovica PIO Bruto" Binding="{Binding BrutoPioOsnovica, StringFormat=N2}" Width="125"/>
+                        <DataGridTextColumn Header="Neto naknade (legacy)" Binding="{Binding NetoNaknadeLegacy, StringFormat=N2}" Width="140"/>
+                        <DataGridTextColumn Header="Operativni" Binding="{Binding Operativni}" Width="85"/>
+                        <DataGridTextColumn Header="Oznaka" Binding="{Binding Oznaka}" Width="65"/>
+                        <DataGridTextColumn Header="Minimalna plata osnovica" Binding="{Binding MinimalnaPlataOsnovica, StringFormat=N2}" Width="150"/>
+                        <DataGridTextColumn Header="Šifra samodoprinosa 1" Binding="{Binding SifraSamodoprinosa1}" Width="140"/>
+                        <DataGridTextColumn Header="Šifra samodoprinosa 2" Binding="{Binding SifraSamodoprinosa2}" Width="140"/>
+                        <DataGridTextColumn Header="Poseban porez" Binding="{Binding PosebanPorez, StringFormat=N2}" Width="105"/>
+                        <DataGridTextColumn Header="Neto porez osnovica" Binding="{Binding NetoPorez, StringFormat=N2}" Width="130"/>
+                        <DataGridTextColumn Header="Neto bez poreza" Binding="{Binding NetoBezPoreza, StringFormat=N2}" Width="110"/>
+                        <DataGridTextColumn Header="Prosek (12m)" Binding="{Binding Prosek, StringFormat=N2}" Width="100"/>
                     </DataGrid.Columns>
                     <DataGrid.RowStyle>
                         <Style TargetType="DataGridRow">

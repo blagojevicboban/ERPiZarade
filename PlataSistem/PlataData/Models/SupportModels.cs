@@ -45,6 +45,19 @@ public class RadniSat
     public int NocniRadPraznikomSati { get; set; }
     public int PlacenoOdsustvoSati { get; set; }
 
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal Stimulacija { get; set; }
+
+    public int RadNedeljomSati { get; set; }
+    public int PlacenoZakonskiSati { get; set; }
+    public int BolovanjePreko60Sati { get; set; }
+    public int PorodiljskoOdsustvoSati { get; set; }
+    public int Bolovanje100Sati { get; set; }
+    public int TopliObrokDani { get; set; }
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal RegresIznos { get; set; }
+
     [Column(TypeName = "decimal(14,4)")]
     public decimal Prosek { get; set; }
 

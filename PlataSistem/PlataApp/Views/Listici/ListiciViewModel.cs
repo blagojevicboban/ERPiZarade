@@ -46,6 +46,11 @@ public class ListiciViewModel : INotifyPropertyChanged
         _db = PlataDbContext.Create(AppConfig.DbPath);
 
         LoadCommand = new RelayCommand(async _ => await LoadObracuneAsync());
+        ClearFilterCommand = new RelayCommand(async _ => 
+        {
+            SearchText = "";
+            await LoadObracuneAsync();
+        });
         ToggleSelectAllCommand = new RelayCommand(_ => ToggleSelectAll());
 
         Meseci = new ObservableCollection<int>(Enumerable.Range(1, 12));
@@ -141,7 +146,12 @@ public class ListiciViewModel : INotifyPropertyChanged
     public string SearchText
     {
         get => _searchText;
-        set { _searchText = value; OnPropertyChanged(); }
+        set 
+        { 
+            _searchText = value; 
+            OnPropertyChanged(); 
+            _ = LoadObracuneAsync();
+        }
     }
 
     public string StatusText
@@ -151,6 +161,7 @@ public class ListiciViewModel : INotifyPropertyChanged
     }
 
     public ICommand LoadCommand { get; }
+    public ICommand ClearFilterCommand { get; }
     public ICommand ToggleSelectAllCommand { get; }
 
     public async Task LoadObracuneAsync()

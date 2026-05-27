@@ -41,7 +41,6 @@
                     <ColumnDefinition Width="100"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="100"/>
-                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
@@ -54,11 +53,7 @@
                            FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
                 <ComboBox x:Name="ComboMesec" Grid.Column="3" VerticalAlignment="Center" Height="32" IsEnabled="False" Margin="0,0,16,0"/>
 
-                <Button Grid.Column="4" Content="🔄  Učitaj parametre"
-                        Style="{StaticResource SecondaryButton}" Padding="16,6"
-                        IsEnabled="False" Click="BtnUcitaj_Click"/>
-
-                <Button Grid.Column="6" Content="💾  Sačuvaj podešavanja poreza"
+                <Button Grid.Column="5" Content="💾  Sačuvaj podešavanja poreza"
                         Style="{StaticResource PrimaryButton}" Padding="20,7"
                         Click="BtnSacuvaj_Click"/>
             </Grid>

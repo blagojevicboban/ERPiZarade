@@ -33,7 +33,6 @@
                        Style="{StaticResource PageSubtitle}"/>
         </StackPanel>
 
-        <!-- ── TOOLBAR (Izbor perioda) ──────────────────────────────── -->
         <Border Grid.Row="1" Style="{StaticResource Card}" Padding="16,12" Margin="0,0,0,16">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -41,7 +40,6 @@
                     <ColumnDefinition Width="100"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="100"/>
-                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
@@ -52,10 +50,6 @@
                 <TextBlock Grid.Column="2" Text="Mesec:" VerticalAlignment="Center" Margin="0,0,8,0"
                            FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
                 <ComboBox x:Name="ComboMesec" Grid.Column="3" VerticalAlignment="Center" Height="32" IsEnabled="False" Margin="0,0,16,0"/>
-
-                <Button Grid.Column="4" Content="🔄  Učitaj doprinose"
-                        Style="{StaticResource SecondaryButton}" Padding="16,6"
-                        IsEnabled="False" Click="BtnUcitaj_Click"/>
             </Grid>
         </Border>
 

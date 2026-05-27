@@ -35,9 +35,8 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="100"/>
                     <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="240"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0" Text="Godina:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
@@ -47,9 +46,62 @@
                 <ComboBox Grid.Column="3" ItemsSource="{Binding Meseci}" SelectedItem="{Binding SelectedMesec}" IsEnabled="False" Margin="0,0,16,0" Padding="8,5"/>
 
                 <TextBlock Grid.Column="4" Text="Radnik:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
-                <TextBox Grid.Column="5" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,16,0" VerticalAlignment="Center"/>
-
-                <Button Grid.Column="7" Content="🔍  Prikaži" Style="{StaticResource PrimaryButton}" Command="{Binding LoadCommand}"/>
+                <Border Grid.Column="5" Background="#F9FAFB" CornerRadius="6"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                        VerticalAlignment="Center">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="🔍" FontSize="12" VerticalAlignment="Center" Margin="8,0,4,0" Foreground="#9CA3AF"/>
+                        <TextBox Grid.Column="1" BorderThickness="0" Background="Transparent"
+                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                 Padding="4,6" FontSize="13" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="Pretraži radnike..." Foreground="#9CA3AF"
+                                   FontSize="13" Margin="6,0,0,0" IsHitTestVisible="False" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SearchText}" Value="">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding SearchText}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        
+                        <Button Grid.Column="2" Content="❌" Command="{Binding ClearFilterCommand}"
+                                Background="Transparent" BorderThickness="0" Padding="6,0" Cursor="Hand" VerticalAlignment="Center"
+                                FontSize="10" Foreground="#9CA3AF">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SearchText}" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding SearchText}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </Grid>
+                </Border>
             </Grid>
         </Border>
 

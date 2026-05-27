@@ -29,6 +29,11 @@ public class ObracunViewModel : INotifyPropertyChanged
         _db = PlataDbContext.Create(AppConfig.DbPath);
         
         LoadCommand = new RelayCommand(async _ => await LoadObracuneAsync());
+        ClearFilterCommand = new RelayCommand(async _ => 
+        {
+            SearchText = "";
+            await LoadObracuneAsync();
+        });
         
         // Inicijalizuj mesece
         Meseci = new ObservableCollection<int>(Enumerable.Range(1, 12));
@@ -113,7 +118,12 @@ public class ObracunViewModel : INotifyPropertyChanged
     public string SearchText
     {
         get => _searchText;
-        set { _searchText = value; OnPropertyChanged(); }
+        set 
+        { 
+            _searchText = value; 
+            OnPropertyChanged(); 
+            _ = LoadObracuneAsync();
+        }
     }
 
     public ObracunPlate? SelectedObracun
@@ -129,6 +139,7 @@ public class ObracunViewModel : INotifyPropertyChanged
     }
 
     public ICommand LoadCommand { get; }
+    public ICommand ClearFilterCommand { get; }
 
     public async Task LoadObracuneAsync()
     {

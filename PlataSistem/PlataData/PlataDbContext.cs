@@ -108,6 +108,13 @@ public class PlataDbContext : DbContext
         }
         catch { }
 
+        // Bezbedno kreiranje indeksa za brzu pretragu po godini i mesecu
+        try
+        {
+            ctx.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS IX_ObracuniPlata_Godina_Mesec ON ObracuniPlata (Godina, Mesec);");
+        }
+        catch { }
+
         // Bezbedno dodavanje kolona u SQLite bez migracija
         try
         {

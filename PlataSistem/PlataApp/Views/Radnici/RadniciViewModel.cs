@@ -93,9 +93,12 @@ public class RadniciViewModel : INotifyPropertyChanged
             if (PrikazujeSamoAktivne)
                 query = query.Where(r => r.Aktivan);
             if (!string.IsNullOrWhiteSpace(SearchText))
-                query = query.Where(r => r.ImeIPrezime.Contains(SearchText) ||
-                                         r.BrojRadnika.ToString().Contains(SearchText) ||
-                                         r.MaticniBroj.Contains(SearchText));
+            {
+                var lowerSearch = SearchText.ToLower();
+                query = query.Where(r => r.ImeIPrezime.ToLower().Contains(lowerSearch) ||
+                                         r.BrojRadnika.ToString().Contains(lowerSearch) ||
+                                         r.MaticniBroj.ToLower().Contains(lowerSearch));
+            }
 
             var list = await query.OrderBy(r => r.BrojRadnika).ToListAsync();
             Radnici = new ObservableCollection<Radnik>(list);

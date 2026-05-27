@@ -164,7 +164,8 @@ public class ListiciViewModel : INotifyPropertyChanged
 
             if (!string.IsNullOrWhiteSpace(SearchText))
             {
-                query = query.Where(o => o.Radnik.ImeIPrezime.Contains(SearchText));
+                var lowerSearch = SearchText.ToLower();
+                query = query.Where(o => o.Radnik.ImeIPrezime.ToLower().Contains(lowerSearch));
             }
 
             var rawList = await query.OrderBy(o => o.Radnik.BrojRadnika).ToListAsync();

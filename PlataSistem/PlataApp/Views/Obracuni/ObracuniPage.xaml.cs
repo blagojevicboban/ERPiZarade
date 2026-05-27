@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Microsoft.EntityFrameworkCore;
 using PlataData;
 using PlataData.Models;
 
@@ -39,21 +40,42 @@ public partial class ObracuniPage : Page
     {
         try
         {
-            var allObracuni = _db.ObracuniPlata
-                .Select(o => new { o.Godina, o.Mesec, o.NetoIsplata, o.BrutoZarada, o.BrutoBolovanje, o.DatumObracuna })
-                .ToList();
-
-            var summaries = allObracuni
-                .GroupBy(o => new { o.Godina, o.Mesec })
-                .Select(g => new ObracunPeriodSummary
+            var summaries = new List<ObracunPeriodSummary>();
+            using (var conn = _db.Database.GetDbConnection())
+            {
+                conn.Open();
+                using (var cmd = conn.CreateCommand())
                 {
-                    Godina = g.Key.Godina,
-                    Mesec = g.Key.Mesec,
-                    BrojRadnika = g.Count(),
-                    UkupnoNeto = g.Sum(o => o.NetoIsplata),
-                    UkupnoBruto = g.Sum(o => o.BrutoZarada + o.BrutoBolovanje),
-                    PoslednjiDatum = g.Max(o => o.DatumObracuna)
-                })
+                    cmd.CommandText = @"
+                        SELECT 
+                            Godina, 
+                            Mesec, 
+                            COUNT(*) as BrojRadnika, 
+                            SUM(NetoIsplata) as UkupnoNeto, 
+                            SUM(BrutoZarada + BrutoBolovanje) as UkupnoBruto, 
+                            MAX(DatumObracuna) as PoslednjiDatum
+                        FROM ObracuniPlata
+                        GROUP BY Godina, Mesec";
+                    
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            summaries.Add(new ObracunPeriodSummary
+                            {
+                                Godina = reader.GetInt32(0),
+                                Mesec = reader.GetInt32(1),
+                                BrojRadnika = reader.GetInt32(2),
+                                UkupnoNeto = reader.IsDBNull(3) ? 0 : reader.GetDecimal(3),
+                                UkupnoBruto = reader.IsDBNull(4) ? 0 : reader.GetDecimal(4),
+                                PoslednjiDatum = reader.IsDBNull(5) ? DateTime.MinValue : reader.GetDateTime(5)
+                            });
+                        }
+                    }
+                }
+            }
+
+            summaries = summaries
                 .OrderByDescending(s => s.Godina)
                 .ThenByDescending(s => s.Mesec)
                 .ToList();

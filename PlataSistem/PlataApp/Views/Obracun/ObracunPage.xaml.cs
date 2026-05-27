@@ -25,6 +25,17 @@ public partial class ObracunPage : Page
         InitializeComponent();
     }
 
+    public ObracunPage(int godina, int mesec)
+    {
+        InitializeComponent();
+        if (DataContext is ObracunViewModel vm)
+        {
+            vm.SelectedGodina = godina;
+            vm.SelectedMesec = mesec;
+            _ = vm.LoadObracuneAsync();
+        }
+    }
+
     private void BtnStampajListic_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is not ObracunViewModel vm || vm.SelectedObracun == null)

@@ -12,8 +12,8 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         UcitajImeFirme();
-        // Otvori Radnici kao početnu stranicu
-        NavigateTo(BtnRadnici, new RadniciPage());
+        // Otvori Obračuni kao početnu stranicu
+        NavigateTo(null!, new Views.Obracuni.ObracuniPage());
     }
 
     public void UcitajImeFirme()
@@ -66,4 +66,23 @@ public partial class MainWindow : Window
 
     private void BtnPodesavanja_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnPodesavanja, new Views.Podesavanja.PodesavanjaPage());
+
+    private void BtnPorezi_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnPorezi, new Views.Porezi.PoreziPage());
+
+    private void BtnDoprinosi_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnDoprinosi, new Views.Doprinosi.DoprinosiPage());
+
+    private void BtnPlatniRazredi_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnPlatniRazredi, new Views.PlatniRazredi.PlatniRazrediPage());
+
+    private void FirmaBorder_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        NavigateTo(null!, new Views.Obracuni.ObracuniPage());
+    }
+
+    public void NavigateToObracun(int godina, int mesec)
+    {
+        NavigateTo(BtnObracun, new Views.Obracun.ObracunPage(godina, mesec));
+    }
 }

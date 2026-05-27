@@ -5,18 +5,6 @@
       Background="{StaticResource SurfaceBrush}">
 
     <Page.Resources>
-        <!-- Cell alignment styles -->
-        <Style x:Key="LeftAlignedCell" TargetType="TextBlock">
-            <Setter Property="Margin" Value="12,0"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="HorizontalAlignment" Value="Left"/>
-        </Style>
-        <Style x:Key="RightAlignedCell" TargetType="TextBlock">
-            <Setter Property="Margin" Value="12,0"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="HorizontalAlignment" Value="Right"/>
-        </Style>
-
         <!-- Modern TabControl / TabItem styles -->
         <Style TargetType="TabItem">
             <Setter Property="Background" Value="Transparent"/>
@@ -63,7 +51,6 @@
     <Grid Margin="24,20,24,16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>  <!-- Header -->
-            <RowDefinition Height="Auto"/>  <!-- Toolbar (Izbor perioda) -->
             <RowDefinition Height="*"/>     <!-- Tab Control Content -->
             <RowDefinition Height="Auto"/>  <!-- Status bar -->
         </Grid.RowDefinitions>
@@ -71,45 +58,14 @@
         <!-- ── HEADER ──────────────────────────────────────────────── -->
         <StackPanel Grid.Row="0" Margin="0,0,0,16">
             <TextBlock Text="⚙️ Podešavanja" Style="{StaticResource PageTitle}"/>
-            <TextBlock Text="Upravljanje poreskim stopama, doprinosima, obračunskim koeficijentima i žiro računima"
+            <TextBlock Text="Upravljanje osnovnim podacima o firmi i kreiranje/vraćanje rezervne kopije baze podataka"
                        Style="{StaticResource PageSubtitle}"/>
         </StackPanel>
 
-        <!-- ── TOOLBAR (Izbor perioda) ──────────────────────────────── -->
-        <Border Grid.Row="1" Style="{StaticResource Card}" Padding="16,12" Margin="0,0,0,16">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="100"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="100"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <TextBlock Grid.Column="0" Text="Godina:" VerticalAlignment="Center" Margin="0,0,8,0"
-                           FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
-                <ComboBox x:Name="ComboGodina" Grid.Column="1" VerticalAlignment="Center" Height="32" Margin="0,0,16,0"/>
-
-                <TextBlock Grid.Column="2" Text="Mesec:" VerticalAlignment="Center" Margin="0,0,8,0"
-                           FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
-                <ComboBox x:Name="ComboMesec" Grid.Column="3" VerticalAlignment="Center" Height="32" Margin="0,0,16,0"/>
-
-                <Button Grid.Column="4" Content="🔄  Učitaj parametre"
-                        Style="{StaticResource SecondaryButton}" Padding="16,6"
-                        Click="BtnUcitaj_Click"/>
-
-                <Button Grid.Column="6" Content="💾  Sačuvaj podešavanja poreza"
-                        Style="{StaticResource PrimaryButton}" Padding="20,7"
-                        Click="BtnSacuvaj_Click"/>
-            </Grid>
-        </Border>
-
         <!-- ── TAB CONTROL CONTENT ─────────────────────────────────── -->
-        <TabControl Grid.Row="2" Background="Transparent" BorderThickness="0">
+        <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0">
             
-            <!-- TAB 3: Podaci o firmi -->
+            <!-- TAB 1: Podaci o firmi -->
             <TabItem Header="🏢 Podaci o firmi">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,12,0,0">
                     <Border Style="{StaticResource Card}" Margin="0,0,0,16">
@@ -199,659 +155,56 @@
                 </ScrollViewer>
             </TabItem>
 
-            <!-- TAB 1: Porezi i opšti parametri -->
-            <TabItem Header="⚖️ Porezi i opšti parametri">
+            <!-- TAB 2: Rezervna kopija -->
+            <TabItem Header="💾 Rezervna kopija">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,12,0,0">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
 
-                        <!-- ── KARTICA 1: OPŠTI PARAMETRI (Levo) ────────────────── -->
-                        <Border Grid.Column="0" Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,8,16">
+                        <!-- LEVO: Kreiranje rezervne kopije -->
+                        <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,8,16">
                             <StackPanel>
-                                <TextBlock Text="💼 Opšti obračunski parametri" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,12"/>
-                                <Rectangle Height="1" Fill="{StaticResource BorderBrush}" Margin="0,0,0,12"/>
-
-                                <!-- Garantovana zarada -->
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="140"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Garantovana zarada (minimalna neto):" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <TextBox x:Name="TxtZarada" Grid.Column="1" TextAlignment="Right" HorizontalAlignment="Stretch"/>
-                                </Grid>
-
-                                <!-- Vrednost boda -->
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="140"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Trenutna vrednost boda:" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <TextBox x:Name="TxtVrBoda" Grid.Column="1" TextAlignment="Right"/>
-                                </Grid>
-
-                                <!-- Fond časova -->
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="140"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Mesečni fond časova:" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <TextBox x:Name="TxtFondCasova" Grid.Column="1" TextAlignment="Right"/>
-                                </Grid>
-
-                                <!-- Časova za obračun -->
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="140"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Planirano časova za obračun:" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <TextBox x:Name="TxtCasZaOb" Grid.Column="1" TextAlignment="Right"/>
-                                </Grid>
-
-                                <!-- Akontacija -->
-                                <Grid Margin="0,0,0,4">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="140"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Plaćanje akontacije (DA/NE):" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <ComboBox x:Name="ComboAkont" Grid.Column="1" Height="32">
-                                        <ComboBoxItem Content="DA"/>
-                                        <ComboBoxItem Content="NE"/>
-                                    </ComboBox>
-                                </Grid>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- ── KARTICA 2: PORESKE STOPE (Desno) ──────────────────── -->
-                        <Border Grid.Column="1" Grid.Row="0" Style="{StaticResource Card}" Margin="8,0,0,16">
-                            <StackPanel>
-                                <TextBlock Text="⚖️ Poreske stope i limiti" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,12"/>
-                                <Rectangle Height="1" Fill="{StaticResource BorderBrush}" Margin="0,0,0,12"/>
-
-                                <!-- Prva stopa poreza -->
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="140"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="1. stopa poreza (%):" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <TextBox x:Name="TxtAkPorez" Grid.Column="1" TextAlignment="Right"/>
-                                </Grid>
-
-                                <!-- Poresko oslobodjenje (Prvast) -->
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="140"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Mesečni iznos poreskog oslobođenja:" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <TextBox x:Name="TxtPrvast" Grid.Column="1" TextAlignment="Right"/>
-                                </Grid>
-
-                                <!-- Gornja granica 2. stope (Drugast) -->
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="140"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Gornja granica 2. stope poreza:" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <TextBox x:Name="TxtDrugast" Grid.Column="1" TextAlignment="Right"/>
-                                </Grid>
-
-                                <!-- AkPorez2 -->
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="140"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Dodatni porez stopa 2 (iznad limit 1):" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <TextBox x:Name="TxtAkPorez2" Grid.Column="1" TextAlignment="Right"/>
-                                </Grid>
-
-                                <!-- AkPorez3 -->
-                                <Grid Margin="0,0,0,4">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="140"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Dodatni porez stopa 3 (iznad limit 2):" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <TextBox x:Name="TxtAkPorez3" Grid.Column="1" TextAlignment="Right"/>
-                                </Grid>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- ── KARTICA 3: OSNOVNI POREZ (Levo) ──────────────────── -->
-                        <Border Grid.Column="0" Grid.Row="1" Style="{StaticResource Card}" Margin="0,0,8,16">
-                            <StackPanel>
-                                <TextBlock Text="🏢 Platni detalji: OSNOVNI POREZ" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,12"/>
-                                <Rectangle Height="1" Fill="{StaticResource BorderBrush}" Margin="0,0,0,12"/>
-
-                                <!-- Šifra plaćanja -->
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="120"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Šifra plaćanja:" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <TextBox x:Name="TxtSifPlac1" Grid.Column="1"/>
-                                </Grid>
-
-                                <!-- Žiro račun -->
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="120"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Žiro račun:" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <TextBox x:Name="TxtZiroR1" Grid.Column="1"/>
-                                </Grid>
-
-                                <!-- Pozivi na broj -->
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="120"/>
-                                        <ColumnDefinition Width="70"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Poziv na broj:" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <TextBox x:Name="TxtPozivNa1" Grid.Column="1" Margin="0,0,10,0"/>
-                                    <TextBlock Grid.Column="2" Text="Model:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"/>
-                                    <TextBox x:Name="TxtPozivNa3" Grid.Column="3"/>
-                                </Grid>
-
-                                <!-- Svrha -->
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="120"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Svrha plaćanja:" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <TextBox x:Name="TxtSvrha1" Grid.Column="1"/>
-                                </Grid>
-
-                                <!-- Primalac -->
-                                <Grid Margin="0,0,0,4">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="120"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Primalac:" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <TextBox x:Name="TxtPrimalac1" Grid.Column="1"/>
-                                </Grid>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- ── KARTICA 4: DODATNI POREZ (Desno) ─────────────────── -->
-                        <Border Grid.Column="1" Grid.Row="1" Style="{StaticResource Card}" Margin="8,0,0,16">
-                            <StackPanel>
-                                <TextBlock Text="🏢 Platni detalji: DODATNI POREZ" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,12"/>
-                                <Rectangle Height="1" Fill="{StaticResource BorderBrush}" Margin="0,0,0,12"/>
-
-                                <!-- Šifra plaćanja -->
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="120"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Šifra plaćanja:" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <TextBox x:Name="TxtSifPlac2" Grid.Column="1"/>
-                                </Grid>
-
-                                <!-- Žiro račun -->
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="120"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Žiro račun:" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <TextBox x:Name="TxtZiroR2" Grid.Column="1"/>
-                                </Grid>
-
-                                <!-- Pozivi na broj -->
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="120"/>
-                                        <ColumnDefinition Width="70"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Poziv na broj:" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <TextBox x:Name="TxtPozivNa2" Grid.Column="1" Margin="0,0,10,0"/>
-                                    <TextBlock Grid.Column="2" Text="Model:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"/>
-                                    <TextBox x:Name="TxtPozivNa4" Grid.Column="3"/>
-                                </Grid>
-
-                                <!-- Svrha -->
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="120"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Svrha plaćanja:" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <TextBox x:Name="TxtSvrha3" Grid.Column="1"/>
-                                </Grid>
-
-                                <!-- Primalac -->
-                                <Grid Margin="0,0,0,4">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="120"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Primalac:" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <TextBox x:Name="TxtPrimalac3" Grid.Column="1"/>
-                                </Grid>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- ── KARTICA 5: PROCENTI UVEĆANJA (Spojeno dole) ───────── -->
-                        <Border Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="2" Style="{StaticResource Card}" Margin="0,0,0,16">
-                            <StackPanel>
-                                <TextBlock Text="📈 Procenti uvećanja zarada i naknada" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,12"/>
+                                <TextBlock Text="💾 Kreiranje rezervne kopije (Backup)" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,4"/>
+                                <TextBlock Text="Sačuvajte trenutno stanje baze podataka na sigurnu lokaciju." FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,12"/>
                                 <Rectangle Height="1" Fill="{StaticResource BorderBrush}" Margin="0,0,0,16"/>
 
-                                <!-- Grid sa procentima -->
-                                <UniformGrid Columns="3" Rows="3">
-                                    <!-- Državni praznik -->
-                                    <StackPanel Margin="10,0,10,12">
-                                        <TextBlock Text="% uvećanja za rad praznikom:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                        <TextBox x:Name="TxtProcDrzav" TextAlignment="Right"/>
-                                    </StackPanel>
+                                <TextBlock Text="Trenutna lokacija aktivne baze podataka:" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="TxtAktivnaBazaPath" IsReadOnly="True" Background="#F3F4F6" Height="32" VerticalContentAlignment="Center" Margin="0,0,0,16"/>
 
-                                    <!-- Noćni rad -->
-                                    <StackPanel Margin="10,0,10,12">
-                                        <TextBlock Text="% uvećanja za noćni rad:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                        <TextBox x:Name="TxtProcNocni" TextAlignment="Right"/>
-                                    </StackPanel>
+                                <TextBlock Text="Preporučeno ime za rezervnu kopiju:" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="TxtPredlozenoIme" IsReadOnly="True" Background="#F3F4F6" Height="32" VerticalContentAlignment="Center" Margin="0,0,0,24"/>
 
-                                    <!-- Prekovremeni rad -->
-                                    <StackPanel Margin="10,0,10,12">
-                                        <TextBlock Text="% uvećanja za prekovremeni rad:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                        <TextBox x:Name="TxtProcPreko" TextAlignment="Right"/>
-                                    </StackPanel>
+                                <Button x:Name="BtnKreirajBackup" Content="💾 Napravi rezervnu kopiju baze podataka" Style="{StaticResource PrimaryButton}" Height="40" Click="BtnKreirajBackup_Click"/>
+                            </StackPanel>
+                        </Border>
 
-                                    <!-- Minuli rad godišnje -->
-                                    <StackPanel Margin="10,0,10,12">
-                                        <TextBlock Text="% minuli rad (godišnje):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                        <TextBox x:Name="TxtProcMinul" TextAlignment="Right"/>
-                                    </StackPanel>
+                        <!-- DESNO: Vraćanje iz rezervne kopije -->
+                        <Border Grid.Column="1" Style="{StaticResource Card}" Margin="8,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="🔄 Vraćanje podataka iz rezervne kopije (Restore)" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,4"/>
+                                <TextBlock Text="Učitajte prethodno sačuvane podatke. Pažnja: trenutni podaci će biti prepisani!" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,12"/>
+                                <Rectangle Height="1" Fill="{StaticResource BorderBrush}" Margin="0,0,0,16"/>
 
-                                    <!-- Rad nedeljom -->
-                                    <StackPanel Margin="10,0,10,12">
-                                        <TextBlock Text="% naknade za rad nedeljom:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                        <TextBox x:Name="TxtProcNedel" TextAlignment="Right"/>
+                                <Border Background="#FFF3CD" CornerRadius="8" Padding="12" Margin="0,0,0,20" BorderBrush="#FFEBA0" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="⚠️ VAŽNO UPOZORENJE" FontWeight="Bold" Foreground="#856404" FontSize="13" Margin="0,0,0,4"/>
+                                        <TextBlock Text="Vraćanje podataka iz rezervne kopije će u potpunosti zameniti sve trenutne podatke u sistemu (radnike, obračune, poreske stope i podešavanja). Pre nego što nastavite, preporučuje se da napravite rezervnu kopiju trenutne baze." TextWrapping="Wrap" Foreground="#856404" FontSize="12"/>
                                     </StackPanel>
+                                </Border>
 
-                                    <!-- Bolovanje -->
-                                    <StackPanel Margin="10,0,10,12">
-                                        <TextBlock Text="% naknade za bolovanje:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                        <TextBox x:Name="TxtProcBolov" TextAlignment="Right"/>
-                                    </StackPanel>
-
-                                    <!-- Plaćeno odsustvo -->
-                                    <StackPanel Margin="10,0,10,12">
-                                        <TextBlock Text="% naknade za plaćeno odsustvo:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                        <TextBox x:Name="TxtProcPlac" TextAlignment="Right"/>
-                                    </StackPanel>
-
-                                    <!-- Zakonsko plaćeno odsustvo -->
-                                    <StackPanel Margin="10,0,10,12">
-                                        <TextBlock Text="% zakonskog plaćenog odsustva:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                        <TextBox x:Name="TxtProcPlZa" TextAlignment="Right"/>
-                                    </StackPanel>
-
-                                    <!-- Invalidi II kategorije -->
-                                    <StackPanel Margin="10,0,10,12">
-                                        <TextBlock Text="% naknade za invalide II kat.:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                        <TextBox x:Name="TxtProcInval" TextAlignment="Right"/>
-                                    </StackPanel>
-                                </UniformGrid>
+                                <Button x:Name="BtnVratiBackup" Content="📁 Izaberi i vrati bazu podataka iz kopije" Style="{StaticResource SecondaryButton}" BorderBrush="#DC3545" Foreground="#DC3545" Height="40" Click="BtnVratiBackup_Click"/>
                             </StackPanel>
                         </Border>
                     </Grid>
                 </ScrollViewer>
             </TabItem>
-
-            <!-- TAB 2: Doprinosi -->
-            <TabItem Header="📈 Doprinosi">
-                <Grid Margin="0,12,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="380"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <!-- LEVA KARTICA: Lista doprinosa -->
-                    <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,8,0">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-
-                            <StackPanel Grid.Row="0" Margin="0,0,0,12">
-                                <TextBlock Text="📊 Lista doprinosa" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,4"/>
-                                <TextBlock Text="Stope doprinosa za tekući period" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
-                                <Rectangle Height="1" Fill="{StaticResource BorderBrush}" Margin="0,8,0,0"/>
-                            </StackPanel>
-
-                            <DataGrid x:Name="DoprinosiGrid" Grid.Row="1" 
-                                      AutoGenerateColumns="False" 
-                                      IsReadOnly="True" 
-                                      SelectionMode="Single"
-                                      SelectionChanged="DoprinosiGrid_SelectionChanged"
-                                      BorderThickness="0"
-                                      Background="Transparent"
-                                      HeadersVisibility="Column">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="Naziv doprinosa" Binding="{Binding Naziv}" Width="*" ElementStyle="{StaticResource LeftAlignedCell}"/>
-                                    <DataGridTextColumn Header="Radnik %" Binding="{Binding ProcRadn, StringFormat={}{0:N2}%}" Width="75" ElementStyle="{StaticResource RightAlignedCell}"/>
-                                    <DataGridTextColumn Header="Poslodavac %" Binding="{Binding ProcPosl, StringFormat={}{0:N2}%}" Width="95" ElementStyle="{StaticResource RightAlignedCell}"/>
-                                </DataGrid.Columns>
-                            </DataGrid>
-                        </Grid>
-                    </Border>
-
-                    <!-- DESNA KARTICA: Uređivanje izabranog doprinosa -->
-                    <Border Grid.Column="1" Style="{StaticResource Card}" Margin="8,0,0,0">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-
-                            <StackPanel Grid.Row="0" Margin="0,0,0,12">
-                                <TextBlock x:Name="TxtSelectedDoprinosTitle" Text="📝 Uredi doprinos" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,4"/>
-                                <TextBlock x:Name="TxtSelectedDoprinosSubtitle" Text="Izaberite doprinos iz liste za izmenu stopa i računa" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
-                                <Rectangle Height="1" Fill="{StaticResource BorderBrush}" Margin="0,8,0,0"/>
-                            </StackPanel>
-
-                            <!-- Formular u ScrollVieweru -->
-                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,0,12">
-                                <StackPanel x:Name="PanelDoprinosForm" IsEnabled="False" Margin="0,0,8,0">
-                                    
-                                    <!-- Naziv i Redni broj -->
-                                    <Grid Margin="0,0,0,16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="120"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel Margin="0,0,8,0">
-                                            <TextBlock Text="Naziv doprinosa:" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBox x:Name="TxtDopNaziv"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                            <TextBlock Text="Redni broj:" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBox x:Name="TxtDopRedBroj" IsReadOnly="True" Background="#F3F4F6"/>
-                                        </StackPanel>
-                                    </Grid>
-
-                                    <!-- STOPE DOPRINOSA (Redovan rad) -->
-                                    <TextBlock Text="📈 Stope doprinosa (redovan rad)" FontSize="13" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,8,0,8"/>
-                                    <Grid Margin="0,0,0,16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel Margin="0,0,8,0">
-                                            <TextBlock Text="Na teret radnika (%):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBox x:Name="TxtDopProcRadn" TextAlignment="Right"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                            <TextBlock Text="Na teret poslodavca (%):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBox x:Name="TxtDopProcPosl" TextAlignment="Right"/>
-                                        </StackPanel>
-                                    </Grid>
-
-                                    <!-- BOLOVANJE DO 30 DANA -->
-                                    <TextBlock Text="🤒 Stope za bolovanje do 30 dana" FontSize="13" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,8,0,8"/>
-                                    <Grid Margin="0,0,0,16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel Margin="0,0,8,0">
-                                            <TextBlock Text="Bol. do 30 - Radnik (%):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBox x:Name="TxtDopB60ProcR" TextAlignment="Right"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                            <TextBlock Text="Bol. do 30 - Poslodavac (%):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBox x:Name="TxtDopB60ProcP" TextAlignment="Right"/>
-                                        </StackPanel>
-                                    </Grid>
-
-                                    <!-- OSTALE STOPE -->
-                                    <TextBlock Text="💼 Ostale stope i doprinosi" FontSize="13" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,8,0,8"/>
-                                    <Grid Margin="0,0,0,16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel Margin="0,0,8,0">
-                                            <TextBlock Text="Bol. preko 30 - Poslodavac (%):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBox x:Name="TxtDopBp60ProcP" TextAlignment="Right"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                            <TextBlock Text="Bol. preko 30 - Fond (%):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBox x:Name="TxtDopBp60FProcP" TextAlignment="Right"/>
-                                        </StackPanel>
-                                    </Grid>
-                                    <Grid Margin="0,0,0,16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel Margin="0,0,6,0">
-                                            <TextBlock Text="Porodiljsko - Posl. (%):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBox x:Name="TxtDopPorProcP" TextAlignment="Right"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="1" Margin="6,0,6,0">
-                                            <TextBlock Text="Neplaćeno do 30 (%):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBox x:Name="TxtDopNepProcP" TextAlignment="Right"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="2" Margin="6,0,0,0">
-                                            <TextBlock Text="Invalidi II kat. (%):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBox x:Name="TxtDopInvProcP" TextAlignment="Right"/>
-                                        </StackPanel>
-                                    </Grid>
-
-                                    <!-- PLATNI DETALJI - RADNIK (PRIMALAC 1) -->
-                                    <TextBlock Text="🏦 Platni detalji: Radnik / Primalac 1" FontSize="13" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,8,0,8"/>
-                                    <Grid Margin="0,0,0,10">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel Margin="0,0,8,0">
-                                            <TextBlock Text="Primalac (red 1):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBox x:Name="TxtDopPrimalac1"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                            <TextBlock Text="Primalac (red 2):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBox x:Name="TxtDopPrimalac2"/>
-                                        </StackPanel>
-                                    </Grid>
-                                    <Grid Margin="0,0,0,10">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel Margin="0,0,8,0">
-                                            <TextBlock Text="Svrha plaćanja (red 1):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBox x:Name="TxtDopSvrha1"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                            <TextBlock Text="Svrha plaćanja (red 2):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBox x:Name="TxtDopSvrha2"/>
-                                        </StackPanel>
-                                    </Grid>
-                                    <Grid Margin="0,0,0,16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="2*"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel Margin="0,0,8,0">
-                                            <TextBlock Text="Žiro račun (radnik):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBox x:Name="TxtDopZiroRacun"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="1" Margin="4,0,8,0">
-                                            <TextBlock Text="Poziv na broj 1:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBox x:Name="TxtDopPozivNaB"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="2" Margin="4,0,0,0">
-                                            <TextBlock Text="Šifra plaćanja 1:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBox x:Name="TxtDopSifPlac"/>
-                                        </StackPanel>
-                                    </Grid>
-
-                                    <!-- PLATNI DETALJI - POSLODAVAC (PRIMALAC 2) -->
-                                    <TextBlock Text="🏢 Platni detalji: Poslodavac / Primalac 2" FontSize="13" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,8,0,8"/>
-                                    <Grid Margin="0,0,0,16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="2*"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel Margin="0,0,8,0">
-                                            <TextBlock Text="Žiro račun (poslodavac):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBox x:Name="TxtDopZiroRacP"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="1" Margin="4,0,8,0">
-                                            <TextBlock Text="Poziv na broj 2:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBox x:Name="TxtDopPozivNa2"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="2" Margin="4,0,0,0">
-                                            <TextBlock Text="Šifra plaćanja 2:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <TextBox x:Name="TxtDopSifPlacP"/>
-                                        </StackPanel>
-                                    </Grid>
-
-                                </StackPanel>
-                            </ScrollViewer>
-
-                            <!-- Dugme za snimanje doprinosa -->
-                            <Button Grid.Row="2" x:Name="BtnSacuvajDoprinos" 
-                                    Content="💾 Sačuvaj izmene za ovaj doprinos" 
-                                    Style="{StaticResource PrimaryButton}" 
-                                    Height="40" 
-                                    IsEnabled="False"
-                                    Click="BtnSacuvajDoprinos_Click"/>
-                        </Grid>
-                    </Border>
-                </Grid>
-            </TabItem>
-
-            <!-- TAB 4: Platni razredi -->
-            <TabItem Header="📊 Platni razredi">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,12,0,0">
-                    <Border Style="{StaticResource Card}" Margin="0,0,0,16">
-                        <StackPanel>
-                            <TextBlock Text="📊 Platni razredi - Najniže bruto osnovice" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,4"/>
-                            <TextBlock Text="Pregled i izmena najnižih bruto osnovica za stepene stručne spreme (Normalni doprinosi i Doprinosi za PIO)" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,12"/>
-                            <Rectangle Height="1" Fill="{StaticResource BorderBrush}" Margin="0,0,0,16"/>
-
-                            <!-- Grid sa naslovima kolona -->
-                            <Grid Margin="0,0,0,8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="220"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Stepen stručne spreme" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                <TextBlock Grid.Column="1" Text="Normalni doprinosi" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock Grid.Column="2" Text="Doprinos za PIO" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                            </Grid>
-                            
-                            <Rectangle Height="1" Fill="{StaticResource BorderBrush}" Margin="0,0,0,12"/>
-
-                            <!-- Grid sa stepenima i inputima -->
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="220"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-
-                                <!-- I i II stepen -->
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Osnovica za I i II stepen (1)" VerticalAlignment="Center" Margin="0,0,0,10" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                <TextBox x:Name="TxtR1" Grid.Row="0" Grid.Column="1" Height="32" VerticalContentAlignment="Center" Margin="10,0,10,10" TextAlignment="Right"/>
-                                <TextBox x:Name="TxtP1" Grid.Row="0" Grid.Column="2" Height="32" VerticalContentAlignment="Center" Margin="10,0,10,10" TextAlignment="Right"/>
-
-                                <!-- III stepen -->
-                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Osnovica za III stepen (2)" VerticalAlignment="Center" Margin="0,0,0,10" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                <TextBox x:Name="TxtR2" Grid.Row="1" Grid.Column="1" Height="32" VerticalContentAlignment="Center" Margin="10,0,10,10" TextAlignment="Right"/>
-                                <TextBox x:Name="TxtP2" Grid.Row="1" Grid.Column="2" Height="32" VerticalContentAlignment="Center" Margin="10,0,10,10" TextAlignment="Right"/>
-
-                                <!-- IV stepen -->
-                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Osnovica za IV stepen (3)" VerticalAlignment="Center" Margin="0,0,0,10" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                <TextBox x:Name="TxtR3" Grid.Row="2" Grid.Column="1" Height="32" VerticalContentAlignment="Center" Margin="10,0,10,10" TextAlignment="Right"/>
-                                <TextBox x:Name="TxtP3" Grid.Row="2" Grid.Column="2" Height="32" VerticalContentAlignment="Center" Margin="10,0,10,10" TextAlignment="Right"/>
-
-                                <!-- V stepen -->
-                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Osnovica za V stepen (4)" VerticalAlignment="Center" Margin="0,0,0,10" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                <TextBox x:Name="TxtR4" Grid.Row="3" Grid.Column="1" Height="32" VerticalContentAlignment="Center" Margin="10,0,10,10" TextAlignment="Right"/>
-                                <TextBox x:Name="TxtP4" Grid.Row="3" Grid.Column="2" Height="32" VerticalContentAlignment="Center" Margin="10,0,10,10" TextAlignment="Right"/>
-
-                                <!-- VI stepen -->
-                                <TextBlock Grid.Row="4" Grid.Column="0" Text="Osnovica za VI stepen (5)" VerticalAlignment="Center" Margin="0,0,0,10" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                <TextBox x:Name="TxtR5" Grid.Row="4" Grid.Column="1" Height="32" VerticalContentAlignment="Center" Margin="10,0,10,10" TextAlignment="Right"/>
-                                <TextBox x:Name="TxtP5" Grid.Row="4" Grid.Column="2" Height="32" VerticalContentAlignment="Center" Margin="10,0,10,10" TextAlignment="Right"/>
-
-                                <!-- VII1 stepen -->
-                                <TextBlock Grid.Row="5" Grid.Column="0" Text="Osnovica za VII1 stepen (6)" VerticalAlignment="Center" Margin="0,0,0,10" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                <TextBox x:Name="TxtR6" Grid.Row="5" Grid.Column="1" Height="32" VerticalContentAlignment="Center" Margin="10,0,10,10" TextAlignment="Right"/>
-                                <TextBox x:Name="TxtP6" Grid.Row="5" Grid.Column="2" Height="32" VerticalContentAlignment="Center" Margin="10,0,10,10" TextAlignment="Right"/>
-
-                                <!-- VII2 stepen -->
-                                <TextBlock Grid.Row="6" Grid.Column="0" Text="Osnovica za VII2 stepen (7)" VerticalAlignment="Center" Margin="0,0,0,10" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                <TextBox x:Name="TxtR7" Grid.Row="6" Grid.Column="1" Height="32" VerticalContentAlignment="Center" Margin="10,0,10,10" TextAlignment="Right"/>
-                                <TextBox x:Name="TxtP7" Grid.Row="6" Grid.Column="2" Height="32" VerticalContentAlignment="Center" Margin="10,0,10,10" TextAlignment="Right"/>
-
-                                <!-- VIII stepen -->
-                                <TextBlock Grid.Row="7" Grid.Column="0" Text="Osnovica za VIII stepen (8)" VerticalAlignment="Center" Margin="0,0,0,10" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                <TextBox x:Name="TxtR8" Grid.Row="7" Grid.Column="1" Height="32" VerticalContentAlignment="Center" Margin="10,0,10,10" TextAlignment="Right"/>
-                                <TextBox x:Name="TxtP8" Grid.Row="7" Grid.Column="2" Height="32" VerticalContentAlignment="Center" Margin="10,0,10,10" TextAlignment="Right"/>
-
-                                <!-- Rezerva -->
-                                <TextBlock Grid.Row="8" Grid.Column="0" Text="Rezerva (9)" VerticalAlignment="Center" Margin="0,0,0,10" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                <TextBox x:Name="TxtR9" Grid.Row="8" Grid.Column="1" Height="32" VerticalContentAlignment="Center" Margin="10,0,10,10" TextAlignment="Right"/>
-                                <TextBox x:Name="TxtP9" Grid.Row="8" Grid.Column="2" Height="32" VerticalContentAlignment="Center" Margin="10,0,10,10" TextAlignment="Right"/>
-                            </Grid>
-
-                            <Button x:Name="BtnSacuvajRazredi" Content="💾 Sačuvaj platne razrede" Style="{StaticResource PrimaryButton}" Height="40" Margin="0,16,0,0" Click="BtnSacuvajRazredi_Click"/>
-                        </StackPanel>
-                    </Border>
-                </ScrollViewer>
-            </TabItem>
         </TabControl>
 
         <!-- ── STATUS BAR ────────────────────────────────────────────── -->
-        <Border Grid.Row="3" Margin="0,12,0,0"
+        <Border Grid.Row="2" Margin="0,12,0,0"
                 Background="White" CornerRadius="6" Padding="12,6"
                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
             <TextBlock x:Name="StatusMessage" Text="Spreman" FontSize="12"

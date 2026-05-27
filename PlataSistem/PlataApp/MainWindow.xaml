@@ -38,7 +38,8 @@
 
                 <!-- Ime firme -->
                 <Border DockPanel.Dock="Top" Margin="12,12,12,4"
-                        Background="#20FFFFFF" CornerRadius="8" Padding="12,10">
+                        Background="#20FFFFFF" CornerRadius="8" Padding="12,10"
+                        Cursor="Hand" MouseDown="FirmaBorder_MouseDown">
                     <StackPanel>
                         <TextBlock Text="Firma:" FontSize="10" Foreground="#90CAF9"/>
                         <TextBlock x:Name="ImeFirmeText"
@@ -58,6 +59,15 @@
                     <Button x:Name="BtnObracun" Content="📊  Obračun plate"
                             Style="{StaticResource NavButton}"
                             Click="BtnObracun_Click"/>
+                    <Button x:Name="BtnPorezi" Content="⚖️  Porezi i parametri"
+                            Style="{StaticResource NavButton}"
+                            Click="BtnPorezi_Click"/>
+                    <Button x:Name="BtnDoprinosi" Content="📈  Doprinosi"
+                            Style="{StaticResource NavButton}"
+                            Click="BtnDoprinosi_Click"/>
+                    <Button x:Name="BtnPlatniRazredi" Content="📊  Platni razredi"
+                            Style="{StaticResource NavButton}"
+                            Click="BtnPlatniRazredi_Click"/>
 
                     <TextBlock Text="ŠTAMPA" FontSize="10" FontWeight="SemiBold"
                                Foreground="#7986CB" Margin="24,16,0,4"/>

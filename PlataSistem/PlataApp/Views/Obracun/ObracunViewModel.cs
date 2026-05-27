@@ -32,7 +32,7 @@ public class ObracunViewModel : INotifyPropertyChanged
         
         // Inicijalizuj mesece
         Meseci = new ObservableCollection<int>(Enumerable.Range(1, 12));
-        SelectedMesec = DateTime.Now.Month;
+        SelectedMesec = AppConfig.ActiveMesec ?? DateTime.Now.Month;
 
         _ = InitAsync();
     }
@@ -52,7 +52,15 @@ public class ObracunViewModel : INotifyPropertyChanged
                 god = [DateTime.Now.Year];
 
             Godine = new ObservableCollection<int>(god);
-            SelectedGodina = Godine.FirstOrDefault();
+
+            if (AppConfig.ActiveGodina.HasValue && Godine.Contains(AppConfig.ActiveGodina.Value))
+            {
+                SelectedGodina = AppConfig.ActiveGodina.Value;
+            }
+            else
+            {
+                SelectedGodina = Godine.FirstOrDefault();
+            }
 
             await LoadObracuneAsync();
         }
@@ -83,13 +91,23 @@ public class ObracunViewModel : INotifyPropertyChanged
     public int SelectedGodina
     {
         get => _selectedGodina;
-        set { _selectedGodina = value; OnPropertyChanged(); }
+        set 
+        { 
+            _selectedGodina = value; 
+            OnPropertyChanged(); 
+            AppConfig.ActiveGodina = value;
+        }
     }
 
     public int SelectedMesec
     {
         get => _selectedMesec;
-        set { _selectedMesec = value; OnPropertyChanged(); }
+        set 
+        { 
+            _selectedMesec = value; 
+            OnPropertyChanged(); 
+            AppConfig.ActiveMesec = value;
+        }
     }
 
     public string SearchText

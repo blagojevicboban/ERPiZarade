@@ -49,12 +49,25 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Aktivni period -->
+                <Border x:Name="ActivePeriodBorder" DockPanel.Dock="Top" Margin="12,4,12,4"
+                        Background="#15000000" CornerRadius="8" Padding="12,10"
+                        Cursor="Hand" MouseDown="FirmaBorder_MouseDown">
+                    <StackPanel>
+                        <TextBlock Text="Aktivni period:" FontSize="10" Foreground="#90CAF9"/>
+                        <TextBlock x:Name="ActivePeriodText"
+                                   Text="Nije izabran"
+                                   FontSize="13" FontWeight="SemiBold"
+                                   Foreground="White"/>
+                    </StackPanel>
+                </Border>
+
                 <!-- Navigacija -->
                 <StackPanel DockPanel.Dock="Top" Margin="0,12,0,0">
                     <TextBlock Text="EVIDENCIJA" FontSize="10" FontWeight="SemiBold"
                                Foreground="#7986CB" Margin="24,8,0,4"/>
                     <Button x:Name="BtnRadnici" Content="👤  Radnici"
-                            Style="{StaticResource NavButtonActive}"
+                            Style="{StaticResource NavButton}"
                             Click="BtnRadnici_Click"/>
                     <Button x:Name="BtnObracun" Content="📊  Obračun plate"
                             Style="{StaticResource NavButton}"

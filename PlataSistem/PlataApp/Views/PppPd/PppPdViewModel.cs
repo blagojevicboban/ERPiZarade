@@ -63,7 +63,7 @@ public class PppPdViewModel : INotifyPropertyChanged
         ValidateCommand = new RelayCommand(_ => ValidateData());
         
         Meseci = new ObservableCollection<int>(Enumerable.Range(1, 12));
-        SelectedMesec = DateTime.Now.Month;
+        SelectedMesec = AppConfig.ActiveMesec ?? DateTime.Now.Month;
         
         // Default klijentska oznaka
         KlijentskaOznaka = $"DECL-{DateTime.Now:ddMMyyyy}";
@@ -105,7 +105,15 @@ public class PppPdViewModel : INotifyPropertyChanged
                 god = [DateTime.Now.Year];
 
             Godine = new ObservableCollection<int>(god);
-            SelectedGodina = Godine.FirstOrDefault();
+
+            if (AppConfig.ActiveGodina.HasValue && Godine.Contains(AppConfig.ActiveGodina.Value))
+            {
+                SelectedGodina = AppConfig.ActiveGodina.Value;
+            }
+            else
+            {
+                SelectedGodina = Godine.FirstOrDefault();
+            }
 
             await LoadObracuneAsync();
         }
@@ -232,6 +240,7 @@ public class PppPdViewModel : INotifyPropertyChanged
         { 
             _selectedGodina = value; 
             OnPropertyChanged(); 
+            AppConfig.ActiveGodina = value;
             _ = LoadObracuneAsync(); 
         }
     }
@@ -243,6 +252,7 @@ public class PppPdViewModel : INotifyPropertyChanged
         { 
             _selectedMesec = value; 
             OnPropertyChanged(); 
+            AppConfig.ActiveMesec = value;
             _ = LoadObracuneAsync(); 
         }
     }

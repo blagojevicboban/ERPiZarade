@@ -39,7 +39,11 @@ public partial class ObracuniPage : Page
     {
         try
         {
-            var summaries = _db.ObracuniPlata
+            var allObracuni = _db.ObracuniPlata
+                .Select(o => new { o.Godina, o.Mesec, o.NetoIsplata, o.BrutoZarada, o.BrutoBolovanje, o.DatumObracuna })
+                .ToList();
+
+            var summaries = allObracuni
                 .GroupBy(o => new { o.Godina, o.Mesec })
                 .Select(g => new ObracunPeriodSummary
                 {
@@ -50,10 +54,6 @@ public partial class ObracuniPage : Page
                     UkupnoBruto = g.Sum(o => o.BrutoZarada + o.BrutoBolovanje),
                     PoslednjiDatum = g.Max(o => o.DatumObracuna)
                 })
-                .ToList();
-
-            // Poredak od najnovijeg ka najstarijem
-            summaries = summaries
                 .OrderByDescending(s => s.Godina)
                 .ThenByDescending(s => s.Mesec)
                 .ToList();
@@ -85,6 +85,9 @@ public partial class ObracuniPage : Page
 
     private void OtvorPeriod(ObracunPeriodSummary summary)
     {
+        AppConfig.ActiveGodina = summary.Godina;
+        AppConfig.ActiveMesec = summary.Mesec;
+
         var mainWindow = Application.Current.MainWindow as MainWindow;
         if (mainWindow != null)
         {

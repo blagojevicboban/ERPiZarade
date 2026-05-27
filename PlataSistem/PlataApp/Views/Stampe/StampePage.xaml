@@ -40,10 +40,10 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0" Text="Godina obračuna:" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="13" FontWeight="SemiBold"/>
-                <ComboBox Grid.Column="1" ItemsSource="{Binding Godine}" SelectedItem="{Binding SelectedGodina}" Margin="0,0,24,0" Padding="8,5"/>
+                <ComboBox Grid.Column="1" ItemsSource="{Binding Godine}" SelectedItem="{Binding SelectedGodina}" IsEnabled="False" Margin="0,0,24,0" Padding="8,5"/>
 
                 <TextBlock Grid.Column="2" Text="Mesec obračuna:" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="13" FontWeight="SemiBold"/>
-                <ComboBox Grid.Column="3" ItemsSource="{Binding Meseci}" SelectedItem="{Binding SelectedMesec}" Margin="0,0,24,0" Padding="8,5"/>
+                <ComboBox Grid.Column="3" ItemsSource="{Binding Meseci}" SelectedItem="{Binding SelectedMesec}" IsEnabled="False" Margin="0,0,24,0" Padding="8,5"/>
 
                 <TextBlock Grid.Column="4" Text="Radna jedinica (RJ):" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="13" FontWeight="SemiBold"/>
                 <ComboBox Grid.Column="5" ItemsSource="{Binding RadneJedinice}" SelectedItem="{Binding SelectedRadnaJedinica}" Padding="8,5"/>

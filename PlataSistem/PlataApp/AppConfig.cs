@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Windows;
 
 namespace PlataApp;
 
@@ -28,6 +29,38 @@ public static class AppConfig
             return _dbPath;
         }
         set => _dbPath = value;
+    }
+
+    private static int? _activeGodina;
+    public static int? ActiveGodina
+    {
+        get => _activeGodina;
+        set
+        {
+            _activeGodina = value;
+            OsveziMainWindowActivePeriod();
+        }
+    }
+
+    private static int? _activeMesec;
+    public static int? ActiveMesec
+    {
+        get => _activeMesec;
+        set
+        {
+            _activeMesec = value;
+            OsveziMainWindowActivePeriod();
+        }
+    }
+
+    private static void OsveziMainWindowActivePeriod()
+    {
+        try
+        {
+            var mainWin = Application.Current?.MainWindow as MainWindow;
+            mainWin?.OsveziAktivniPeriodPrikaz();
+        }
+        catch { }
     }
 }
 

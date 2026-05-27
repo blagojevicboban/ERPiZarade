@@ -12,8 +12,54 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         UcitajImeFirme();
+        InicijalizujAktivniPeriod();
         // Otvori Obračuni kao početnu stranicu
         NavigateTo(null!, new Views.Obracuni.ObracuniPage());
+    }
+
+    private void InicijalizujAktivniPeriod()
+    {
+        try
+        {
+            using var db = PlataData.PlataDbContext.Create(AppConfig.DbPath);
+            var latestObracun = db.ObracuniPlata
+                .OrderByDescending(o => o.Godina)
+                .ThenByDescending(o => o.Mesec)
+                .FirstOrDefault();
+
+            if (latestObracun != null)
+            {
+                AppConfig.ActiveGodina = latestObracun.Godina;
+                AppConfig.ActiveMesec = latestObracun.Mesec;
+            }
+        }
+        catch { }
+        OsveziAktivniPeriodPrikaz();
+    }
+
+    public void OsveziAktivniPeriodPrikaz()
+    {
+        if (ActivePeriodText == null) return;
+
+        if (AppConfig.ActiveGodina.HasValue && AppConfig.ActiveMesec.HasValue)
+        {
+            string[] meseciStr = {
+                "Januar", "Februar", "Mart", "April", "Maj", "Jun",
+                "Jul", "Avgust", "Septembar", "Oktobar", "Novembar", "Decembar"
+            };
+            int mesec = AppConfig.ActiveMesec.Value;
+            int godina = AppConfig.ActiveGodina.Value;
+            if (mesec >= 1 && mesec <= 12)
+            {
+                ActivePeriodText.Text = $"{meseciStr[mesec - 1]} {godina}";
+                return;
+            }
+            ActivePeriodText.Text = $"{mesec:D2} / {godina}";
+        }
+        else
+        {
+            ActivePeriodText.Text = "Nije izabran";
+        }
     }
 
     public void UcitajImeFirme()
@@ -41,7 +87,8 @@ public partial class MainWindow : Window
     {
         if (_activeNavBtn != null)
             _activeNavBtn.Style = (Style)FindResource("NavButton");
-        btn.Style = (Style)FindResource("NavButtonActive");
+        if (btn != null)
+            btn.Style = (Style)FindResource("NavButtonActive");
         _activeNavBtn = btn;
         MainFrame.Navigate(page);
     }

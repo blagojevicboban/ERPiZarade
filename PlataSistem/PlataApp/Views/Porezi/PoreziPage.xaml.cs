@@ -43,13 +43,24 @@ public partial class PoreziPage : Page
     {
         try
         {
-            var latestObracun = _db.ObracuniPlata
-                .OrderByDescending(o => o.Godina)
-                .ThenByDescending(o => o.Mesec)
-                .FirstOrDefault();
+            int defGodina;
+            int defMesec;
 
-            int defGodina = latestObracun?.Godina ?? DateTime.Now.Year;
-            int defMesec = latestObracun?.Mesec ?? DateTime.Now.Month;
+            if (AppConfig.ActiveGodina.HasValue && AppConfig.ActiveMesec.HasValue)
+            {
+                defGodina = AppConfig.ActiveGodina.Value;
+                defMesec = AppConfig.ActiveMesec.Value;
+            }
+            else
+            {
+                var latestObracun = _db.ObracuniPlata
+                    .OrderByDescending(o => o.Godina)
+                    .ThenByDescending(o => o.Mesec)
+                    .FirstOrDefault();
+
+                defGodina = latestObracun?.Godina ?? DateTime.Now.Year;
+                defMesec = latestObracun?.Mesec ?? DateTime.Now.Month;
+            }
 
             ComboGodina.SelectedItem = defGodina;
             ComboMesec.SelectedItem = defMesec;
@@ -223,6 +234,8 @@ public partial class PoreziPage : Page
         if (ComboGodina.SelectedItem is int godina && ComboMesec.SelectedItem is int mesec)
         {
             UcitajParametre(godina, mesec);
+            AppConfig.ActiveGodina = godina;
+            AppConfig.ActiveMesec = mesec;
         }
     }
 

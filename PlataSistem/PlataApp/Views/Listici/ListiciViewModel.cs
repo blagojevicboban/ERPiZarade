@@ -49,7 +49,7 @@ public class ListiciViewModel : INotifyPropertyChanged
         ToggleSelectAllCommand = new RelayCommand(_ => ToggleSelectAll());
 
         Meseci = new ObservableCollection<int>(Enumerable.Range(1, 12));
-        SelectedMesec = DateTime.Now.Month;
+        SelectedMesec = AppConfig.ActiveMesec ?? DateTime.Now.Month;
 
         _ = InitAsync();
     }
@@ -68,17 +68,26 @@ public class ListiciViewModel : INotifyPropertyChanged
                 god = [DateTime.Now.Year];
 
             Godine = new ObservableCollection<int>(god);
-            SelectedGodina = Godine.FirstOrDefault();
 
-            // Ako imamo aktivni mesec iz baze koji je pre Aprila 2026, postavi to
-            var latestPeriod = await _db.ObracuniPlata
-                .OrderByDescending(o => o.Godina).ThenByDescending(o => o.Mesec)
-                .FirstOrDefaultAsync();
-
-            if (latestPeriod != null)
+            if (AppConfig.ActiveGodina.HasValue && AppConfig.ActiveMesec.HasValue)
             {
-                SelectedGodina = latestPeriod.Godina;
-                SelectedMesec = latestPeriod.Mesec;
+                SelectedGodina = AppConfig.ActiveGodina.Value;
+                SelectedMesec = AppConfig.ActiveMesec.Value;
+            }
+            else
+            {
+                SelectedGodina = Godine.FirstOrDefault();
+
+                // Ako imamo aktivni mesec iz baze koji je pre Aprila 2026, postavi to
+                var latestPeriod = await _db.ObracuniPlata
+                    .OrderByDescending(o => o.Godina).ThenByDescending(o => o.Mesec)
+                    .FirstOrDefaultAsync();
+
+                if (latestPeriod != null)
+                {
+                    SelectedGodina = latestPeriod.Godina;
+                    SelectedMesec = latestPeriod.Mesec;
+                }
             }
 
             await LoadObracuneAsync();
@@ -110,13 +119,23 @@ public class ListiciViewModel : INotifyPropertyChanged
     public int SelectedGodina
     {
         get => _selectedGodina;
-        set { _selectedGodina = value; OnPropertyChanged(); }
+        set 
+        { 
+            _selectedGodina = value; 
+            OnPropertyChanged(); 
+            AppConfig.ActiveGodina = value;
+        }
     }
 
     public int SelectedMesec
     {
         get => _selectedMesec;
-        set { _selectedMesec = value; OnPropertyChanged(); }
+        set 
+        { 
+            _selectedMesec = value; 
+            OnPropertyChanged(); 
+            AppConfig.ActiveMesec = value;
+        }
     }
 
     public string SearchText

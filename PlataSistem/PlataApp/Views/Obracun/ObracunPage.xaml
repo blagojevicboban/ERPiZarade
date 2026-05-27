@@ -48,10 +48,10 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0" Text="Godina:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
-                <ComboBox Grid.Column="1" ItemsSource="{Binding Godine}" SelectedItem="{Binding SelectedGodina}" Margin="0,0,16,0" Padding="8,5"/>
+                <ComboBox Grid.Column="1" ItemsSource="{Binding Godine}" SelectedItem="{Binding SelectedGodina}" IsEnabled="False" Margin="0,0,16,0" Padding="8,5"/>
 
                 <TextBlock Grid.Column="2" Text="Mesec:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
-                <ComboBox Grid.Column="3" ItemsSource="{Binding Meseci}" SelectedItem="{Binding SelectedMesec}" Margin="0,0,16,0" Padding="8,5"/>
+                <ComboBox Grid.Column="3" ItemsSource="{Binding Meseci}" SelectedItem="{Binding SelectedMesec}" IsEnabled="False" Margin="0,0,16,0" Padding="8,5"/>
 
                 <TextBlock Grid.Column="4" Text="Radnik:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
                 <TextBox Grid.Column="5" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,16,0" VerticalAlignment="Center"/>

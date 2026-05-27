@@ -103,7 +103,7 @@
                           HeadersVisibility="Column"
                           Margin="0">
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="Period obračuna" SortMemberPath="HronoloskiSortKey" Width="180">
+                        <DataGridTemplateColumn Header="Period obračuna" Width="180">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">

@@ -33,29 +33,9 @@ public partial class NoviObracunWindow : Window
         ComboGodina.ItemsSource = Enumerable.Range(DateTime.Now.Year - 10, 12).OrderByDescending(g => g).ToList();
         ComboMesec.ItemsSource = Enumerable.Range(1, 12).ToList();
 
-        // Uvek tražimo poslednji hronološki obračunati period u bazi za određivanje sledećeg perioda
-        var poslednjiObracun = _db.ObracuniPlata
-            .OrderByDescending(o => o.Godina)
-            .ThenByDescending(o => o.Mesec)
-            .FirstOrDefault();
-
-        if (poslednjiObracun != null)
+        if (_preselectedPeriod != null)
         {
-            int sledeciMesec = poslednjiObracun.Mesec + 1;
-            int sledecaGodina = poslednjiObracun.Godina;
-            if (sledeciMesec > 12)
-            {
-                sledeciMesec = 1;
-                sledecaGodina++;
-            }
-            ComboGodina.SelectedItem = sledecaGodina;
-            ComboMesec.SelectedItem = sledeciMesec;
-            
-            // Ponudi poslednji obračunati period za prenos radnih sati
-            PostaviSelektovaniPeriodZaPrenos(poslednjiObracun.Godina, poslednjiObracun.Mesec);
-        }
-        else if (_preselectedPeriod != null)
-        {
+            // Ako je izabran obračun, ponudi sledeći mesec za novi obračun
             int sledeciMesec = _preselectedPeriod.Mesec + 1;
             int sledecaGodina = _preselectedPeriod.Godina;
             if (sledeciMesec > 12)
@@ -66,6 +46,7 @@ public partial class NoviObracunWindow : Window
             ComboGodina.SelectedItem = sledecaGodina;
             ComboMesec.SelectedItem = sledeciMesec;
             
+            // A za prenos ponudi upravo taj izabrani obračun!
             PostaviSelektovaniPeriodZaPrenos(_preselectedPeriod.Godina, _preselectedPeriod.Mesec);
         }
         else
@@ -73,6 +54,7 @@ public partial class NoviObracunWindow : Window
             ComboGodina.SelectedItem = DateTime.Now.Month == 1 ? DateTime.Now.Year - 1 : DateTime.Now.Year;
             ComboMesec.SelectedItem = DateTime.Now.Month == 1 ? 12 : DateTime.Now.Month - 1;
             
+            // Ponudi poslednji obračun za prenos
             PostaviPoslednjiPeriodZaPrenos();
         }
 

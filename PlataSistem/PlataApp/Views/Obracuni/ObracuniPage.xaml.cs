@@ -395,8 +395,6 @@ public class ObracunPeriodSummary
     public int Godina { get; set; }
     public int Mesec { get; set; }
     
-    public int HronoloskiSortKey => Godina * 12 + Mesec;
-    
     public string PeriodStr
     {
         get

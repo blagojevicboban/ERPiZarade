@@ -201,6 +201,37 @@
                     </Grid>
                 </ScrollViewer>
             </TabItem>
+
+            <!-- TAB 3: Postavke programa -->
+            <TabItem Header="🖥️ Postavke programa">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,12,0,0">
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="🖥️ Postavke programa" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,4"/>
+                            <TextBlock Text="Opšte postavke vezane za izgled i ponašanje programa." FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,12"/>
+                            <Rectangle Height="1" Fill="{StaticResource BorderBrush}" Margin="0,0,0,16"/>
+
+                            <!-- Pokretanje maksimizovano -->
+                            <Border Background="#F8FAFF" CornerRadius="8" Padding="16,12" Margin="0,0,0,12" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="Pokretanje programa maksimizovano" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="Program će se automatski otvoriti u celom ekranu pri sledećem pokretanju." FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkPokretanjeMaximizovano" Grid.Column="1" VerticalAlignment="Center" Margin="16,0,0,0"
+                                              Checked="ChkPostavke_Changed" Unchecked="ChkPostavke_Changed"/>
+                                </Grid>
+                            </Border>
+
+                            <TextBlock Text="Promene se primenjuju pri sledećem pokretanju programa." FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,8,0,0" FontStyle="Italic"/>
+                        </StackPanel>
+                    </Border>
+                </ScrollViewer>
+            </TabItem>
         </TabControl>
 
         <!-- ── STATUS BAR ────────────────────────────────────────────── -->

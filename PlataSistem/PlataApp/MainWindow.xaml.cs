@@ -11,6 +11,11 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        // Primeni podešavanje maksimizovanog pokretanja
+        if (UserSettings.Instance.PokretanjeMaximizovano)
+            WindowState = WindowState.Maximized;
+
         UcitajImeFirme();
         InicijalizujAktivniPeriod();
         // Otvori Obračuni kao početnu stranicu
@@ -95,6 +100,9 @@ public partial class MainWindow : Window
 
     private void BtnRadnici_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnRadnici, new RadniciPage());
+
+    private void BtnRadniSati_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnRadniSati, new Views.RadniSati.RadniSatiPage());
 
     private void BtnObracun_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnObracun, new Views.Obracun.ObracunPage());

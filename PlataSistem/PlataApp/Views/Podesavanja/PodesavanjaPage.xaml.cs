@@ -28,6 +28,13 @@ public partial class PodesavanjaPage : Page
             TxtPredlozenoIme.Text = $"plata_backup_{DateTime.Now:yyyyMMdd_HHmmss}.db";
         }
         catch { }
+
+        // Učitaj korisničke postavke programa
+        try
+        {
+            ChkPokretanjeMaximizovano.IsChecked = UserSettings.Instance.PokretanjeMaximizovano;
+        }
+        catch { }
     }
 
     private void UcitajFirmaPodatke()
@@ -101,6 +108,20 @@ public partial class PodesavanjaPage : Page
         catch (Exception ex)
         {
             MessageBox.Show($"Greška pri čuvanju podataka o firmi: {ex.Message}", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void ChkPostavke_Changed(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            UserSettings.Instance.PokretanjeMaximizovano = ChkPokretanjeMaximizovano.IsChecked == true;
+            UserSettings.Instance.Save();
+            StatusMessage.Text = "Postavke programa su sačuvane.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage.Text = $"Greška pri čuvanju postavki: {ex.Message}";
         }
     }
 

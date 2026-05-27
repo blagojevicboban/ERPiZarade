@@ -22,6 +22,38 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="HorizontalAlignment" Value="Right"/>
         </Style>
+
+        <!-- Destructive action button style (e.g. Delete) -->
+        <Style x:Key="DestructiveButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#EF4444"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="10,2"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}"
+                                BorderBrush="#EF4444" BorderThickness="1.5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#FEE2E2"/>
+                                <Setter Property="Foreground" Value="#991B1B"/>
+                                <Setter Property="BorderBrush" Value="#991B1B"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Page.Resources>
 
     <Grid Margin="24,20,24,16">
@@ -84,21 +116,29 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="Broj zaposlenih" Binding="{Binding BrojRadnika}" Width="150" ElementStyle="{StaticResource CenterAlignedCell}"/>
+                        <DataGridTextColumn Header="Broj zaposlenih" Binding="{Binding BrojRadnika}" Width="130" ElementStyle="{StaticResource CenterAlignedCell}"/>
+                        <DataGridTextColumn Header="Vrednost boda" Binding="{Binding VrednostBoda, StringFormat=N4}" Width="130" ElementStyle="{StaticResource RightAlignedCell}"/>
                         <DataGridTextColumn Header="Ukupno Bruto" Binding="{Binding UkupnoBruto, StringFormat=N2}" Width="*" ElementStyle="{StaticResource RightAlignedCell}"/>
                         <DataGridTextColumn Header="Ukupno za isplatu (Neto)" Binding="{Binding UkupnoNeto, StringFormat=N2}" Width="*" ElementStyle="{StaticResource RightAlignedCell}"/>
                         <DataGridTextColumn Header="Datum obračuna" Binding="{Binding PoslednjiDatum, StringFormat={}{0:dd.MM.yyyy}}" Width="180" ElementStyle="{StaticResource CenterAlignedCell}"/>
                         
                         <!-- Akciona kolona -->
-                        <DataGridTemplateColumn Width="110">
+                        <DataGridTemplateColumn Width="185">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Button Content="👁️ Otvori" 
-                                            Style="{StaticResource SecondaryButton}" 
-                                            Padding="10,2" 
-                                            VerticalAlignment="Center"
-                                            HorizontalAlignment="Center"
-                                            Click="BtnOtvori_Click"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <Button Content="👁️ Otvori" 
+                                                Style="{StaticResource SecondaryButton}" 
+                                                Padding="10,2" 
+                                                Margin="0,0,6,0"
+                                                VerticalAlignment="Center"
+                                                Click="BtnOtvori_Click"/>
+                                        <Button Content="🗑️ Obriši" 
+                                                Style="{StaticResource DestructiveButton}" 
+                                                Padding="10,2" 
+                                                VerticalAlignment="Center"
+                                                Click="BtnObrisi_Click"/>
+                                    </StackPanel>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>

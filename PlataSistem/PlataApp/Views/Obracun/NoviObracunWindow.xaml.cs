@@ -158,6 +158,7 @@ public partial class NoviObracunWindow : Window
             {
                 if (postojeciSati.TryGetValue(r.Id, out var sacuvaniSati))
                 {
+                    // Prosek se uvek iznova izračunava za ciljni period — ne prenosi se
                     return new RadnikSatiInput
                     {
                         RadnikId = r.Id,
@@ -170,7 +171,7 @@ public partial class NoviObracunWindow : Window
                         GodisnjiOdmorSati = sacuvaniSati.GodisnjiOdmorSati,
                         DrzavniPraznikSati = sacuvaniSati.DrzavniPraznikSati,
                         NocniSati = sacuvaniSati.NocniSati,
-                        Prosek = sacuvaniSati.Prosek > 0 ? sacuvaniSati.Prosek : _obracunService.IzracunajProsekRadnika(r.Id, godina, mesec)
+                        Prosek = _obracunService.IzracunajProsekRadnika(r.Id, godina, mesec)
                     };
                 }
                 else
@@ -455,6 +456,9 @@ public partial class NoviObracunWindow : Window
                 return;
             }
 
+            int godina = (int)ComboGodina.SelectedItem;
+            int mesec = (int)ComboMesec.SelectedItem;
+
             int prenetoCount = 0;
             foreach (var r in _radniciSati)
             {
@@ -466,6 +470,8 @@ public partial class NoviObracunWindow : Window
                     r.GodisnjiOdmorSati = starSati.GodisnjiOdmorSati;
                     r.DrzavniPraznikSati = starSati.DrzavniPraznikSati;
                     r.NocniSati = starSati.NocniSati;
+                    // Prosek se izračunava za NOVI (ciljni) period — ne prenosi se iz starog
+                    r.Prosek = _obracunService.IzracunajProsekRadnika(r.RadnikId, godina, mesec);
                     prenetoCount++;
                 }
             }

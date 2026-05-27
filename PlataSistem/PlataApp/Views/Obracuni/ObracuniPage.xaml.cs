@@ -105,6 +105,20 @@ public partial class ObracuniPage : Page
         }
     }
 
+    private void BtnNoviObracun_Click(object sender, RoutedEventArgs e)
+    {
+        var selected = PeriodiGrid.SelectedItem as ObracunPeriodSummary;
+
+        var window = new Obracun.NoviObracunWindow(selected)
+        {
+            Owner = Window.GetWindow(this)
+        };
+        if (window.ShowDialog() == true)
+        {
+            UcitajPeriodiSummary();
+        }
+    }
+
     private void OtvorPeriod(ObracunPeriodSummary summary)
     {
         AppConfig.ActiveGodina = summary.Godina;
@@ -143,4 +157,6 @@ public class ObracunPeriodSummary
     public decimal UkupnoNeto { get; set; }
     public decimal UkupnoBruto { get; set; }
     public DateTime PoslednjiDatum { get; set; }
+
+    public bool IsActive => AppConfig.ActiveGodina == Godina && AppConfig.ActiveMesec == Mesec;
 }

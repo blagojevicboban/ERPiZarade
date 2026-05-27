@@ -34,28 +34,38 @@
         <Border Grid.Row="1" Style="{StaticResource Card}" Margin="16,12,16,8" Padding="16,12">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="90"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="90"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="130"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="100"/>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/> <!-- Godina Lbl -->
+                    <ColumnDefinition Width="70"/>   <!-- ComboGodina -->
+                    <ColumnDefinition Width="Auto"/> <!-- Mesec Lbl -->
+                    <ColumnDefinition Width="60"/>   <!-- ComboMesec -->
+                    <ColumnDefinition Width="Auto"/> <!-- Bod Lbl -->
+                    <ColumnDefinition Width="90"/>   <!-- TxtVrednostBoda -->
+                    <ColumnDefinition Width="Auto"/> <!-- Fond Lbl -->
+                    <ColumnDefinition Width="55"/>   <!-- TxtFondCasova -->
+                    <ColumnDefinition Width="*"/>    <!-- Spacer -->
+                    <ColumnDefinition Width="Auto"/> <!-- Prenos Lbl -->
+                    <ColumnDefinition Width="140"/>  <!-- ComboPrenosIz -->
+                    <ColumnDefinition Width="Auto"/> <!-- BtnPrenesi -->
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0" Text="Godina:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
-                <ComboBox x:Name="ComboGodina" Grid.Column="1" Margin="0,0,16,0" Padding="8,5"/>
+                <ComboBox x:Name="ComboGodina" Grid.Column="1" Margin="0,0,12,0" Padding="6,4"/>
 
                 <TextBlock Grid.Column="2" Text="Mesec:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
-                <ComboBox x:Name="ComboMesec" Grid.Column="3" Margin="0,0,16,0" Padding="8,5"/>
+                <ComboBox x:Name="ComboMesec" Grid.Column="3" Margin="0,0,12,0" Padding="6,4"/>
 
-                <TextBlock Grid.Column="4" Text="Vrednost boda (RSD):" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
-                <TextBox x:Name="TxtVrednostBoda" Grid.Column="5" Text="1860.34" Margin="0,0,16,0" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="4" Text="Bod (RSD):" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
+                <TextBox x:Name="TxtVrednostBoda" Grid.Column="5" Text="1860.34" Margin="0,0,12,0" VerticalAlignment="Center" Padding="8,4"/>
 
-                <TextBlock Grid.Column="6" Text="Fond časova:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
-                <TextBox x:Name="TxtFondCasova" Grid.Column="7" Text="176" VerticalAlignment="Center" LostFocus="TxtFondCasova_LostFocus"/>
+                <TextBlock Grid.Column="6" Text="Fond sati:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
+                <TextBox x:Name="TxtFondCasova" Grid.Column="7" Text="176" Margin="0,0,12,0" VerticalAlignment="Center" LostFocus="TxtFondCasova_LostFocus" Padding="8,4"/>
+
+                <TextBlock Grid.Column="9" Text="Kopiraj sate iz:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
+                <ComboBox x:Name="ComboPrenosIz" Grid.Column="10" Margin="0,0,8,0" Padding="6,4" DisplayMemberPath="Naziv" VerticalAlignment="Center"/>
+
+                <Button Grid.Column="11" x:Name="BtnPrenesi" Content="📋 Prenesi" 
+                        Style="{StaticResource SecondaryButton}" VerticalAlignment="Center" Padding="12,5"
+                        Click="BtnPrenesi_Click"/>
             </Grid>
         </Border>
 

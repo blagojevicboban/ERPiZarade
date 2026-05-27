@@ -62,52 +62,54 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Navigacija -->
-                <StackPanel DockPanel.Dock="Top" Margin="0,12,0,0">
-                    <TextBlock Text="EVIDENCIJA" FontSize="10" FontWeight="SemiBold"
-                               Foreground="#7986CB" Margin="24,8,0,4"/>
-                    <Button x:Name="BtnRadnici" Content="👤  Radnici"
-                            Style="{StaticResource NavButton}"
-                            Click="BtnRadnici_Click"/>
-                    <Button x:Name="BtnObracun" Content="📊  Obračun plate"
-                            Style="{StaticResource NavButton}"
-                            Click="BtnObracun_Click"/>
-                    <Button x:Name="BtnPorezi" Content="⚖️  Porezi i parametri"
-                            Style="{StaticResource NavButton}"
-                            Click="BtnPorezi_Click"/>
-                    <Button x:Name="BtnDoprinosi" Content="📈  Doprinosi"
-                            Style="{StaticResource NavButton}"
-                            Click="BtnDoprinosi_Click"/>
-                    <Button x:Name="BtnPlatniRazredi" Content="📊  Platni razredi"
-                            Style="{StaticResource NavButton}"
-                            Click="BtnPlatniRazredi_Click"/>
-
-                    <TextBlock Text="ŠTAMPA" FontSize="10" FontWeight="SemiBold"
-                               Foreground="#7986CB" Margin="24,16,0,4"/>
-                    <Button x:Name="BtnListici" Content="🧾  Platni listići"
-                            Style="{StaticResource NavButton}"
-                            Click="BtnListici_Click"/>
-                    <Button x:Name="BtnStampe" Content="📑  Izveštaji &amp; rekapit."
-                            Style="{StaticResource NavButton}"
-                            Click="BtnStampe_Click"/>
-                    <Button x:Name="BtnPppPd" Content="📋  PPP-PD"
-                            Style="{StaticResource NavButton}"
-                            Click="BtnPppPd_Click"/>
-
-                    <TextBlock Text="ŠIFARNICI" FontSize="10" FontWeight="SemiBold"
-                               Foreground="#7986CB" Margin="24,16,0,4"/>
-                    <Button x:Name="BtnKrediti" Content="💳  Krediti"
-                            Style="{StaticResource NavButton}"
-                            Click="BtnKrediti_Click"/>
-                    <Button x:Name="BtnPodesavanja" Content="⚙️  Podešavanja"
-                            Style="{StaticResource NavButton}"
-                            Click="BtnPodesavanja_Click"/>
-                </StackPanel>
-
                 <!-- Verzija na dnu -->
                 <TextBlock DockPanel.Dock="Bottom" Text="v1.0.0  •  2026"
                            FontSize="11" Foreground="#546E7A"
-                           HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                           HorizontalAlignment="Center" Margin="0,12,0,16"/>
+
+                <!-- Navigacija -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" BorderThickness="0">
+                    <StackPanel Margin="0,12,0,0">
+                        <TextBlock Text="EVIDENCIJA" FontSize="10" FontWeight="SemiBold"
+                                   Foreground="#7986CB" Margin="24,8,0,4"/>
+                        <Button x:Name="BtnRadnici" Content="👤  Radnici"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnRadnici_Click"/>
+                        <Button x:Name="BtnObracun" Content="📊  Obračun plate"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnObracun_Click"/>
+                        <Button x:Name="BtnPorezi" Content="⚖️  Porezi i parametri"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnPorezi_Click"/>
+                        <Button x:Name="BtnDoprinosi" Content="📈  Doprinosi"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnDoprinosi_Click"/>
+                        <Button x:Name="BtnPlatniRazredi" Content="📊  Platni razredi"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnPlatniRazredi_Click"/>
+
+                        <TextBlock Text="ŠTAMPA" FontSize="10" FontWeight="SemiBold"
+                                   Foreground="#7986CB" Margin="24,16,0,4"/>
+                        <Button x:Name="BtnListici" Content="🧾  Platni listići"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnListici_Click"/>
+                        <Button x:Name="BtnStampe" Content="📑  Izveštaji &amp; rekapit."
+                                Style="{StaticResource NavButton}"
+                                Click="BtnStampe_Click"/>
+                        <Button x:Name="BtnPppPd" Content="📋  PPP-PD"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnPppPd_Click"/>
+
+                        <TextBlock Text="ŠIFARNICI" FontSize="10" FontWeight="SemiBold"
+                                   Foreground="#7986CB" Margin="24,16,0,4"/>
+                        <Button x:Name="BtnKrediti" Content="💳  Krediti"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnKrediti_Click"/>
+                        <Button x:Name="BtnPodesavanja" Content="⚙️  Podešavanja"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnPodesavanja_Click"/>
+                    </StackPanel>
+                </ScrollViewer>
             </DockPanel>
         </Border>
 

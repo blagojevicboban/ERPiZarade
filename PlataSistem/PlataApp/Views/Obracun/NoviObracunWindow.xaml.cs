@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using PlataData;
 using PlataData.Models;
 using PlataApp.Services;
+using PlataApp.Views.Obracuni;
 
 namespace PlataApp.Views.Obracun;
 
@@ -14,26 +15,98 @@ public partial class NoviObracunWindow : Window
 {
     private readonly PlataDbContext _db;
     private readonly ObracunService _obracunService;
+    private readonly ObracunPeriodSummary? _preselectedPeriod;
     private ObservableCollection<RadnikSatiInput> _radniciSati = [];
 
-    public NoviObracunWindow()
+    public NoviObracunWindow(ObracunPeriodSummary? preselectedPeriod = null)
     {
         InitializeComponent();
         
+        _preselectedPeriod = preselectedPeriod;
         _db = PlataDbContext.Create(AppConfig.DbPath);
         _obracunService = new ObracunService(_db);
 
+        // Učitaj sve postojeće periode za prenos podataka
+        UcitajPeriodeZaPrenos();
+
         // Inicijalizuj ComboBox-eve
         ComboGodina.ItemsSource = Enumerable.Range(DateTime.Now.Year - 10, 12).OrderByDescending(g => g).ToList();
-        ComboGodina.SelectedItem = DateTime.Now.Month == 1 ? DateTime.Now.Year - 1 : DateTime.Now.Year;
-
         ComboMesec.ItemsSource = Enumerable.Range(1, 12).ToList();
-        ComboMesec.SelectedItem = DateTime.Now.Month == 1 ? 12 : DateTime.Now.Month - 1;
+
+        if (_preselectedPeriod != null)
+        {
+            // Ako je izabran obračun, ponudi sledeći mesec za novi obračun
+            int sledeciMesec = _preselectedPeriod.Mesec + 1;
+            int sledecaGodina = _preselectedPeriod.Godina;
+            if (sledeciMesec > 12)
+            {
+                sledeciMesec = 1;
+                sledecaGodina++;
+            }
+            ComboGodina.SelectedItem = sledecaGodina;
+            ComboMesec.SelectedItem = sledeciMesec;
+            
+            // A za prenos ponudi upravo taj izabrani obračun!
+            PostaviSelektovaniPeriodZaPrenos(_preselectedPeriod.Godina, _preselectedPeriod.Mesec);
+        }
+        else
+        {
+            ComboGodina.SelectedItem = DateTime.Now.Month == 1 ? DateTime.Now.Year - 1 : DateTime.Now.Year;
+            ComboMesec.SelectedItem = DateTime.Now.Month == 1 ? 12 : DateTime.Now.Month - 1;
+            
+            // Ponudi poslednji obračun za prenos
+            PostaviPoslednjiPeriodZaPrenos();
+        }
 
         LoadAktivneRadnike();
 
         ComboGodina.SelectionChanged += ComboPeriod_SelectionChanged;
         ComboMesec.SelectionChanged += ComboPeriod_SelectionChanged;
+    }
+
+    private void UcitajPeriodeZaPrenos()
+    {
+        try
+        {
+            var uniquePeriods = _db.RadniSati
+                .Select(s => new { s.Godina, s.Mesec })
+                .Distinct()
+                .OrderByDescending(p => p.Godina)
+                .ThenByDescending(p => p.Mesec)
+                .ToList();
+
+            var list = uniquePeriods.Select(p => new PrenosPeriodItem
+            {
+                Godina = p.Godina,
+                Mesec = p.Mesec
+            }).ToList();
+
+            ComboPrenosIz.ItemsSource = list;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Greška pri učitavanju perioda za prenos: {ex.Message}", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void PostaviSelektovaniPeriodZaPrenos(int godina, int mesec)
+    {
+        if (ComboPrenosIz.ItemsSource is List<PrenosPeriodItem> items)
+        {
+            var target = items.FirstOrDefault(i => i.Godina == godina && i.Mesec == mesec);
+            if (target != null)
+            {
+                ComboPrenosIz.SelectedItem = target;
+            }
+        }
+    }
+
+    private void PostaviPoslednjiPeriodZaPrenos()
+    {
+        if (ComboPrenosIz.ItemsSource is List<PrenosPeriodItem> items && items.Count > 0)
+        {
+            ComboPrenosIz.SelectedIndex = 0;
+        }
     }
 
     private void ComboPeriod_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -353,6 +426,87 @@ public partial class NoviObracunWindow : Window
             MessageBox.Show($"Greška prilikom resetovanja sati: {ex.Message}", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
+
+    private void BtnPrenesi_Click(object sender, RoutedEventArgs e)
+    {
+        if (ComboPrenosIz.SelectedItem is not PrenosPeriodItem selectedSource)
+        {
+            MessageBox.Show("Molimo izaberite period iz kojeg želite da prenesete podatke o radnim satima.", "Upozorenje", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        int prethodnaGodina = selectedSource.Godina;
+        int prethodniMesec = selectedSource.Mesec;
+
+        try
+        {
+            // Potraži sate za selektovani period u bazi
+            var prethodniSati = _db.RadniSati
+                .Where(s => s.Godina == prethodnaGodina && s.Mesec == prethodniMesec)
+                .ToDictionary(s => s.RadnikId);
+
+            if (prethodniSati.Count == 0)
+            {
+                MessageBox.Show(
+                    $"Nisu pronađeni sačuvani radni sati za izabrani mesec ({prethodniMesec}.{prethodnaGodina}) iz kojeg bi se preneli podaci.",
+                    "Obaveštenje",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            int prenetoCount = 0;
+            foreach (var r in _radniciSati)
+            {
+                if (prethodniSati.TryGetValue(r.RadnikId, out var starSati))
+                {
+                    r.RedovniSati = starSati.RedovniSati;
+                    r.BolovanjeSati = starSati.BolovanjeSati;
+                    r.PrekovremeneSati = starSati.PrekovremeneSati;
+                    r.GodisnjiOdmorSati = starSati.GodisnjiOdmorSati;
+                    r.DrzavniPraznikSati = starSati.DrzavniPraznikSati;
+                    r.NocniSati = starSati.NocniSati;
+                    prenetoCount++;
+                }
+            }
+
+            GridRadniciSati.Items.Refresh();
+            TxtObavestenje.Text = $"📋 Uspešno preneti podaci o satima iz perioda {prethodniMesec}.{prethodnaGodina} za {prenetoCount} radnika.";
+            MessageBox.Show(
+                $"Uspešno preneti podaci o satima iz perioda {prethodniMesec}.{prethodnaGodina} za {prenetoCount} radnika.",
+                "Uspeh",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Greška prilikom prenosa podataka: {ex.Message}", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+}
+
+public class PrenosPeriodItem
+{
+    public int Godina { get; set; }
+    public int Mesec { get; set; }
+    
+    public string Naziv
+    {
+        get
+        {
+            string[] meseciStr = {
+                "Januar", "Februar", "Mart", "April", "Maj", "Jun",
+                "Jul", "Avgust", "Septembar", "Oktobar", "Novembar", "Decembar"
+            };
+            if (Mesec >= 1 && Mesec <= 12)
+            {
+                return $"{meseciStr[Mesec - 1]} {Godina}";
+            }
+            return $"{Mesec:D2}/{Godina}";
+        }
+    }
+    
+    public override string ToString() => Naziv;
 }
 
 public class RadnikSatiInput

@@ -40,6 +40,10 @@ public class RadniSat
     public int GodisnjiOdmorSati { get; set; }
     public int DrzavniPraznikSati { get; set; }
     public int NocniSati { get; set; }
+    public int SmenskiSati { get; set; }
+    public int RadPraznikomSati { get; set; }
+    public int NocniRadPraznikomSati { get; set; }
+    public int PlacenoOdsustvoSati { get; set; }
 
     [Column(TypeName = "decimal(14,4)")]
     public decimal Prosek { get; set; }

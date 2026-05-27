@@ -105,6 +105,10 @@
                     <DataGridTextColumn Header="Godišnji odmor" Binding="{Binding GodisnjiOdmorSati, UpdateSourceTrigger=PropertyChanged}" Width="110"/>
                     <DataGridTextColumn Header="Državni praznik" Binding="{Binding DrzavniPraznikSati, UpdateSourceTrigger=PropertyChanged}" Width="110"/>
                     <DataGridTextColumn Header="Noćni rad" Binding="{Binding NocniSati, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
+                    <DataGridTextColumn Header="Smenski rad" Binding="{Binding SmenskiSati, UpdateSourceTrigger=PropertyChanged}" Width="95"/>
+                    <DataGridTextColumn Header="Rad praznikom" Binding="{Binding RadPraznikomSati, UpdateSourceTrigger=PropertyChanged}" Width="110"/>
+                    <DataGridTextColumn Header="Noćni rad praznikom" Binding="{Binding NocniRadPraznikomSati, UpdateSourceTrigger=PropertyChanged}" Width="140"/>
+                    <DataGridTextColumn Header="Plaćeno odsustvo" Binding="{Binding PlacenoOdsustvoSati, UpdateSourceTrigger=PropertyChanged}" Width="125"/>
                     <DataGridTextColumn Header="Prosek (12m)" Binding="{Binding Prosek, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}" Width="100"/>
                 </DataGrid.Columns>
             </DataGrid>

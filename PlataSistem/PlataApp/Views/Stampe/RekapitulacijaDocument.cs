@@ -44,6 +44,27 @@ public class RekapitulacijaDocument
         page.PageColor(Colors.White);
         page.DefaultTextStyle(x => x.FontSize(8.5f).FontFamily("Courier New"));
 
+        // ── Dinamičke stope doprinosa učitane iz obračuna ──────────────────────────────
+        decimal stopaPioR = 14.000m;
+        decimal stopaZdrR = 5.150m;
+        decimal stopaNezR = 0.750m;
+        
+        decimal stopaPioP = 10.000m;
+        decimal stopaZdrP = 5.150m;
+        decimal stopaNezP = 0.000m;
+
+        var prviObracun = _obracuni.FirstOrDefault();
+        if (prviObracun != null)
+        {
+            if (decimal.TryParse(prviObracun.StopaPioRadnikStr?.Replace("%", "").Replace(",", "."), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var valPioR)) stopaPioR = valPioR;
+            if (decimal.TryParse(prviObracun.StopaZdravstvoRadnikStr?.Replace("%", "").Replace(",", "."), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var valZdrR)) stopaZdrR = valZdrR;
+            if (decimal.TryParse(prviObracun.StopaNezaposlenostRadnikStr?.Replace("%", "").Replace(",", "."), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var valNezR)) stopaNezR = valNezR;
+
+            if (decimal.TryParse(prviObracun.StopaPioPoslodavacStr?.Replace("%", "").Replace(",", "."), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var valPioP)) stopaPioP = valPioP;
+            if (decimal.TryParse(prviObracun.StopaZdravstvoPoslodavacStr?.Replace("%", "").Replace(",", "."), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var valZdrP)) stopaZdrP = valZdrP;
+            if (decimal.TryParse(prviObracun.StopaNezaposlenostPoslodavacStr?.Replace("%", "").Replace(",", "."), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var valNezP)) stopaNezP = valNezP;
+        }
+
         // ── Izračunavanja (odgovaraju SAMODOP.PRG: procedure rekapitulacija()) ───────────
 
         // Bruto zarada (neto_zar u OBRACUN.DBF)
@@ -266,15 +287,15 @@ public class RekapitulacijaDocument
             col.Item().PaddingTop(2);
 
             // ── DOPRINOSI RADNIKA ────────────────────────────────────────────────────────
-            Row($"Dop.-penzijsko - zarada ...........{StopaPioR,9:F3} % .....", sumPioR);
+            Row($"Dop.-penzijsko - zarada ...........{stopaPioR,9:F3} % .....", sumPioR);
             Row("Dop.-penzijsko  UKUPNO ..............................",
                 sumPioR, bold: true, bgColor: Colors.Grey.Lighten5);
 
-            Row($"Dop.-zdravstveno - zarada .........{StopaZdrR,9:F3} % .....", sumZdrR);
+            Row($"Dop.-zdravstveno - zarada .........{stopaZdrR,9:F3} % .....", sumZdrR);
             Row("Dop.-zdravstveno  UKUPNO ............................",
                 sumZdrR, bold: true, bgColor: Colors.Grey.Lighten5);
 
-            Row($"Dop.-nezaposlenost - zarada .......{StopaNezR,9:F3} % .....", sumNezR);
+            Row($"Dop.-nezaposlenost - zarada .......{stopaNezR,9:F3} % .....", sumNezR);
             Row("Dop.-nezaposlenost  UKUPNO ..........................",
                 sumNezR, bold: true, bgColor: Colors.Grey.Lighten5);
 
@@ -314,19 +335,17 @@ public class RekapitulacijaDocument
             col.Item().PaddingTop(2);
 
             // ── DOPRINOSI POSLODAVCA ─────────────────────────────────────────────────────
-            Row($"Dop.-penzijsko - zarada ...........{StopaPioP,9:F3} % .....", sumPioP);
+            Row($"Dop.-penzijsko - zarada ...........{stopaPioP,9:F3} % .....", sumPioP);
             Row("Dop.-penzijsko  UKUPNO ..............................",
                 sumPioP, bold: true, bgColor: Colors.Grey.Lighten5);
 
-            Row($"Dop.-zdravstveno - zarada .........{StopaZdrP,9:F3} % .....", sumZdrP);
+            Row($"Dop.-zdravstveno - zarada .........{stopaZdrP,9:F3} % .....", sumZdrP);
             Row("Dop.-zdravstveno  UKUPNO ............................",
                 sumZdrP, bold: true, bgColor: Colors.Grey.Lighten5);
 
-            if (sumNezP != 0)
-            {
-                Row("Dop.-nezaposlenost  UKUPNO ..........................",
-                    sumNezP, bold: true, bgColor: Colors.Grey.Lighten5);
-            }
+            Row($"Dop.-nezaposlenost - zarada .......{stopaNezP,9:F3} % .....", sumNezP);
+            Row("Dop.-nezaposlenost  UKUPNO ..........................",
+                sumNezP, bold: true, bgColor: Colors.Grey.Lighten5);
 
             // ── UKUPNA MASA ──────────────────────────────────────────────────────────────
             col.Item().PaddingTop(6)

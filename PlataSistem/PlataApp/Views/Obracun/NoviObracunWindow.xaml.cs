@@ -33,9 +33,29 @@ public partial class NoviObracunWindow : Window
         ComboGodina.ItemsSource = Enumerable.Range(DateTime.Now.Year - 10, 12).OrderByDescending(g => g).ToList();
         ComboMesec.ItemsSource = Enumerable.Range(1, 12).ToList();
 
-        if (_preselectedPeriod != null)
+        // Uvek tražimo poslednji hronološki obračunati period u bazi za određivanje sledećeg perioda
+        var poslednjiObracun = _db.ObracuniPlata
+            .OrderByDescending(o => o.Godina)
+            .ThenByDescending(o => o.Mesec)
+            .FirstOrDefault();
+
+        if (poslednjiObracun != null)
         {
-            // Ako je izabran obračun, ponudi sledeći mesec za novi obračun
+            int sledeciMesec = poslednjiObracun.Mesec + 1;
+            int sledecaGodina = poslednjiObracun.Godina;
+            if (sledeciMesec > 12)
+            {
+                sledeciMesec = 1;
+                sledecaGodina++;
+            }
+            ComboGodina.SelectedItem = sledecaGodina;
+            ComboMesec.SelectedItem = sledeciMesec;
+            
+            // Ponudi poslednji obračunati period za prenos radnih sati
+            PostaviSelektovaniPeriodZaPrenos(poslednjiObracun.Godina, poslednjiObracun.Mesec);
+        }
+        else if (_preselectedPeriod != null)
+        {
             int sledeciMesec = _preselectedPeriod.Mesec + 1;
             int sledecaGodina = _preselectedPeriod.Godina;
             if (sledeciMesec > 12)
@@ -46,7 +66,6 @@ public partial class NoviObracunWindow : Window
             ComboGodina.SelectedItem = sledecaGodina;
             ComboMesec.SelectedItem = sledeciMesec;
             
-            // A za prenos ponudi upravo taj izabrani obračun!
             PostaviSelektovaniPeriodZaPrenos(_preselectedPeriod.Godina, _preselectedPeriod.Mesec);
         }
         else
@@ -54,7 +73,6 @@ public partial class NoviObracunWindow : Window
             ComboGodina.SelectedItem = DateTime.Now.Month == 1 ? DateTime.Now.Year - 1 : DateTime.Now.Year;
             ComboMesec.SelectedItem = DateTime.Now.Month == 1 ? 12 : DateTime.Now.Month - 1;
             
-            // Ponudi poslednji obračun za prenos
             PostaviPoslednjiPeriodZaPrenos();
         }
 
@@ -171,6 +189,10 @@ public partial class NoviObracunWindow : Window
                         GodisnjiOdmorSati = sacuvaniSati.GodisnjiOdmorSati,
                         DrzavniPraznikSati = sacuvaniSati.DrzavniPraznikSati,
                         NocniSati = sacuvaniSati.NocniSati,
+                        SmenskiSati = sacuvaniSati.SmenskiSati,
+                        RadPraznikomSati = sacuvaniSati.RadPraznikomSati,
+                        NocniRadPraznikomSati = sacuvaniSati.NocniRadPraznikomSati,
+                        PlacenoOdsustvoSati = sacuvaniSati.PlacenoOdsustvoSati,
                         Prosek = _obracunService.IzracunajProsekRadnika(r.Id, godina, mesec)
                     };
                 }
@@ -189,6 +211,10 @@ public partial class NoviObracunWindow : Window
                         GodisnjiOdmorSati = 0,
                         DrzavniPraznikSati = 0,
                         NocniSati = 0,
+                        SmenskiSati = 0,
+                        RadPraznikomSati = 0,
+                        NocniRadPraznikomSati = 0,
+                        PlacenoOdsustvoSati = 0,
                         Prosek = prosek
                     };
                 }
@@ -320,6 +346,10 @@ public partial class NoviObracunWindow : Window
                     GodisnjiOdmorSati = input.GodisnjiOdmorSati,
                     DrzavniPraznikSati = input.DrzavniPraznikSati,
                     NocniSati = input.NocniSati,
+                    SmenskiSati = input.SmenskiSati,
+                    RadPraznikomSati = input.RadPraznikomSati,
+                    NocniRadPraznikomSati = input.NocniRadPraznikomSati,
+                    PlacenoOdsustvoSati = input.PlacenoOdsustvoSati,
                     Prosek = input.Prosek
                 };
 
@@ -413,6 +443,10 @@ public partial class NoviObracunWindow : Window
                     GodisnjiOdmorSati = 0,
                     DrzavniPraznikSati = 0,
                     NocniSati = 0,
+                    SmenskiSati = 0,
+                    RadPraznikomSati = 0,
+                    NocniRadPraznikomSati = 0,
+                    PlacenoOdsustvoSati = 0,
                     Prosek = prosek
                 };
             }).ToList();
@@ -470,6 +504,10 @@ public partial class NoviObracunWindow : Window
                     r.GodisnjiOdmorSati = starSati.GodisnjiOdmorSati;
                     r.DrzavniPraznikSati = starSati.DrzavniPraznikSati;
                     r.NocniSati = starSati.NocniSati;
+                    r.SmenskiSati = starSati.SmenskiSati;
+                    r.RadPraznikomSati = starSati.RadPraznikomSati;
+                    r.NocniRadPraznikomSati = starSati.NocniRadPraznikomSati;
+                    r.PlacenoOdsustvoSati = starSati.PlacenoOdsustvoSati;
                     // Prosek se izračunava za NOVI (ciljni) period — ne prenosi se iz starog
                     r.Prosek = _obracunService.IzracunajProsekRadnika(r.RadnikId, godina, mesec);
                     prenetoCount++;
@@ -527,5 +565,9 @@ public class RadnikSatiInput
     public int GodisnjiOdmorSati { get; set; }
     public int DrzavniPraznikSati { get; set; }
     public int NocniSati { get; set; }
+    public int SmenskiSati { get; set; }
+    public int RadPraznikomSati { get; set; }
+    public int NocniRadPraznikomSati { get; set; }
+    public int PlacenoOdsustvoSati { get; set; }
     public decimal Prosek { get; set; }
 }

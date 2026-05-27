@@ -236,6 +236,28 @@ public class ObracunService
         decimal bossZdr = DefaultEmployerZdravstvoRate;
         decimal bossNez = DefaultEmployerNezaposlenostRate;
 
+        // Dinamička inicijalizacija stopa za poslodavca na osnovu perioda ukoliko nema vrednosti u bazi
+        if (godina >= 2023)
+        {
+            bossPio = 0.1000m;
+            bossNez = 0.0000m;
+        }
+        else if (godina == 2022)
+        {
+            bossPio = 0.1100m;
+            bossNez = 0.0000m;
+        }
+        else if (godina >= 2020 || (godina == 2019 && mesec == 12))
+        {
+            bossPio = 0.1150m;
+            bossNez = 0.0000m;
+        }
+        else
+        {
+            bossPio = 0.1200m;
+            bossNez = 0.0075m;
+        }
+
         // Overlay with database rates if found
         if (dbDoprinosi.Any())
         {
@@ -243,21 +265,21 @@ public class ObracunService
             if (pioRec != null)
             {
                 empPio = pioRec.ProcRadn / 100m;
-                bossPio = pioRec.ProcPosl / 100m;
+                if (pioRec.ProcPosl > 0) bossPio = pioRec.ProcPosl / 100m;
             }
 
             var zdrRec = dbDoprinosi.FirstOrDefault(d => d.RedniBroj == 2);
             if (zdrRec != null)
             {
                 empZdr = zdrRec.ProcRadn / 100m;
-                bossZdr = zdrRec.ProcPosl / 100m;
+                if (zdrRec.ProcPosl > 0) bossZdr = zdrRec.ProcPosl / 100m;
             }
 
             var nezRec = dbDoprinosi.FirstOrDefault(d => d.RedniBroj == 3);
             if (nezRec != null)
             {
                 empNez = nezRec.ProcRadn / 100m;
-                bossNez = nezRec.ProcPosl / 100m;
+                if (nezRec.ProcPosl > 0) bossNez = nezRec.ProcPosl / 100m;
             }
         }
 

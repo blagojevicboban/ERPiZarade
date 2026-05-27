@@ -303,15 +303,27 @@
                             <!-- Doprinosi -->
                             <TextBlock Text="DOPRINOSI NA TERET RADNIKA" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,8"/>
                             <Grid Margin="0,0,0,4">
-                                <TextBlock Text="Doprinos za PIO (14.00%):" FontSize="12"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Doprinos za PIO (" FontSize="12"/>
+                                    <TextBlock Text="{Binding SelectedObracun.StopaPioRadnikStr}" FontSize="12"/>
+                                    <TextBlock Text="):" FontSize="12"/>
+                                </StackPanel>
                                 <TextBlock Text="{Binding SelectedObracun.DoprinosPioRadnik, StringFormat=N2}" HorizontalAlignment="Right"/>
                             </Grid>
                             <Grid Margin="0,0,0,4">
-                                <TextBlock Text="Doprinos za zdravstvo (5.15%):" FontSize="12"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Doprinos za zdravstvo (" FontSize="12"/>
+                                    <TextBlock Text="{Binding SelectedObracun.StopaZdravstvoRadnikStr}" FontSize="12"/>
+                                    <TextBlock Text="):" FontSize="12"/>
+                                </StackPanel>
                                 <TextBlock Text="{Binding SelectedObracun.DoprinosZdravstvoRadnik, StringFormat=N2}" HorizontalAlignment="Right"/>
                             </Grid>
                             <Grid Margin="0,0,0,4">
-                                <TextBlock Text="Doprinos za nezaposlenost (0.75%):" FontSize="12"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Doprinos za nezaposlenost (" FontSize="12"/>
+                                    <TextBlock Text="{Binding SelectedObracun.StopaNezaposlenostRadnikStr}" FontSize="12"/>
+                                    <TextBlock Text="):" FontSize="12"/>
+                                </StackPanel>
                                 <TextBlock Text="{Binding SelectedObracun.DoprinosNezaposlenostRadnik, StringFormat=N2}" HorizontalAlignment="Right"/>
                             </Grid>
                             <Grid Margin="0,4,0,6">
@@ -351,10 +363,57 @@
                                 </Grid>
                             </Border>
 
-                            <Grid Margin="0,0,0,16">
+                            <Grid Margin="0,0,0,8">
                                 <TextBlock Text="Bruto 2 (teret poslodavca):" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
                                 <TextBlock Text="{Binding SelectedObracun.Bruto2, StringFormat=N2}" HorizontalAlignment="Right" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
                             </Grid>
+
+                            <!-- Doprinosi na teret poslodavca -->
+                            <Border Background="#FFF8F0" CornerRadius="6" Padding="12" Margin="0,0,0,8" BorderBrush="#FED7AA" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="DOPRINOSI NA TERET POSLODAVCA" FontSize="10" FontWeight="Bold" Foreground="#92400E" Margin="0,0,0,8"/>
+                                    <Grid Margin="0,0,0,4">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Doprinos za PIO (" FontSize="12" Foreground="#78350F"/>
+                                            <TextBlock Text="{Binding SelectedObracun.StopaPioPoslodavacStr}" FontSize="12" Foreground="#78350F"/>
+                                            <TextBlock Text="):" FontSize="12" Foreground="#78350F"/>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding SelectedObracun.DoprinosPioPoslodavac, StringFormat=N2}" HorizontalAlignment="Right" Foreground="#78350F"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,4">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Doprinos za zdravstvo (" FontSize="12" Foreground="#78350F"/>
+                                            <TextBlock Text="{Binding SelectedObracun.StopaZdravstvoPoslodavacStr}" FontSize="12" Foreground="#78350F"/>
+                                            <TextBlock Text="):" FontSize="12" Foreground="#78350F"/>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding SelectedObracun.DoprinosZdravstvoPoslodavac, StringFormat=N2}" HorizontalAlignment="Right" Foreground="#78350F"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,4">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Doprinos za nezaposlenost (" FontSize="12" Foreground="#78350F"/>
+                                            <TextBlock Text="{Binding SelectedObracun.StopaNezaposlenostPoslodavacStr}" FontSize="12" Foreground="#78350F"/>
+                                            <TextBlock Text="):" FontSize="12" Foreground="#78350F"/>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding SelectedObracun.DoprinosNezaposlenostPoslodavac, StringFormat=N2}" HorizontalAlignment="Right" Foreground="#78350F"/>
+                                    </Grid>
+                                    <Separator Margin="0,6,0,6" Background="#FED7AA"/>
+                                    <Grid>
+                                        <TextBlock Text="Ukupni doprinosi poslodavca:" FontSize="12" FontWeight="Bold" Foreground="#92400E"/>
+                                        <TextBlock Text="{Binding SelectedObracun.UkupniDoprinosiPoslodavca, StringFormat=N2}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="#92400E"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Ukupna masa za isplatu -->
+                            <Border Margin="0,0,0,16" Background="#FEF3C7" Padding="10" CornerRadius="6" BorderBrush="#F59E0B" BorderThickness="1.5">
+                                <Grid>
+                                    <StackPanel>
+                                        <TextBlock Text="UKUPNA MASA ZA ISPLATU" FontSize="11" FontWeight="Bold" Foreground="#92400E"/>
+                                        <TextBlock Text="(Bruto 2 + doprinosi poslodavca)" FontSize="10" Foreground="#B45309"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding SelectedObracun.UkupnaMasaZaIsplatu, StringFormat=N2}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="18" FontWeight="Bold" Foreground="#78350F"/>
+                                </Grid>
+                            </Border>
 
                             <!-- PDF i XML izvoz -->
                             <Grid Margin="0,8,0,0">

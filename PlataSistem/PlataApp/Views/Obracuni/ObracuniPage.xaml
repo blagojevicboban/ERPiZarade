@@ -103,7 +103,7 @@
                           HeadersVisibility="Column"
                           Margin="0">
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="Period obračuna" Width="180">
+                        <DataGridTemplateColumn Header="Period obračuna" SortMemberPath="HronoloskiSortKey" Width="180">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -169,8 +169,17 @@
         <Border Grid.Row="2" Margin="0,12,0,0"
                 Background="White" CornerRadius="6" Padding="12,6"
                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
-            <TextBlock x:Name="StatusMessage" Text="Učitavanje..." FontSize="12"
-                        Foreground="{StaticResource TextSecondaryBrush}"/>
+            <Grid>
+                <TextBlock x:Name="StatusMessage" Text="Učitavanje..." FontSize="12"
+                            Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                <Button x:Name="BtnRetroaktivniDoprinosi"
+                        Content="🔄  Preračunaj doprinose poslodavca (retroaktivno)"
+                        HorizontalAlignment="Right"
+                        Style="{StaticResource SecondaryButton}"
+                        Padding="12,4"
+                        Click="BtnRetroaktivniDoprinosi_Click"
+                        ToolTip="Preračunava doprinose na teret poslodavca za sve istorijske obračune gde su vrednosti 0"/>
+            </Grid>
         </Border>
     </Grid>
 </Page>

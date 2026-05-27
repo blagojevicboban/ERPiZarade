@@ -145,6 +145,10 @@ public class ObracunPlate
     public int GodisnjioOdmorSati { get; set; }
     public int DrzavniPraznikSati { get; set; }
     public int NocniSati { get; set; }
+    public int SmenskiSati { get; set; }
+    public int RadPraznikomSati { get; set; }
+    public int NocniRadPraznikomSati { get; set; }
+    public int PlacenoOdsustvoSati { get; set; }
 
     // ── META ───────────────────────────────────────────────
     public bool Zakljucen { get; set; } = false;
@@ -158,7 +162,7 @@ public class ObracunPlate
 
     // ── NOT MAPPED HELPERS FOR UI BINDINGS ────────────────
     [NotMapped]
-    public int UkupnoSati => RedovniSati + BolovanjeSati + PrekovremeneSati + GodisnjioOdmorSati + DrzavniPraznikSati + NocniSati;
+    public int UkupnoSati => RedovniSati + BolovanjeSati + PrekovremeneSati + GodisnjioOdmorSati + DrzavniPraznikSati + NocniSati + SmenskiSati + RadPraznikomSati + NocniRadPraznikomSati + PlacenoOdsustvoSati;
 
     [NotMapped]
     public decimal UkupnoBruto => BrutoZarada + BrutoBolovanje;
@@ -171,6 +175,34 @@ public class ObracunPlate
 
     [NotMapped]
     public decimal Bruto2 => BrutoZarada + BrutoBolovanje + DoprinosPioPoslodavac + DoprinosZdravstvoPoslodavac + DoprinosNezaposlenostPoslodavac;
+
+    [NotMapped]
+    public decimal UkupniDoprinosiPoslodavca => DoprinosPioPoslodavac + DoprinosZdravstvoPoslodavac + DoprinosNezaposlenostPoslodavac;
+
+    [NotMapped]
+    public decimal UkupniOdbici => KreditObustava + Samodoprinosi + OstaliOdbici;
+
+    /// <summary>Ukupna masa za isplatu = Bruto 2 + doprinosi na teret poslodavca (ukupan teret poslodavca)</summary>
+    [NotMapped]
+    public decimal UkupnaMasaZaIsplatu => Bruto2 + UkupniDoprinosiPoslodavca;
+
+    [NotMapped]
+    public string StopaPioRadnikStr { get; set; } = "14.00%";
+
+    [NotMapped]
+    public string StopaZdravstvoRadnikStr { get; set; } = "5.15%";
+
+    [NotMapped]
+    public string StopaNezaposlenostRadnikStr { get; set; } = "0.75%";
+
+    [NotMapped]
+    public string StopaPioPoslodavacStr { get; set; } = "10.00%";
+
+    [NotMapped]
+    public string StopaZdravstvoPoslodavacStr { get; set; } = "5.15%";
+
+    [NotMapped]
+    public string StopaNezaposlenostPoslodavacStr { get; set; } = "0.00%";
 
     // Navigacija
     public Radnik Radnik { get; set; } = null!;

@@ -216,6 +216,10 @@ public partial class RadniSatiPage : Page
                     postojeciObracun.GodisnjioOdmorSati = rs.GodisnjiOdmorSati;
                     postojeciObracun.DrzavniPraznikSati = rs.DrzavniPraznikSati;
                     postojeciObracun.NocniSati = rs.NocniSati;
+                    postojeciObracun.SmenskiSati = rs.SmenskiSati;
+                    postojeciObracun.RadPraznikomSati = rs.RadPraznikomSati;
+                    postojeciObracun.NocniRadPraznikomSati = rs.NocniRadPraznikomSati;
+                    postojeciObracun.PlacenoOdsustvoSati = rs.PlacenoOdsustvoSati;
 
                     postojeciObracun.Prosek = noviObracun.Prosek;
                     postojeciObracun.DatumObracuna = DateTime.Now;

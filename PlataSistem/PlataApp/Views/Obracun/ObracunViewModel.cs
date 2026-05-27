@@ -129,7 +129,15 @@ public class ObracunViewModel : INotifyPropertyChanged
     public ObracunPlate? SelectedObracun
     {
         get => _selectedObracun;
-        set { _selectedObracun = value; OnPropertyChanged(); }
+        set 
+        { 
+            _selectedObracun = value; 
+            OnPropertyChanged(); 
+            if (_selectedObracun != null)
+            {
+                _ = UcitajStopeZaObracunAsync(_selectedObracun);
+            }
+        }
     }
 
     public string StatusText
@@ -164,6 +172,86 @@ public class ObracunViewModel : INotifyPropertyChanged
         {
             StatusText = $"Greška: {ex.Message}";
         }
+    }
+
+    private async Task UcitajStopeZaObracunAsync(ObracunPlate o)
+    {
+        try
+        {
+            // Učitaj doprinose za tu godinu i mesec iz baze podataka
+            var stope = await _db.Doprinosi
+                .Where(d => d.Godina == o.Godina && d.Mesec == o.Mesec)
+                .ToListAsync();
+
+            // Ako nema u bazi za taj mesec, probaj najbliži prethodni
+            if (!stope.Any())
+            {
+                var closest = await _db.Doprinosi
+                    .Where(d => d.Godina < o.Godina || (d.Godina == o.Godina && d.Mesec < o.Mesec))
+                    .OrderByDescending(d => d.Godina)
+                    .ThenByDescending(d => d.Mesec)
+                    .FirstOrDefaultAsync();
+
+                if (closest != null)
+                {
+                    stope = await _db.Doprinosi
+                        .Where(d => d.Godina == closest.Godina && d.Mesec == closest.Mesec)
+                        .ToListAsync();
+                }
+            }
+
+            // Podrazumevane stope za radnika (Srbija)
+            decimal empPio = 14.00m;
+            decimal empZdr = 5.15m;
+            decimal empNez = 0.75m;
+
+            // Podrazumevane stope za poslodavca (Srbija)
+            decimal bossPio = 10.00m;
+            decimal bossZdr = 5.15m;
+            decimal bossNez = 0.00m;
+
+            // Fallback stope poslodavca na osnovu perioda (ako su u bazi 0)
+            if (o.Godina >= 2023) { bossPio = 10.00m; bossNez = 0.00m; }
+            else if (o.Godina == 2022) { bossPio = 11.00m; bossNez = 0.00m; }
+            else if (o.Godina >= 2020 || (o.Godina == 2019 && o.Mesec == 12)) { bossPio = 11.50m; bossNez = 0.00m; }
+            else { bossPio = 12.00m; bossNez = 0.75m; }
+
+            if (stope.Any())
+            {
+                var pioRec = stope.FirstOrDefault(d => d.RedniBroj == 1);
+                if (pioRec != null)
+                {
+                    empPio = pioRec.ProcRadn;
+                    if (pioRec.ProcPosl > 0) bossPio = pioRec.ProcPosl;
+                }
+
+                var zdrRec = stope.FirstOrDefault(d => d.RedniBroj == 2);
+                if (zdrRec != null)
+                {
+                    empZdr = zdrRec.ProcRadn;
+                    if (zdrRec.ProcPosl > 0) bossZdr = zdrRec.ProcPosl;
+                }
+
+                var nezRec = stope.FirstOrDefault(d => d.RedniBroj == 3);
+                if (nezRec != null)
+                {
+                    empNez = nezRec.ProcRadn;
+                    if (nezRec.ProcPosl > 0) bossNez = nezRec.ProcPosl;
+                }
+            }
+
+            o.StopaPioRadnikStr = $"{empPio:F2}%";
+            o.StopaZdravstvoRadnikStr = $"{empZdr:F2}%";
+            o.StopaNezaposlenostRadnikStr = $"{empNez:F2}%";
+
+            o.StopaPioPoslodavacStr = $"{bossPio:F2}%";
+            o.StopaZdravstvoPoslodavacStr = $"{bossZdr:F2}%";
+            o.StopaNezaposlenostPoslodavacStr = $"{bossNez:F2}%";
+
+            // Obavesti UI da se promenio SelectedObracun kako bi ponovo procitao sve NotMapped string propertije
+            OnPropertyChanged(nameof(SelectedObracun));
+        }
+        catch { }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

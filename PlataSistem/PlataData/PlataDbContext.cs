@@ -128,6 +128,22 @@ public class PlataDbContext : DbContext
         }
         catch { /* Kolona vec postoji */ }
 
+        // Nova polja za sate — RadniSati
+        string[] noviSatiKoloneRS = { "SmenskiSati", "RadPraznikomSati", "NocniRadPraznikomSati", "PlacenoOdsustvoSati" };
+        foreach (var col in noviSatiKoloneRS)
+        {
+            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE RadniSati ADD COLUMN {col} INTEGER NOT NULL DEFAULT 0;"); }
+            catch { /* Kolona već postoji */ }
+        }
+
+        // Nova polja za sate — ObracuniPlata
+        string[] noviSatiKoloneOP = { "SmenskiSati", "RadPraznikomSati", "NocniRadPraznikomSati", "PlacenoOdsustvoSati" };
+        foreach (var col in noviSatiKoloneOP)
+        {
+            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} INTEGER NOT NULL DEFAULT 0;"); }
+            catch { /* Kolona već postoji */ }
+        }
+
         // Bezbedno dodavanje detaljnih bruto kolona
         string[] newCols = {
             "NetoZar", "NetoNerd", "NetoGOd", "NetoTo", "NetoReg",

@@ -137,4 +137,8 @@ public class Porezi
 
     [Column(TypeName = "decimal(14,2)")]
     public decimal ProsBrut { get; set; }
+
+    /// <summary>Cena toplog obroka po danu (TopliObrokDani × TopliObrokCena = iznos naknade)</summary>
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal TopliObrokCena { get; set; }
 }

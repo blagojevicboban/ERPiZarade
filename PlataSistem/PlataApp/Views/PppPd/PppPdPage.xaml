@@ -184,16 +184,25 @@
                               IsReadOnly="True"
                               CanUserAddRows="False"
                               CanUserDeleteRows="False"
-                              BorderThickness="0">
+                              BorderThickness="0"
+                              HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Auto"
+                              ScrollViewer.CanContentScroll="True"
+                              FrozenColumnCount="3">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="R.B." Binding="{Binding Radnik.BrojRadnika}" Width="50"/>
-                            <DataGridTextColumn Header="Radnik" Binding="{Binding Radnik.ImeIPrezime}" Width="*"/>
+                            <DataGridTextColumn Header="Radnik" Binding="{Binding Radnik.ImeIPrezime}" Width="150"/>
                             <DataGridTextColumn Header="JMBG" Binding="{Binding Radnik.Jmbg}" Width="110"/>
+                            <DataGridTextColumn Header="SVP" Binding="{Binding Converter={x:Static local:SvpConverter.Instance}}" Width="95"/>
+                            <DataGridTextColumn Header="Efekt. sati" Binding="{Binding Converter={x:Static local:EfektivniSatiConverter.Instance}}" Width="85"/>
+                            <DataGridTextColumn Header="Fond sati" Binding="{Binding Converter={x:Static local:FondSatiConverter.Instance}}" Width="85"/>
                             <DataGridTextColumn Header="Bruto" Binding="{Binding Converter={x:Static local:BrutoConverter.Instance}, StringFormat=N2}" Width="100"/>
                             <DataGridTextColumn Header="Osnovica porez" Binding="{Binding PoreskaOsnovica, StringFormat=N2}" Width="105"/>
                             <DataGridTextColumn Header="Porez" Binding="{Binding PorezNaDohodak, StringFormat=N2}" Width="85"/>
+                            <DataGridTextColumn Header="Osnovica dopr." Binding="{Binding Converter={x:Static local:OsnovicaDoprinosaConverter.Instance}, StringFormat=N2}" Width="105"/>
                             <DataGridTextColumn Header="PIO (teret R+P)" Binding="{Binding Converter={x:Static local:PioTotalConverter.Instance}, StringFormat=N2}" Width="105"/>
                             <DataGridTextColumn Header="ZDR (teret R+P)" Binding="{Binding Converter={x:Static local:ZdrTotalConverter.Instance}, StringFormat=N2}" Width="105"/>
+                            <DataGridTextColumn Header="NEZ (teret R+P)" Binding="{Binding Converter={x:Static local:NezTotalConverter.Instance}, StringFormat=N2}" Width="105"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Border>

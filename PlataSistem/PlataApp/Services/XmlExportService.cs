@@ -109,6 +109,9 @@ public class XmlExportService
                     // Standard code is 101101000 for regular, or 109101000 for sick leave paid by employer
                     // If Radno_Mesto is a 9-digit code, use it. Otherwise, use fallbacks based on sick leave.
                     string svp = "101101000";
+                    bool jePenzioner = !string.IsNullOrWhiteSpace(obracun.Radnik.Radno_Mesto) && 
+                                       obracun.Radnik.Radno_Mesto.TrimStart().StartsWith("109");
+
                     if (obracun.BrutoBolovanje > obracun.BrutoZarada)
                     {
                         svp = "109101000";
@@ -118,6 +121,10 @@ public class XmlExportService
                              obracun.Radnik.Radno_Mesto.All(char.IsDigit))
                     {
                         svp = obracun.Radnik.Radno_Mesto;
+                    }
+                    else if (jePenzioner)
+                    {
+                        svp = "101109000"; // SVP za zaposlene penzionere
                     }
 
                     int efektivniSati = obracun.RedovniSati + obracun.PrekovremeneSati;

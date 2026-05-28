@@ -261,7 +261,7 @@ public class ObracunPlate
     public decimal NetoPreDoprinosa => BrutoZarada + BrutoBolovanje - PorezNaDohodak - (DoprinosPioRadnik + DoprinosZdravstvoRadnik + DoprinosNezaposlenostRadnik);
 
     [NotMapped]
-    public decimal Bruto2 => BrutoZarada + BrutoBolovanje + DoprinosPioPoslodavac + DoprinosZdravstvoPoslodavac + DoprinosNezaposlenostPoslodavac;
+    public decimal Bruto1 => NetoIsplata + PorezNaDohodak + DoprinosPioRadnik + DoprinosZdravstvoRadnik + DoprinosNezaposlenostRadnik + KreditObustava + Samodoprinosi;
 
     [NotMapped]
     public decimal UkupniDoprinosiPoslodavca => DoprinosPioPoslodavac + DoprinosZdravstvoPoslodavac + DoprinosNezaposlenostPoslodavac;
@@ -269,9 +269,12 @@ public class ObracunPlate
     [NotMapped]
     public decimal UkupniOdbici => KreditObustava + Samodoprinosi + OstaliOdbici;
 
-    /// <summary>Ukupna masa za isplatu = Bruto 2 + doprinosi na teret poslodavca (ukupan teret poslodavca)</summary>
+    /// <summary>Bruto 2 = Bruto 1 + doprinosi na teret poslodavca (ukupan teret poslodavca)</summary>
     [NotMapped]
-    public decimal UkupnaMasaZaIsplatu => Bruto2 + UkupniDoprinosiPoslodavca;
+    public decimal Bruto2 => Bruto1 + UkupniDoprinosiPoslodavca;
+
+    [NotMapped]
+    public decimal UkupnaMasaZaIsplatu => Bruto2;
 
     [NotMapped]
     public string StopaPioRadnikStr { get; set; } = "14.00%";

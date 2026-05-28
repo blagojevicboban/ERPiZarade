@@ -124,8 +124,24 @@ public partial class NoviObracunWindow : Window
             int godina = (int)ComboGodina.SelectedItem;
             int mesec = (int)ComboMesec.SelectedItem;
 
-            if (!int.TryParse(TxtFondCasova.Text, out int fondSati))
-                fondSati = 176;
+            // Pronađi stope i parametre za izabrani period iz baze (sa fallback-om na najbliži prethodni)
+            var porezi = _db.Porezi
+                .FirstOrDefault(p => p.Godina == godina && p.Mesec == mesec);
+            if (porezi == null)
+            {
+                porezi = _db.Porezi
+                    .Where(p => p.Godina < godina || (p.Godina == godina && p.Mesec < mesec))
+                    .OrderByDescending(p => p.Godina)
+                    .ThenByDescending(p => p.Mesec)
+                    .FirstOrDefault();
+            }
+
+            decimal vrBoda = porezi?.VrBoda ?? 1860.34m;
+            int fondIzBaze = porezi?.FondCasova ?? 176;
+
+            TxtVrednostBoda.Text = vrBoda.ToString("F4");
+            TxtFondCasova.Text = fondIzBaze.ToString();
+            int fondSati = fondIzBaze;
 
             var aktivniRadnici = _db.Radnici
                 .Where(r => r.Aktivan)

@@ -284,6 +284,13 @@ public class PlataDbContext : DbContext
         }
         catch { /* Tabela vec postoji */ }
 
+        // Bezbedno dodavanje TopliObrokCena u Porezi (cena toplog obroka po danu)
+        try
+        {
+            ctx.Database.ExecuteSqlRaw("ALTER TABLE Porezi ADD COLUMN TopliObrokCena DECIMAL(14,2) DEFAULT 0;");
+        }
+        catch { /* Kolona već postoji */ }
+
         // Bezbedno inicijalno popunjavanje default platnih razreda ako je tabela prazna
         try
         {

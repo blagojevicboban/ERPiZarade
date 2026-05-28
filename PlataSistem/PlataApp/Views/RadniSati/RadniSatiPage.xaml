@@ -31,7 +31,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>  <!-- Header -->
             <RowDefinition Height="Auto"/>  <!-- Toolbar/Info -->
-            <RowDefinition Height="*"/>     <!-- DataGrid Content -->
+            <RowDefinition Height="*" MinHeight="200"/>     <!-- DataGrid Content -->
             <RowDefinition Height="Auto"/>  <!-- Bottom Action Bar -->
         </Grid.RowDefinitions>
 
@@ -136,6 +136,11 @@
                       Background="Transparent"
                       RowHeaderWidth="0"
                       HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      ScrollViewer.CanContentScroll="True"
+                      EnableRowVirtualization="True"
                       FrozenColumnCount="4"
                       CellEditEnding="GridRadniSati_CellEditEnding">
                 <DataGrid.Columns>
@@ -304,7 +309,7 @@
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
-                    <DataGridTextColumn Header="Topli obrok (dani)" Binding="{Binding TopliObrokDani, UpdateSourceTrigger=PropertyChanged}" Width="120">
+                    <DataGridTextColumn Header="Topli obrok (iznos RSD)" Binding="{Binding TopliObrokDani, UpdateSourceTrigger=PropertyChanged}" Width="120">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="HorizontalAlignment" Value="Center"/>

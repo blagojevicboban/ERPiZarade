@@ -178,6 +178,7 @@ public partial class RadniSatiPage : Page
                     postojeciObracun.NetoNerd = noviObracun.NetoNerd;
                     postojeciObracun.NetoGOd = noviObracun.NetoGOd;
                     postojeciObracun.NetoTo = noviObracun.NetoTo;
+                    postojeciObracun.TopliObrokIznos = noviObracun.TopliObrokIznos;
                     postojeciObracun.NetoReg = noviObracun.NetoReg;
                     postojeciObracun.Neto = noviObracun.Neto;
                     postojeciObracun.NetoBol = noviObracun.NetoBol;
@@ -486,6 +487,7 @@ public partial class RadniSatiPage : Page
                 postojeciObracun.NetoNerd = noviObracun.NetoNerd;
                 postojeciObracun.NetoGOd = noviObracun.NetoGOd;
                 postojeciObracun.NetoTo = noviObracun.NetoTo;
+                postojeciObracun.TopliObrokIznos = noviObracun.TopliObrokIznos;
                 postojeciObracun.NetoReg = noviObracun.NetoReg;
                 postojeciObracun.Neto = noviObracun.Neto;
                 postojeciObracun.NetoBol = noviObracun.NetoBol;
@@ -574,7 +576,7 @@ public partial class RadniSatiPage : Page
             new() { DisplayName = "Bolovanje >60 dana", PropertyName = nameof(RadniSat.BolovanjePreko60Sati), PropertyType = typeof(int) },
             new() { DisplayName = "Porodiljsko", PropertyName = nameof(RadniSat.PorodiljskoOdsustvoSati), PropertyType = typeof(int) },
             new() { DisplayName = "Bolovanje 100%", PropertyName = nameof(RadniSat.Bolovanje100Sati), PropertyType = typeof(int) },
-            new() { DisplayName = "Topli obrok (dani)", PropertyName = nameof(RadniSat.TopliObrokDani), PropertyType = typeof(int) },
+            new() { DisplayName = "Topli obrok (iznos RSD)", PropertyName = nameof(RadniSat.TopliObrokDani), PropertyType = typeof(int) },
             new() { DisplayName = "Regres (iznos)", PropertyName = nameof(RadniSat.RegresIznos), PropertyType = typeof(decimal) },
             new() { DisplayName = "Stimulacija (%)", PropertyName = nameof(RadniSat.Stimulacija), PropertyType = typeof(decimal) },
             new() { DisplayName = "Prosek (12m)", PropertyName = nameof(RadniSat.Prosek), PropertyType = typeof(decimal) }
@@ -672,6 +674,7 @@ public partial class RadniSatiPage : Page
                     postojeciObracun.NetoNerd = noviObracun.NetoNerd;
                     postojeciObracun.NetoGOd = noviObracun.NetoGOd;
                     postojeciObracun.NetoTo = noviObracun.NetoTo;
+                    postojeciObracun.TopliObrokIznos = noviObracun.TopliObrokIznos;
                     postojeciObracun.NetoReg = noviObracun.NetoReg;
                     postojeciObracun.Neto = noviObracun.Neto;
                     postojeciObracun.NetoBol = noviObracun.NetoBol;

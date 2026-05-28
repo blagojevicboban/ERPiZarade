@@ -160,3 +160,116 @@ public class ZdrTotalConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         => throw new NotImplementedException();
 }
+
+public class NezTotalConverter : IValueConverter
+{
+    public static readonly NezTotalConverter Instance = new();
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is ObracunPlate o)
+        {
+            return o.DoprinosNezaposlenostRadnik + o.DoprinosNezaposlenostPoslodavac;
+        }
+        return 0m;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
+public class SvpConverter : IValueConverter
+{
+    public static readonly SvpConverter Instance = new();
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is ObracunPlate o && o.Radnik != null)
+        {
+            string svp = "101101000";
+            bool jePenzioner = !string.IsNullOrWhiteSpace(o.Radnik.Radno_Mesto) && 
+                               o.Radnik.Radno_Mesto.TrimStart().StartsWith("109");
+
+            if (o.BrutoBolovanje > o.BrutoZarada)
+            {
+                svp = "109101000";
+            }
+            else if (!string.IsNullOrWhiteSpace(o.Radnik.Radno_Mesto) && 
+                     o.Radnik.Radno_Mesto.Length == 9 && 
+                     o.Radnik.Radno_Mesto.All(char.IsDigit))
+            {
+                svp = o.Radnik.Radno_Mesto;
+            }
+            else if (jePenzioner)
+            {
+                svp = "101109000";
+            }
+            return svp;
+        }
+        return "101101000";
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
+public class OsnovicaDoprinosaConverter : IValueConverter
+{
+    public static readonly OsnovicaDoprinosaConverter Instance = new();
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is ObracunPlate o)
+        {
+            decimal bruto = o.BrutoZarada + o.BrutoBolovanje;
+            decimal pioRadnik = o.DoprinosPioRadnik;
+            decimal pioPoslodavac = o.DoprinosPioPoslodavac;
+            decimal totalPio = pioRadnik + pioPoslodavac;
+
+            decimal osnovicaDoprinosa = bruto;
+            if (totalPio > 0 && bruto > 0)
+            {
+                osnovicaDoprinosa = Math.Round(totalPio / 0.24m, 2);
+            }
+            return osnovicaDoprinosa;
+        }
+        return 0m;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
+public class EfektivniSatiConverter : IValueConverter
+{
+    public static readonly EfektivniSatiConverter Instance = new();
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is ObracunPlate o)
+        {
+            return o.RedovniSati + o.PrekovremeneSati;
+        }
+        return 0;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
+public class FondSatiConverter : IValueConverter
+{
+    public static readonly FondSatiConverter Instance = new();
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is ObracunPlate o)
+        {
+            return o.RedovniSati + o.BolovanjeSati + o.PrekovremeneSati + o.GodisnjioOdmorSati;
+        }
+        return 0;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}

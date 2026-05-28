@@ -81,11 +81,12 @@ public class ObracunService
         decimal procNocni = pParams != null ? pParams.ProcNocni : 26.00m;
         decimal procDrzav = pParams != null ? pParams.ProcDrzav : 110.00m;
         decimal procBolov = pParams != null ? pParams.ProcBolov : 65.00m;
+        decimal procNedel = pParams != null ? pParams.ProcNedel : 0.00m;
 
-        // 3. workedHours and Minuli Rad calculation
-        decimal workedHours = sati.RedovniSati + sati.PrekovremeneSati + sati.DrzavniPraznikSati + sati.NocniSati;
+        // 3. workedHours and Minuli Rad calculation (includes regular, overtime, worked holiday, night shift, and Sunday hours)
+        decimal workedHours = sati.RedovniSati + sati.PrekovremeneSati + sati.RadPraznikomSati + sati.NocniSati + sati.RadNedeljomSati;
         decimal neto_zar = workedHours * hourlyBase;
-        decimal brutoMinuliRad = Math.Round(neto_zar * (procMinul / 100m) * yearsOfTenure, 0);
+        decimal brutoMinuliRad = Math.Round(neto_zar * (procMinul / 100m) * yearsOfTenure, 2);
         decimal min_po_cas = workedHours > 0 ? brutoMinuliRad / workedHours : 0m;
 
         // 12-month average hourly rate from database (or calculated dynamically)
@@ -96,13 +97,28 @@ public class ObracunService
         decimal brutoBolovanje = sati.BolovanjeSati * prosek * (procBolov / 100m); // sick leave base
         decimal brutoPrekovremeni = sati.PrekovremeneSati * (1m + procPreko / 100m) * (hourlyBase + min_po_cas); // overtime bonus + base
         decimal brutoGodisnji = sati.GodisnjiOdmorSati * prosek; // Paid at Prosek
-        decimal brutoPraznik = sati.DrzavniPraznikSati * (1m + procDrzav / 100m) * (hourlyBase + min_po_cas); // state holiday bonus + base
+        decimal brutoPraznik = sati.RadPraznikomSati * (1m + procDrzav / 100m) * (hourlyBase + min_po_cas); // worked holiday (DRZAVNI) paid at hourly base + premium + minuli rad
+        decimal brutoNeradniPraznik = sati.DrzavniPraznikSati * prosek; // neradni holiday (NERDRZAVNI) paid at prosek
         decimal brutoNocni = sati.NocniSati * (1m + procNocni / 100m) * (hourlyBase + min_po_cas); // night shift bonus + base
+        decimal brutoNedelja = sati.RadNedeljomSati * (1m + procNedel / 100m) * hourlyBase; // Sunday premium + hourly base
 
-        // Obračun stimulacije (procentualni bonus na bazi redovnog rada i dodataka)
-        decimal brutoStimulacija = Math.Round((brutoRedovni + brutoPrekovremeni + brutoPraznik + brutoNocni) * (sati.Stimulacija / 100m), 2);
+        // Obračun stimulacije (procentualni bonus na bazi redovnog rada, prekovremenog, praznika, noćnog rada i rada nedeljom)
+        decimal brutoStimulacija = Math.Round((brutoRedovni + brutoPrekovremeni + brutoPraznik + brutoNocni + brutoNedelja) * (sati.Stimulacija / 100m), 2);
 
-        decimal totalBruto = brutoRedovni + brutoBolovanje + brutoPrekovremeni + brutoGodisnji + brutoPraznik + brutoNocni + brutoMinuliRad + brutoStimulacija;
+        // Naknade koje su se isplaćivale odvojeno, a zapravo su bruto (topli obrok, regres)
+        decimal topliObrokIznos = Math.Round((decimal)sati.TopliObrokDani, 2);
+        decimal regresIznos = sati.RegresIznos;
+
+        // Ostali bruto elementi vezani za radne sate (bolovanje 100%, plaćeno odsustvo, plaćeno zakonski, bolovanje preko 60 dana, porodiljsko)
+        decimal brutoBolovanje100 = sati.Bolovanje100Sati * prosek;
+        decimal brutoPlacenoOdsustvo = sati.PlacenoOdsustvoSati * prosek;
+        decimal brutoPlacenoZakonski = sati.PlacenoZakonskiSati * prosek;
+        decimal brutoBolovanjePreko60 = sati.BolovanjePreko60Sati * prosek;
+        decimal brutoPorodiljsko = sati.PorodiljskoOdsustvoSati * prosek;
+
+        decimal totalBruto = brutoRedovni + brutoBolovanje + brutoPrekovremeni + brutoGodisnji + brutoPraznik + brutoNeradniPraznik + brutoNocni + brutoNedelja + brutoMinuliRad + brutoStimulacija 
+                           + topliObrokIznos + regresIznos 
+                           + brutoBolovanje100 + brutoPlacenoOdsustvo + brutoPlacenoZakonski + brutoBolovanjePreko60 + brutoPorodiljsko;
 
         // 5. Tax parameters
         decimal taxRate = DefaultTaxRate;
@@ -126,7 +142,8 @@ public class ObracunService
         }
 
         // Scale tax exemption to hours worked relative to month fund
-        decimal totalHours = sati.RedovniSati + sati.BolovanjeSati + sati.PrekovremeneSati + sati.GodisnjiOdmorSati + sati.DrzavniPraznikSati + sati.NocniSati;
+        decimal totalHours = sati.RedovniSati + sati.BolovanjeSati + sati.PrekovremeneSati + sati.GodisnjiOdmorSati + sati.DrzavniPraznikSati + sati.RadPraznikomSati + sati.NocniSati + sati.RadNedeljomSati
+                             + sati.Bolovanje100Sati + sati.PlacenoOdsustvoSati + sati.PlacenoZakonskiSati + sati.BolovanjePreko60Sati + sati.PorodiljskoOdsustvoSati;
         decimal workFactor = fondCasova > 0 ? totalHours / fondCasova : 1.0m;
         if (workFactor > 1.0m) workFactor = 1.0m;
 
@@ -290,6 +307,15 @@ public class ObracunService
         if (radnik.StopaZdravstvo > 0) empZdr = radnik.StopaZdravstvo;
         if (radnik.StopaNezaposlenost > 0) empNez = radnik.StopaNezaposlenost;
 
+        // Penzioneri (radno mesto počinje sa "109") — nema doprinosa za nezaposlenost
+        bool jePenzioner = !string.IsNullOrWhiteSpace(radnik.Radno_Mesto)
+                           && radnik.Radno_Mesto.TrimStart().StartsWith("109");
+        if (jePenzioner)
+        {
+            empNez = 0m;
+            bossNez = 0m;
+        }
+
         decimal dopPioRadnik = brutPioOsn * empPio;
         decimal dopZdrRadnik = brutoOsn * empZdr;
         decimal dopNezRadnik = brutoOsn * empNez;
@@ -319,7 +345,9 @@ public class ObracunService
             samodoprinosiIznos += s.Iznos;
         }
 
-        // 8. Net salary calculation
+        // 8. Topli obrok i regres su već uključeni u totalBruto
+
+        // 9. Net salary calculation (doprinosi i porez se odbijaju od ukupnog bruto iznosa)
         decimal totalEmployeeDeductions = dopPioRadnik + dopZdrRadnik + dopNezRadnik + porez;
         decimal netoIsplata = totalBruto - totalEmployeeDeductions - kreditiObustava - samodoprinosiIznos;
         if (netoIsplata < 0m) netoIsplata = 0m;
@@ -332,17 +360,24 @@ public class ObracunService
             Mesec = mesec,
             BrutoZarada = Math.Round(totalBruto - brutoBolovanje, 2),
             BrutoBolovanje = Math.Round(brutoBolovanje, 2),
-            BrutoNaknade = Math.Round(brutoPrekovremeni + brutoPraznik + brutoNocni, 2),
+            BrutoNaknade = Math.Round(brutoPrekovremeni + brutoPraznik + brutoNocni + brutoNedelja, 2),
             BrutoStimulacija = brutoStimulacija,
             BrutoMinuliRad = Math.Round(brutoMinuliRad, 2),
             
             // Legacy detaljne stavke koje su falile i resetovale se na 0
             NetoZar = Math.Round(brutoRedovni, 2),
-            NetoNerd = Math.Round(brutoPraznik, 2),
+            NetoNerd = Math.Round(brutoNeradniPraznik, 2),
             NetoGOd = Math.Round(brutoGodisnji, 2),
             NetoBol = Math.Round(brutoBolovanje, 2),
             NetoNocni = Math.Round(brutoNocni, 2),
             NetoPrek = Math.Round(brutoPrekovremeni, 2),
+            NetoDrza = Math.Round(brutoPraznik, 2),
+            NetoNede = Math.Round(brutoNedelja, 2),
+            
+            NetoB100 = Math.Round(brutoBolovanje100, 2),
+            NetoPlac = Math.Round(brutoPlacenoOdsustvo, 2),
+            NetoPlZ = Math.Round(brutoPlacenoZakonski, 2),
+            
             Neto = Math.Round(totalBruto, 2),
             
             DoprinosPioRadnik = Math.Round(dopPioRadnik, 2),
@@ -355,16 +390,38 @@ public class ObracunService
 
             PorezNaDohodak = Math.Round(porez, 2),
             PoreskaOsnovica = Math.Round(poreskaOsnovica, 2),
+            LicniOdbitak = Math.Round(scaledExemption, 2),
             KreditObustava = Math.Round(kreditiObustava, 2),
             Samodoprinosi = Math.Round(samodoprinosiIznos, 2),
             OstaliOdbici = 0m,
             NetoIsplata = Math.Round(netoIsplata, 2),
 
+            // Naknade (topli obrok, regres) — prikazane odvojeno u listiciću
+            NetoTo = Math.Round(topliObrokIznos, 2),
+            TopliObrokIznos = Math.Round(topliObrokIznos, 2),
+            NetoReg = Math.Round(regresIznos, 2),
+
             RedovniSati = sati.RedovniSati,
             BolovanjeSati = sati.BolovanjeSati,
             PrekovremeneSati = sati.PrekovremeneSati,
             GodisnjioOdmorSati = sati.GodisnjiOdmorSati,
+            DrzavniPraznikSati = sati.DrzavniPraznikSati,
+            NocniSati = sati.NocniSati,
+            RadPraznikomSati = sati.RadPraznikomSati,
+            NedeljaSati = sati.RadNedeljomSati,
+            
+            SmenskiSati = sati.SmenskiSati,
+            NocniRadPraznikomSati = sati.NocniRadPraznikomSati,
+            PlacenoOdsustvoSati = sati.PlacenoOdsustvoSati,
+            PlacenoOdsustvoSatiLegacy = sati.PlacenoOdsustvoSati,
+            PlacenoZakonskiSatiLegacy = sati.PlacenoZakonskiSati,
+            BolovanjePreko60SatiLegacy = sati.BolovanjePreko60Sati,
+            PorodiljskoOdsustvoSatiLegacy = sati.PorodiljskoOdsustvoSati,
+            Bolovanje100SatiLegacy = sati.Bolovanje100Sati,
+            
             Prosek = Math.Round(prosek, 2),
+            CenaSataRedovan = Math.Round(hourlyBase, 5),
+            CenaSataMinuliRad = Math.Round(min_po_cas, 5),
             Zakljucen = false,
             DatumObracuna = DateTime.Now,
             Napomena = $"Obračun kreiran {DateTime.Now:dd.MM.yyyy HH:mm}"

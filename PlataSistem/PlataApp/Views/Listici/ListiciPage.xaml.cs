@@ -443,13 +443,17 @@ public partial class ListiciPage : Page
                 // Ukupno Bruto
                 AddRow("UKUPNA BRUTO ZARADA", totalBruto, bold: true);
 
-
-                // Osnovica i porez
-                AddRow("Osnovica za obračun doprinosa", totalBruto);
+                // Porez na dohodak (sa poreskim oslobođenjem i osnovicom za porez iznad)
+                decimal poreskoOslobodjenje = o.LicniOdbitak > 0 ? o.LicniOdbitak : (totalBruto - o.PoreskaOsnovica);
+                AddRow("Poresko oslobođenje", poreskoOslobodjenje);
+                AddRow("Osnovica za porez", o.PoreskaOsnovica);
                 if (o.PorezNaDohodak > 0)
                 {
                     AddRow("Porez na dohodak građana (stopa 10.00%)", o.PorezNaDohodak);
                 }
+
+                // Osnovica za doprinose (iznad doprinosa na teret radnika)
+                AddRow("Osnovica za obračun doprinosa", totalBruto);
 
                 // Doprinosi zaposlenog
                 if (o.DoprinosPioRadnik > 0)
@@ -511,9 +515,13 @@ public partial class ListiciPage : Page
                 // Konačno za isplatu
                 AddRow("ZA ISPLATU (Konačni neto)", o.NetoIsplata, bold: true);
 
+                // Bruto 1
+                decimal bruto1 = o.Bruto1;
+                AddRow("Bruto 1 (Neto + porez + doprinosi)", bruto1);
+
                 // Bruto 2
-                decimal bruto2 = totalBruto + o.DoprinosPioPoslodavac + o.DoprinosZdravstvoPoslodavac + o.DoprinosNezaposlenostPoslodavac;
-                AddRow("Bruto 2 (Doprinosi na teret poslodavca)", bruto2);
+                decimal bruto2 = o.Bruto2;
+                AddRow("Bruto 2 (Bruto 1 + doprinosi poslodavca)", bruto2);
             });
 
             // Potpisi

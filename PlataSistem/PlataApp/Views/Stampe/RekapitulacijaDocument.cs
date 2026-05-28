@@ -240,7 +240,7 @@ public class RekapitulacijaDocument
             if (sumKorDod    != 0) Row("Bruto korektivni dodatak ............................", sumKorDod);
             if (sumKorDod1   != 0) Row("Bruto korektivni dodatak 1 ..........................", sumKorDod1);
 
-            Row("Zarada ..............................................",
+            Row("Bruto 1 (Zarada).....................................",
                 sumZarada, bold: true, bgColor: Colors.Grey.Lighten4);
             Row("Dodatni porez........................................", sumDodPorez);
             Row("Ukupan neto..........................................",
@@ -347,11 +347,11 @@ public class RekapitulacijaDocument
             Row("Dop.-nezaposlenost  UKUPNO ..........................",
                 sumNezP, bold: true, bgColor: Colors.Grey.Lighten5);
 
-            // ── UKUPNA MASA ──────────────────────────────────────────────────────────────
+            // ── BRUTO 2 ──────────────────────────────────────────────────────────────────
             col.Item().PaddingTop(6)
                 .Text(new string('_', 109)).FontSize(7.5f).FontFamily("Courier New");
             col.Item().PaddingTop(2).AlignCenter()
-                .Text("UKUPNA MASA ZA ISPLATU")
+                .Text("BRUTO 2 (UKUPNA MASA ZA ISPLATU)")
                 .Bold().FontSize(9).FontFamily("Courier New");
             col.Item()
                 .Text(new string('_', 109)).FontSize(7.5f).FontFamily("Courier New");
@@ -360,7 +360,7 @@ public class RekapitulacijaDocument
             col.Item().Row(row =>
             {
                 row.RelativeItem()
-                    .Text("MASA ZA CEO OBRACUN")
+                    .Text("UKUPAN BRUTO 2 OBRACUN (Bruto 1 + dopr. posl.)")
                     .Bold().FontSize(8.5f).FontFamily("Courier New");
                 row.ConstantItem(110).AlignRight()
                     .Text($"{masaCeoObr:N2}")

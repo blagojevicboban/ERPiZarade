@@ -74,6 +74,8 @@ public class PlatniSpisakDocument
                     columns.ConstantColumn(56);  // Neto 1 (Bez por. i dop.)
                     columns.ConstantColumn(44);  // Obustave
                     columns.ConstantColumn(60);  // Za isplatu
+                    columns.ConstantColumn(50);  // Dopr.P (na teret poslodavca)
+                    columns.ConstantColumn(56);  // Bruto 2
                 });
 
                 // Header
@@ -105,6 +107,8 @@ public class PlatniSpisakDocument
                     AddHeaderCell("Neto1", alignRight: true);
                     AddHeaderCell("Obust.", alignRight: true);
                     AddHeaderCell("Za ispl.", alignRight: true);
+                    AddHeaderCell("Dopr.P", alignRight: true);
+                    AddHeaderCell("Bruto 2", alignRight: true);
                 });
 
                 int rbr = 1;
@@ -116,13 +120,13 @@ public class PlatniSpisakDocument
                     foreach (var grp in groups)
                     {
                         // RJ header row
-                        table.Cell().ColumnSpan(19).Background(Colors.Grey.Lighten3).Padding(2).Row(r =>
+                        table.Cell().ColumnSpan(21).Background(Colors.Grey.Lighten3).Padding(2).Row(r =>
                         {
                             r.RelativeItem().Text($"RADNA JEDINICA {grp.Key}").Bold().FontSize(8.5f).FontColor(Colors.Indigo.Darken3);
                         });
 
                         decimal rjRedovni = 0, rjOdmor = 0, rjBolovanje = 0, rjPraznik = 0, rjPrekovremeni = 0, rjUkupni = 0;
-                        decimal rjBruto = 0, rjOsn = 0, rjPor = 0, rjDop = 0, rjNeto1 = 0, rjObu = 0, rjIsp = 0;
+                        decimal rjBruto = 0, rjOsn = 0, rjPor = 0, rjDop = 0, rjNeto1 = 0, rjObu = 0, rjIsp = 0, rjDopP = 0, rjBruto2 = 0;
 
                         foreach (var o in grp)
                         {
@@ -131,6 +135,8 @@ public class PlatniSpisakDocument
                             decimal neto1 = totalBruto - o.PorezNaDohodak - ukupniDop;
                             decimal obustave = o.KreditObustava + o.Samodoprinosi + o.OstaliOdbici;
                             int ukupSati = o.RedovniSati + o.BolovanjeSati + o.PrekovremeneSati + o.GodisnjioOdmorSati + o.DrzavniPraznikSati;
+                            decimal doprPoslodavca = o.UkupniDoprinosiPoslodavca;
+                            decimal bruto2 = o.Bruto2;
 
                             // Add to RJ sums
                             rjRedovni += o.RedovniSati;
@@ -147,14 +153,16 @@ public class PlatniSpisakDocument
                             rjNeto1 += neto1;
                             rjObu += obustave;
                             rjIsp += o.NetoIsplata;
+                            rjDopP += doprPoslodavca;
+                            rjBruto2 += bruto2;
 
                             WriteRow(table, rbr++, o, totalBruto, ukupniDop, neto1, obustave,
-                                o.RedovniSati, o.GodisnjioOdmorSati, o.BolovanjeSati, o.DrzavniPraznikSati, o.PrekovremeneSati, ukupSati);
+                                o.RedovniSati, o.GodisnjioOdmorSati, o.BolovanjeSati, o.DrzavniPraznikSati, o.PrekovremeneSati, ukupSati, doprPoslodavca, bruto2);
                         }
 
                         // RJ Sum row
                         WriteSumRow(table, $"Suma RJ {grp.Key}", rjRedovni, rjOdmor, rjBolovanje, rjPraznik, rjPrekovremeni, rjUkupni,
-                            rjBruto, rjOsn, rjPor, rjDop, rjNeto1, rjObu, rjIsp, Colors.Grey.Lighten4);
+                            rjBruto, rjOsn, rjPor, rjDop, rjNeto1, rjObu, rjIsp, rjDopP, rjBruto2, Colors.Grey.Lighten4);
                     }
                 }
                 else
@@ -167,9 +175,11 @@ public class PlatniSpisakDocument
                         decimal neto1 = totalBruto - o.PorezNaDohodak - ukupniDop;
                         decimal obustave = o.KreditObustava + o.Samodoprinosi + o.OstaliOdbici;
                         int ukupSati = o.RedovniSati + o.BolovanjeSati + o.PrekovremeneSati + o.GodisnjioOdmorSati + o.DrzavniPraznikSati;
+                        decimal doprPoslodavca = o.UkupniDoprinosiPoslodavca;
+                        decimal bruto2 = o.Bruto2;
 
                         WriteRow(table, rbr++, o, totalBruto, ukupniDop, neto1, obustave,
-                            o.RedovniSati, o.GodisnjioOdmorSati, o.BolovanjeSati, o.DrzavniPraznikSati, o.PrekovremeneSati, ukupSati);
+                            o.RedovniSati, o.GodisnjioOdmorSati, o.BolovanjeSati, o.DrzavniPraznikSati, o.PrekovremeneSati, ukupSati, doprPoslodavca, bruto2);
                     }
                 }
 
@@ -188,9 +198,11 @@ public class PlatniSpisakDocument
                 decimal gNeto1 = _obracuni.Sum(o => o.Bruto1 - o.PorezNaDohodak - (o.DoprinosPioRadnik + o.DoprinosZdravstvoRadnik + o.DoprinosNezaposlenostRadnik));
                 decimal gObu = _obracuni.Sum(o => o.KreditObustava + o.Samodoprinosi + o.OstaliOdbici);
                 decimal gIsp = _obracuni.Sum(o => o.NetoIsplata);
+                decimal gDopP = _obracuni.Sum(o => o.UkupniDoprinosiPoslodavca);
+                decimal gBruto2 = _obracuni.Sum(o => o.Bruto2);
 
                 WriteSumRow(table, "UKUPNA SUMA ZAVODA", gRedovni, gOdmor, gBolovanje, gPraznik, gPrekovremeni, gUkupni,
-                    gBruto, gOsn, gPor, gDop, gNeto1, gObu, gIsp, Colors.Indigo.Lighten5);
+                    gBruto, gOsn, gPor, gDop, gNeto1, gObu, gIsp, gDopP, gBruto2, Colors.Indigo.Lighten5);
             });
         });
 
@@ -204,7 +216,7 @@ public class PlatniSpisakDocument
         });
     }
 
-    private void WriteRow(TableDescriptor table, int rbr, ObracunPlate o, decimal totalBruto, decimal ukupniDop, decimal neto1, decimal obustave, int satR, int satO, int satB, int satP, int satK, int satU)
+    private void WriteRow(TableDescriptor table, int rbr, ObracunPlate o, decimal totalBruto, decimal ukupniDop, decimal neto1, decimal obustave, int satR, int satO, int satB, int satP, int satK, int satU, decimal dopP, decimal bruto2)
     {
         string spr = !string.IsNullOrWhiteSpace(o.Kategorija) ? o.Kategorija : (o.Radnik != null ? o.Radnik.Kategorija : "");
         decimal koef = o.Koeficijent > 0 ? o.Koeficijent : (o.Radnik != null ? o.Radnik.Koeficijent : 0m);
@@ -231,9 +243,11 @@ public class PlatniSpisakDocument
         table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(1.5f).AlignRight().Text($"{neto1:N2}").FontSize(7.5f);
         table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(1.5f).AlignRight().Text($"{obustave:N2}").FontSize(7.5f);
         table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(1.5f).AlignRight().Text($"{o.NetoIsplata:N2}").Bold().FontSize(8.0f);
+        table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(1.5f).AlignRight().Text($"{dopP:N2}").FontSize(7.5f);
+        table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(1.5f).AlignRight().Text($"{bruto2:N2}").Bold().FontSize(8.0f);
     }
 
-    private void WriteSumRow(TableDescriptor table, string title, decimal sR, decimal sO, decimal sB, decimal sP, decimal sK, decimal sU, decimal sBruto, decimal sOsn, decimal sPor, decimal sDop, decimal sNeto1, decimal sObu, decimal sIsp, string bgColor)
+    private void WriteSumRow(TableDescriptor table, string title, decimal sR, decimal sO, decimal sB, decimal sP, decimal sK, decimal sU, decimal sBruto, decimal sOsn, decimal sPor, decimal sDop, decimal sNeto1, decimal sObu, decimal sIsp, decimal sDopP, decimal sBruto2, string bgColor)
     {
         table.Cell().Background(bgColor).Padding(2).Text("");
         table.Cell().Background(bgColor).Padding(2).Text("");
@@ -254,5 +268,7 @@ public class PlatniSpisakDocument
         table.Cell().Background(bgColor).Padding(2).AlignRight().Text($"{sNeto1:N2}").Bold().FontSize(8.0f);
         table.Cell().Background(bgColor).Padding(2).AlignRight().Text($"{sObu:N2}").Bold().FontSize(8.0f);
         table.Cell().Background(bgColor).Padding(2).AlignRight().Text($"{sIsp:N2}").Bold().FontSize(8.5f).FontColor(Colors.Indigo.Darken4);
+        table.Cell().Background(bgColor).Padding(2).AlignRight().Text($"{sDopP:N2}").Bold().FontSize(8.0f);
+        table.Cell().Background(bgColor).Padding(2).AlignRight().Text($"{sBruto2:N2}").Bold().FontSize(8.5f).FontColor(Colors.Indigo.Darken4);
     }
 }

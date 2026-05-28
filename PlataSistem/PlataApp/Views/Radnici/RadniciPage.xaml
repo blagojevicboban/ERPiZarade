@@ -207,7 +207,7 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0" Margin="0,0,8,0">
                                     <TextBlock Text="Br." FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                    <TextBox Text="{Binding EditingRadnik.BrojRadnika, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBox Text="{Binding EditingRadnik.BrojRadnika, UpdateSourceTrigger=PropertyChanged}" IsEnabled="False"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1">
                                     <TextBlock Text="Ime i prezime *" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
@@ -226,6 +226,22 @@
                                 <TextBlock Text="Matični broj" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                                 <TextBox Text="{Binding EditingRadnik.MaticniBroj, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
+
+                            <!-- Datum zaposlenja i prestanka -->
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                    <TextBlock Text="Datum zaposlenja" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                    <DatePicker SelectedDate="{Binding EditingRadnik.DatumZaposlenja, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="Datum prestanka" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                    <DatePicker SelectedDate="{Binding EditingRadnik.DatumPrestanka, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                            </Grid>
 
                             <!-- Koeficijent + Osnov.plata -->
                             <Grid Margin="0,0,0,12">
@@ -257,18 +273,12 @@
 
                             <!-- Banka -->
                             <StackPanel Margin="0,0,0,12">
-                                <TextBlock Text="Banka (šifra)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="80"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBox Grid.Column="0" Text="{Binding EditingRadnik.NazivBanke, UpdateSourceTrigger=PropertyChanged}"/>
-                                    <Border Grid.Column="1" Margin="12,0,0,0" Background="#EEF2FF" CornerRadius="6" Padding="10,0" VerticalAlignment="Stretch">
-                                        <TextBlock Text="{Binding EditingRadnik.NazivBanke, Converter={StaticResource BankCodeToNameConverter}}" 
-                                                   FontSize="12" FontWeight="SemiBold" Foreground="#4338CA" VerticalAlignment="Center"/>
-                                    </Border>
-                                </Grid>
+                                <TextBlock Text="Banka" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                <ComboBox ItemsSource="{Binding AvailableBanke}" 
+                                          SelectedValuePath="Sifra" 
+                                          DisplayMemberPath="Naziv" 
+                                          SelectedValue="{Binding EditingRadnik.NazivBanke, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          Padding="8,5" FontSize="13"/>
                             </StackPanel>
 
                             <!-- Aktivan -->

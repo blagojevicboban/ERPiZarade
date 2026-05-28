@@ -5,6 +5,9 @@ namespace PlataData;
 
 public class PlataDbContext : DbContext
 {
+    private static readonly object _initLock = new();
+    private static bool _isInitialized = false;
+
     public PlataDbContext(DbContextOptions<PlataDbContext> options) : base(options) { }
 
     // Tabele
@@ -84,6 +87,21 @@ public class PlataDbContext : DbContext
         var optionsBuilder = new DbContextOptionsBuilder<PlataDbContext>();
         optionsBuilder.UseSqlite($"Data Source={dbPath}");
         var ctx = new PlataDbContext(optionsBuilder.Options);
+
+        lock (_initLock)
+        {
+            if (!_isInitialized)
+            {
+                InitializeDatabase(ctx);
+                _isInitialized = true;
+            }
+        }
+
+        return ctx;
+    }
+
+    private static void InitializeDatabase(PlataDbContext ctx)
+    {
         ctx.Database.EnsureCreated();
 
         // Bezbedno kreiranje tabele DoprinosiPoslodavca ako ne postoji
@@ -324,8 +342,6 @@ public class PlataDbContext : DbContext
             ");
         }
         catch { }
-
-        return ctx;
     }
 
 }

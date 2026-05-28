@@ -18,6 +18,13 @@ public class RadniciViewModel : INotifyPropertyChanged
     private bool _prikazujeSamoAktivne = true;
     private bool _isEditing;
     private string _statusPoruka = "";
+    private List<Banka> _availableBanke = [];
+
+    public List<Banka> AvailableBanke
+    {
+        get => _availableBanke;
+        set { _availableBanke = value; OnPropertyChanged(); }
+    }
 
     public RadniciViewModel()
     {
@@ -102,6 +109,41 @@ public class RadniciViewModel : INotifyPropertyChanged
 
             var list = await query.OrderBy(r => r.BrojRadnika).ToListAsync();
             Radnici = new ObservableCollection<Radnik>(list);
+
+            // Učitaj aktivne banke
+            int godina = AppConfig.ActiveGodina ?? DateTime.Now.Year;
+            int mesec = AppConfig.ActiveMesec ?? DateTime.Now.Month;
+            var bankeList = await _db.Banke
+                .Where(b => b.Godina == godina && b.Mesec == mesec)
+                .OrderBy(b => b.Naziv)
+                .ToListAsync();
+
+            if (bankeList.Count == 0)
+            {
+                var closest = await _db.Banke
+                    .OrderByDescending(b => b.Godina)
+                    .ThenByDescending(b => b.Mesec)
+                    .FirstOrDefaultAsync();
+
+                if (closest != null)
+                {
+                    bankeList = await _db.Banke
+                        .Where(b => b.Godina == closest.Godina && b.Mesec == closest.Mesec)
+                        .OrderBy(b => b.Naziv)
+                        .ToListAsync();
+                }
+            }
+
+            if (bankeList.Count == 0)
+            {
+                bankeList = new List<Banka>
+                {
+                    new Banka { Sifra = "1", Naziv = "Gotovina" },
+                    new Banka { Sifra = "2", Naziv = "BANKA INTESA" }
+                };
+            }
+            AvailableBanke = bankeList;
+
             StatusPoruka = $"Prikazano: {list.Count} radnika";
         }
         catch (Exception ex)
@@ -112,7 +154,8 @@ public class RadniciViewModel : INotifyPropertyChanged
 
     private void NewRadnik()
     {
-        EditingRadnik = new Radnik { Aktivan = true, BrojRadneJedinice = 1 };
+        int nextBroj = (_db.Radnici.Select(r => (int?)r.BrojRadnika).Max() ?? 0) + 1;
+        EditingRadnik = new Radnik { Aktivan = true, BrojRadneJedinice = 1, BrojRadnika = nextBroj };
         SelectedRadnik = null;
         IsEditing = true;
         StatusPoruka = "Unos novog radnika...";
@@ -127,7 +170,10 @@ public class RadniciViewModel : INotifyPropertyChanged
             {
                 int nextId = (_db.Radnici.Select(r => (int?)r.Id).Max() ?? 0) + 1;
                 EditingRadnik.Id = nextId;
-                EditingRadnik.BrojRadnika = nextId;
+                if (EditingRadnik.BrojRadnika == 0)
+                {
+                    EditingRadnik.BrojRadnika = (_db.Radnici.Select(r => (int?)r.BrojRadnika).Max() ?? 0) + 1;
+                }
 
                 _db.Radnici.Add(EditingRadnik);
                 await _db.SaveChangesAsync();
@@ -186,6 +232,8 @@ public class RadniciViewModel : INotifyPropertyChanged
         Radno_Mesto = src.Radno_Mesto, BrojRadneJedinice = src.BrojRadneJedinice,
         Kategorija = src.Kategorija, Aktivan = src.Aktivan,
         LicnoOslobodjenje = src.LicnoOslobodjenje,
+        DatumZaposlenja = src.DatumZaposlenja,
+        DatumPrestanka = src.DatumPrestanka,
     };
 
     public event PropertyChangedEventHandler? PropertyChanged;

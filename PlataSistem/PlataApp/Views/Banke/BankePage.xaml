@@ -123,23 +123,6 @@
                     <!-- Fields -->
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                         <StackPanel>
-                            <!-- Godina i mesec -->
-                            <Grid Margin="0,0,0,12">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="12"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Godina obračuna" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                    <TextBox x:Name="TxtGodina" Height="32" VerticalContentAlignment="Center"/>
-                                </StackPanel>
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Mesec obračuna" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                    <TextBox x:Name="TxtMesec" Height="32" VerticalContentAlignment="Center"/>
-                                </StackPanel>
-                            </Grid>
-
                             <!-- Šifra banke -->
                             <StackPanel Margin="0,0,0,12">
                                 <TextBlock Text="Šifra banke (kolona BANKA u radnicima)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>

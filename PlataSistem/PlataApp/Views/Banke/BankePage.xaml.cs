@@ -25,14 +25,31 @@ public partial class BankePage : Page
     {
         try
         {
-            _sveBanke = _db.Banke
-                .OrderByDescending(b => b.Godina)
-                .ThenByDescending(b => b.Mesec)
-                .ThenBy(b => b.Sifra)
+            PlataApp.Views.Radnici.BankCodeToNameConverter.ClearCache();
+            
+            int? aktivnaGodina = AppConfig.ActiveGodina;
+            int? aktivniMesec = AppConfig.ActiveMesec;
+
+            var query = _db.Banke.AsQueryable();
+            if (aktivnaGodina.HasValue && aktivniMesec.HasValue)
+            {
+                query = query.Where(b => b.Godina == aktivnaGodina.Value && b.Mesec == aktivniMesec.Value);
+            }
+
+            _sveBanke = query
+                .OrderBy(b => b.Sifra)
                 .ToList();
 
             OsveziTabelu();
-            StatusMessage.Text = $"Učitano {_sveBanke.Count} zapisa o bankama.";
+
+            if (aktivnaGodina.HasValue && aktivniMesec.HasValue)
+            {
+                StatusMessage.Text = $"Učitano {_sveBanke.Count} zapisa o bankama za aktivni obračun {aktivniMesec.Value:D2}/{aktivnaGodina.Value}.";
+            }
+            else
+            {
+                StatusMessage.Text = $"Učitano {_sveBanke.Count} zapisa o bankama.";
+            }
         }
         catch (Exception ex)
         {
@@ -70,8 +87,6 @@ public partial class BankePage : Page
         {
             _selectedBanka = selektovana;
             FormTitle.Text = "📝 Uredi podatke o banci";
-            TxtGodina.Text = _selectedBanka.Godina.ToString();
-            TxtMesec.Text = _selectedBanka.Mesec.ToString();
             TxtSifra.Text = _selectedBanka.Sifra;
             TxtNaziv.Text = _selectedBanka.Naziv;
             TxtZiroRacun.Text = _selectedBanka.ZiroRacun;
@@ -88,19 +103,6 @@ public partial class BankePage : Page
         _selectedBanka = null;
         FormTitle.Text = "➕ Dodaj novu banku";
         
-        // Postavi podrazumevanu godinu i mesec na osnovu poslednjeg zapisa ili tekućeg datuma
-        int defGodina = DateTime.Now.Year;
-        int defMesec = DateTime.Now.Month;
-
-        var poslednjiZapis = _sveBanke.FirstOrDefault();
-        if (poslednjiZapis != null)
-        {
-            defGodina = poslednjiZapis.Godina;
-            defMesec = poslednjiZapis.Mesec;
-        }
-
-        TxtGodina.Text = defGodina.ToString();
-        TxtMesec.Text = defMesec.ToString();
         TxtSifra.Text = "";
         TxtNaziv.Text = "";
         TxtZiroRacun.Text = "";
@@ -115,18 +117,8 @@ public partial class BankePage : Page
 
     private void BtnSacuvaj_Click(object sender, RoutedEventArgs e)
     {
-        // Validacija
-        if (!int.TryParse(TxtGodina.Text.Trim(), out int godina) || godina <= 0)
-        {
-            MessageBox.Show("Molimo unesite ispravnu godinu.", "Validacija", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-
-        if (!int.TryParse(TxtMesec.Text.Trim(), out int mesec) || mesec < 1 || mesec > 12)
-        {
-            MessageBox.Show("Molimo unesite ispravan mesec (1 - 12).", "Validacija", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
+        int godina = AppConfig.ActiveGodina ?? DateTime.Now.Year;
+        int mesec = AppConfig.ActiveMesec ?? DateTime.Now.Month;
 
         string sifra = TxtSifra.Text.Trim();
         if (string.IsNullOrWhiteSpace(sifra))
@@ -174,19 +166,6 @@ public partial class BankePage : Page
             else
             {
                 // Izmena postojećeg zapisa
-                // Provera duplikata ako su godina/mesec/šifra menjani
-                if (_selectedBanka.Godina != godina || _selectedBanka.Mesec != mesec || _selectedBanka.Sifra != sifra)
-                {
-                    var duplikat = _db.Banke.Any(b => b.Id != _selectedBanka.Id && b.Godina == godina && b.Mesec == mesec && b.Sifra == sifra);
-                    if (duplikat)
-                    {
-                        MessageBox.Show($"Druga banka sa šifrom '{sifra}' već postoji za period {mesec:D2}/{godina}.", "Duplikat", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        return;
-                    }
-                }
-
-                _selectedBanka.Godina = godina;
-                _selectedBanka.Mesec = mesec;
                 _selectedBanka.Sifra = sifra;
                 _selectedBanka.Naziv = naziv;
                 _selectedBanka.ZiroRacun = ziro;

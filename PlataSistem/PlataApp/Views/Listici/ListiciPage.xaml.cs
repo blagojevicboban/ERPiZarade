@@ -519,6 +519,44 @@ public partial class ListiciPage : Page
                 decimal bruto1 = o.Bruto1;
                 AddRow("Bruto 1 (Neto + porez + doprinosi)", bruto1);
 
+                // Doprinosi poslodavca
+                decimal bossPioRate = 10.00m;
+                if (decimal.TryParse(o.StopaPioPoslodavacStr?.Replace("%", "").Replace(",", "."), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var valPioP)) 
+                    bossPioRate = valPioP;
+                else
+                {
+                    if (o.Godina >= 2023) bossPioRate = 10.00m;
+                    else if (o.Godina == 2022) bossPioRate = 11.00m;
+                    else if (o.Godina >= 2020 || (o.Godina == 2019 && o.Mesec == 12)) bossPioRate = 11.50m;
+                    else bossPioRate = 12.00m;
+                }
+
+                decimal bossZdrRate = 5.15m;
+                if (decimal.TryParse(o.StopaZdravstvoPoslodavacStr?.Replace("%", "").Replace(",", "."), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var valZdrP))
+                    bossZdrRate = valZdrP;
+
+                decimal bossNezRate = 0.00m;
+                if (decimal.TryParse(o.StopaNezaposlenostPoslodavacStr?.Replace("%", "").Replace(",", "."), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var valNezP))
+                    bossNezRate = valNezP;
+                else
+                {
+                    if (o.Godina >= 2020 || (o.Godina == 2019 && o.Mesec == 12)) bossNezRate = 0.00m;
+                    else bossNezRate = 0.75m;
+                }
+
+                if (o.DoprinosPioPoslodavac > 0)
+                {
+                    AddRow($"Doprinos za PIO na teret poslodavca (stopa {bossPioRate:F2}%)", o.DoprinosPioPoslodavac);
+                }
+                if (o.DoprinosZdravstvoPoslodavac > 0)
+                {
+                    AddRow($"Doprinos za zdravstvo na teret poslodavca (stopa {bossZdrRate:F2}%)", o.DoprinosZdravstvoPoslodavac);
+                }
+                if (o.DoprinosNezaposlenostPoslodavac > 0)
+                {
+                    AddRow($"Doprinos za nezaposlenost na teret poslodavca (stopa {bossNezRate:F2}%)", o.DoprinosNezaposlenostPoslodavac);
+                }
+
                 // Bruto 2
                 decimal bruto2 = o.Bruto2;
                 AddRow("Bruto 2 (Bruto 1 + doprinosi poslodavca)", bruto2);

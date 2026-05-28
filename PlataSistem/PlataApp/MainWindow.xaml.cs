@@ -119,6 +119,10 @@ public partial class MainWindow : Window
     private void BtnKrediti_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnKrediti, new Views.Krediti.KreditiPage());
 
+    private void BtnBanke_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnBanke, new Views.Banke.BankePage());
+
+
     private void BtnPodesavanja_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnPodesavanja, new Views.Podesavanja.PodesavanjaPage());
 

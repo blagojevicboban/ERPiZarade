@@ -454,9 +454,18 @@ await ImportPoreziDbf(poreziiDbf, "POREZII.DBF (istorija)", isHistory: true);
 await ImportPoreziDbf(poreziDbf, "POREZI.DBF (aktivni/tekući)", isHistory: false);
 
 // ══════════════════════════════════════════════════════════════════
+// UVOZ ŠIFRARNIKA BANAKA / BANKEI.DBF I BANKE.DBF
+// ══════════════════════════════════════════════════════════════════
+var bankeiDbf = Path.Combine(dbfDir, "BANKEI.DBF");
+var bankeDbf = Path.Combine(dbfDir, "BANKE.DBF");
+await ImportBankeiDbf(bankeiDbf, "BANKEI.DBF (istorija)", isHistory: true, defaultGodina: aktivnaGodina, defaultMesec: aktivniMesec);
+await ImportBankeiDbf(bankeDbf, "BANKE.DBF (aktivni/tekući)", isHistory: false, defaultGodina: aktivnaGodina, defaultMesec: aktivniMesec);
+
+// ══════════════════════════════════════════════════════════════════
 // UVOZ KOMPANIJE / KORISNIC.DBF (podešavanja firme)
 // ══════════════════════════════════════════════════════════════════
 var korisnicDbf = Path.Combine(dbfDir, "KORISNIC.DBF");
+
 await ImportKorisnicDbf(korisnicDbf);
 
 var razrediDbf = Path.Combine(dbfDir, "RAZREDI.DBF");
@@ -1505,6 +1514,94 @@ async Task ImportDoprinosiPoslodavcaDbf(string dbfPath, string label, int defaul
 
         await db.SaveChangesAsync();
         Console.WriteLine($"\r  [OK] Uvezeno {cnt} zapisa o doprinosima poslodavca iz {label} (preskočeno: {skipped})");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"\r  [GREŠKA] Neuspešan uvoz {label}: {ex.Message}");
+    }
+    finally
+    {
+        if (tempPath != dbfPath && File.Exists(tempPath))
+        {
+            try { File.Delete(tempPath); } catch { }
+        }
+    }
+}
+
+async Task ImportBankeiDbf(string dbfPath, string label, bool isHistory, int defaultGodina, int defaultMesec)
+{
+    if (!File.Exists(dbfPath))
+    {
+        Console.WriteLine($"[!] Nema {label} na putanji: {dbfPath}");
+        return;
+    }
+
+    Console.Write($"\nUvoz {label} ... ");
+    int cnt = 0, skipped = 0;
+
+    var tempPath = dbfPath;
+    if (dbfPath.Contains(" ") || dbfPath.Length > 100)
+    {
+        tempPath = Path.Combine(Path.GetTempPath(), Path.GetFileName(dbfPath));
+        try { File.Copy(dbfPath, tempPath, true); } catch { tempPath = dbfPath; }
+    }
+
+    try
+    {
+        var options = new DbfDataReaderOptions { Encoding = cp852, SkipDeletedRecords = true };
+        using var reader = new DbfDataReader.DbfDataReader(tempPath, options);
+        var columns = Enumerable.Range(0, reader.FieldCount)
+                                .Select(i => reader.GetName(i).ToUpper().Trim()).ToList();
+
+        while (reader.Read())
+        {
+            try
+            {
+                int godina = columns.Contains("GODINA") ? GetInt(reader, columns, "GODINA") : defaultGodina;
+                int mesec = columns.Contains("MESEC") ? GetInt(reader, columns, "MESEC") : defaultMesec;
+                string sifra = GetIntAsString(reader, columns, "RED_BROJ", "SIFRA");
+                string naziv = GetString(reader, columns, "NAZIV");
+                string ziro = GetString(reader, columns, "ZIRO_RACUN", "ZIRO");
+
+                if (godina <= 0) godina = defaultGodina;
+                if (mesec <= 0) mesec = defaultMesec;
+
+                if (string.IsNullOrWhiteSpace(sifra))
+                {
+                    skipped++;
+                    continue;
+                }
+
+                var postojeca = await db.Banke
+                    .FirstOrDefaultAsync(b => b.Godina == godina && b.Mesec == mesec && b.Sifra == sifra);
+
+                if (postojeca == null)
+                {
+                    db.Banke.Add(new Banka
+                    {
+                        Godina = godina,
+                        Mesec = mesec,
+                        Sifra = sifra,
+                        Naziv = naziv,
+                        ZiroRacun = ziro
+                    });
+                    cnt++;
+                }
+                else
+                {
+                    postojeca.Naziv = naziv;
+                    postojeca.ZiroRacun = ziro;
+                    db.Banke.Update(postojeca);
+                }
+            }
+            catch
+            {
+                skipped++;
+            }
+        }
+
+        await db.SaveChangesAsync();
+        Console.WriteLine($"\r  [OK] Uvezeno/ažurirano {cnt} zapisa o bankama iz {label} (preskočeno: {skipped})");
     }
     catch (Exception ex)
     {

@@ -108,9 +108,13 @@
                         <Button x:Name="BtnKrediti" Content="💳  Krediti"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnKrediti_Click"/>
+                        <Button x:Name="BtnBanke" Content="🏦  Banke"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnBanke_Click"/>
                         <Button x:Name="BtnPodesavanja" Content="⚙️  Podešavanja"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnPodesavanja_Click"/>
+
                     </StackPanel>
                 </ScrollViewer>
             </DockPanel>

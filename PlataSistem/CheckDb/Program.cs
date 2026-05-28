@@ -34,3 +34,8 @@ while (reader.Read())
     string strPeriod = $"{mesec:D2}/{godina}";
     Console.WriteLine(string.Format("{0,-10} | {1,-10} | {2,-12:N2} | {3,-12:N2} | {4,-12:N2} | {5,-12:N2}", strPeriod, radnikId, bruto, pio, zdr, nez));
 }
+
+
+
+
+

@@ -169,6 +169,30 @@ public partial class ObracuniPage : Page
                     .ToListAsync();
                 _db.RadniSati.RemoveRange(sati);
 
+                // Obriši specifične parametre poreza za taj mesec
+                var porezi = await _db.Porezi
+                    .Where(p => p.Godina == selected.Godina && p.Mesec == selected.Mesec)
+                    .ToListAsync();
+                _db.Porezi.RemoveRange(porezi);
+
+                // Obriši specifične stope doprinosa za taj mesec
+                var doprinosi = await _db.Doprinosi
+                    .Where(d => d.Godina == selected.Godina && d.Mesec == selected.Mesec)
+                    .ToListAsync();
+                _db.Doprinosi.RemoveRange(doprinosi);
+
+                // Obriši specifični šifrarnik banaka za taj mesec
+                var banke = await _db.Banke
+                    .Where(b => b.Godina == selected.Godina && b.Mesec == selected.Mesec)
+                    .ToListAsync();
+                _db.Banke.RemoveRange(banke);
+
+                // Obriši samodoprinose za taj mesec
+                var samodoprinosi = await _db.Samodoprinosi
+                    .Where(s => s.Godina == selected.Godina && s.Mesec == selected.Mesec)
+                    .ToListAsync();
+                _db.Samodoprinosi.RemoveRange(samodoprinosi);
+
                 await _db.SaveChangesAsync();
 
                 MessageBox.Show($"Uspešno obrisan obračun za period {selected.PeriodStr}.", "Uspeh", MessageBoxButton.OK, MessageBoxImage.Information);

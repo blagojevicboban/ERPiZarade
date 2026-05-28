@@ -281,6 +281,9 @@ public partial class NoviObracunWindow : Window
                 return;
             }
 
+            // Osiguraj poreske, doprinosne i bankovne parametre za ciljni mesec (bilo prenosom ili automatskim fallback kloniranjem)
+            await OsigurajParametreZaCiljniMesecAsync(godina, mesec, vrednostBoda, fondSati);
+
             // Provera da li već postoje obračuni za ovaj period
             var postojeci = await _db.ObracuniPlata
                 .Where(o => o.Godina == godina && o.Mesec == mesec)
@@ -460,7 +463,7 @@ public partial class NoviObracunWindow : Window
         }
     }
 
-    private void BtnPrenesi_Click(object sender, RoutedEventArgs e)
+    private async void BtnPrenesi_Click(object sender, RoutedEventArgs e)
     {
         if (ComboPrenosIz.SelectedItem is not PrenosPeriodItem selectedSource)
         {
@@ -491,6 +494,14 @@ public partial class NoviObracunWindow : Window
             int godina = (int)ComboGodina.SelectedItem;
             int mesec = (int)ComboMesec.SelectedItem;
 
+            decimal.TryParse(TxtVrednostBoda.Text, out decimal vrednostBoda);
+            if (vrednostBoda <= 0) vrednostBoda = 1860.34m;
+            int.TryParse(TxtFondCasova.Text, out int fondSati);
+            if (fondSati <= 0) fondSati = 176;
+
+            // Prenesi sve period-specifične parametre (Poreze, Doprinose, Banke, Samodoprinose) iz baze
+            await PrenesiParametreIzIzvoraAsync(prethodnaGodina, prethodniMesec, godina, mesec, vrednostBoda, fondSati);
+
             int prenetoCount = 0;
             foreach (var r in _radniciSati)
             {
@@ -513,9 +524,9 @@ public partial class NoviObracunWindow : Window
             }
 
             GridRadniciSati.Items.Refresh();
-            TxtObavestenje.Text = $"📋 Uspešno preneti podaci o satima iz perioda {prethodniMesec}.{prethodnaGodina} za {prenetoCount} radnika.";
+            TxtObavestenje.Text = $"📋 Uspešno preneti svi podaci (sati, porezi, doprinosi, banke) iz perioda {prethodniMesec}.{prethodnaGodina} za {prenetoCount} radnika.";
             MessageBox.Show(
-                $"Uspešno preneti podaci o satima iz perioda {prethodniMesec}.{prethodnaGodina} za {prenetoCount} radnika.",
+                $"Uspešno preneti svi podaci (sati, porezi, doprinosi, banke) iz perioda {prethodniMesec}.{prethodnaGodina} za {prenetoCount} radnika.",
                 "Uspeh",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
@@ -523,6 +534,174 @@ public partial class NoviObracunWindow : Window
         catch (Exception ex)
         {
             MessageBox.Show($"Greška prilikom prenosa podataka: {ex.Message}", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private async Task PrenesiParametreIzIzvoraAsync(int sourceGodina, int sourceMesec, int targetGodina, int targetMesec, decimal targetVrBoda, int targetFondCasova)
+    {
+        // 1. Prenos Poreza
+        var targetPorezi = await _db.Porezi.FirstOrDefaultAsync(p => p.Godina == targetGodina && p.Mesec == targetMesec);
+        if (targetPorezi == null)
+        {
+            var sourcePorezi = await _db.Porezi.FirstOrDefaultAsync(p => p.Godina == sourceGodina && p.Mesec == sourceMesec);
+            if (sourcePorezi != null)
+            {
+                var newPorezi = new PlataData.Models.Porezi
+                {
+                    Godina = targetGodina,
+                    Mesec = targetMesec,
+                    VrBoda = targetVrBoda,
+                    FondCasova = targetFondCasova,
+                    Zarada = sourcePorezi.Zarada,
+                    AkPorez = sourcePorezi.AkPorez,
+                    AkPorez2 = sourcePorezi.AkPorez2,
+                    AkPorez3 = sourcePorezi.AkPorez3,
+                    AkPorez4 = sourcePorezi.AkPorez4,
+                    Prvast = sourcePorezi.Prvast,
+                    Drugast = sourcePorezi.Drugast,
+                    Trecast = sourcePorezi.Trecast,
+                    LinPorez3 = sourcePorezi.LinPorez3,
+                    SifPlac1 = sourcePorezi.SifPlac1,
+                    ZiroR1 = sourcePorezi.ZiroR1,
+                    PozivNa1 = sourcePorezi.PozivNa1,
+                    PozivNa3 = sourcePorezi.PozivNa3,
+                    Svrha1 = sourcePorezi.Svrha1,
+                    Svrha2 = sourcePorezi.Svrha2,
+                    Primalac1 = sourcePorezi.Primalac1,
+                    Primalac2 = sourcePorezi.Primalac2,
+                    SifPlac2 = sourcePorezi.SifPlac2,
+                    ZiroR2 = sourcePorezi.ZiroR2,
+                    PozivNa2 = sourcePorezi.PozivNa2,
+                    PozivNa4 = sourcePorezi.PozivNa4,
+                    PosPorez = sourcePorezi.PosPorez,
+                    Svrha3 = sourcePorezi.Svrha3,
+                    Svrha4 = sourcePorezi.Svrha4,
+                    Primalac3 = sourcePorezi.Primalac3,
+                    Primalac4 = sourcePorezi.Primalac4,
+                    ProcDrzav = sourcePorezi.ProcDrzav,
+                    ProcNocni = sourcePorezi.ProcNocni,
+                    ProcPreko = sourcePorezi.ProcPreko,
+                    ProcMinul = sourcePorezi.ProcMinul,
+                    ProcNedel = sourcePorezi.ProcNedel,
+                    ProcBolov = sourcePorezi.ProcBolov,
+                    ProcPlac = sourcePorezi.ProcPlac,
+                    ProcPlZa = sourcePorezi.ProcPlZa,
+                    ProcInval = sourcePorezi.ProcInval,
+                    CasZaOb = sourcePorezi.CasZaOb,
+                    ProcIzdrz = sourcePorezi.ProcIzdrz,
+                    Akont = sourcePorezi.Akont,
+                    ProsBrut = sourcePorezi.ProsBrut,
+                    TopliObrokCena = sourcePorezi.TopliObrokCena
+                };
+                _db.Porezi.Add(newPorezi);
+            }
+        }
+        else
+        {
+            targetPorezi.VrBoda = targetVrBoda;
+            targetPorezi.FondCasova = targetFondCasova;
+            _db.Entry(targetPorezi).State = EntityState.Modified;
+        }
+
+        // 2. Prenos Doprinosa
+        var imaTargetDoprinosi = await _db.Doprinosi.AnyAsync(d => d.Godina == targetGodina && d.Mesec == targetMesec);
+        if (!imaTargetDoprinosi)
+        {
+            var sourceDoprinosi = await _db.Doprinosi.Where(d => d.Godina == sourceGodina && d.Mesec == sourceMesec).ToListAsync();
+            foreach (var sd in sourceDoprinosi)
+            {
+                var newDop = new Doprinos
+                {
+                    Godina = targetGodina,
+                    Mesec = targetMesec,
+                    RedniBroj = sd.RedniBroj,
+                    Naziv = sd.Naziv,
+                    ProcRadn = sd.ProcRadn,
+                    ProcPosl = sd.ProcPosl,
+                    B60ProcR = sd.B60ProcR,
+                    B60ProcP = sd.B60ProcP,
+                    Bp60ProcP = sd.Bp60ProcP,
+                    Bp60FProcP = sd.Bp60FProcP,
+                    PorProcP = sd.PorProcP,
+                    NepProcP = sd.NepProcP,
+                    InvProcP = sd.InvProcP,
+                    Svrha1 = sd.Svrha1,
+                    Svrha2 = sd.Svrha2,
+                    Primalac1 = sd.Primalac1,
+                    Primalac2 = sd.Primalac2,
+                    ZiroRacun = sd.ZiroRacun,
+                    ZiroRacP = sd.ZiroRacP,
+                    PozivNaB = sd.PozivNaB,
+                    PozivNa2 = sd.PozivNa2,
+                    SifPlac = sd.SifPlac,
+                    SifPlacP = sd.SifPlacP
+                };
+                _db.Doprinosi.Add(newDop);
+            }
+        }
+
+        // 3. Prenos Banaka
+        var imaTargetBanke = await _db.Banke.AnyAsync(b => b.Godina == targetGodina && b.Mesec == targetMesec);
+        if (!imaTargetBanke)
+        {
+            var sourceBanke = await _db.Banke.Where(b => b.Godina == sourceGodina && b.Mesec == sourceMesec).ToListAsync();
+            foreach (var sb in sourceBanke)
+            {
+                var newBank = new Banka
+                {
+                    Godina = targetGodina,
+                    Mesec = targetMesec,
+                    Sifra = sb.Sifra,
+                    Naziv = sb.Naziv,
+                    ZiroRacun = sb.ZiroRacun
+                };
+                _db.Banke.Add(newBank);
+            }
+        }
+
+        // 4. Prenos Samodoprinosa
+        var imaTargetSamo = await _db.Samodoprinosi.AnyAsync(s => s.Godina == targetGodina && s.Mesec == targetMesec);
+        if (!imaTargetSamo)
+        {
+            var sourceSamo = await _db.Samodoprinosi.Where(s => s.Godina == sourceGodina && s.Mesec == sourceMesec).ToListAsync();
+            foreach (var ss in sourceSamo)
+            {
+                var newSamo = new Samodoprinosi
+                {
+                    RadnikId = ss.RadnikId,
+                    Godina = targetGodina,
+                    Mesec = targetMesec,
+                    Iznos = ss.Iznos,
+                    Opis = ss.Opis
+                };
+                _db.Samodoprinosi.Add(newSamo);
+            }
+        }
+
+        await _db.SaveChangesAsync();
+    }
+
+    private async Task OsigurajParametreZaCiljniMesecAsync(int targetGodina, int targetMesec, decimal targetVrBoda, int targetFondCasova)
+    {
+        var targetPorezi = await _db.Porezi.FirstOrDefaultAsync(p => p.Godina == targetGodina && p.Mesec == targetMesec);
+        if (targetPorezi != null)
+        {
+            targetPorezi.VrBoda = targetVrBoda;
+            targetPorezi.FondCasova = targetFondCasova;
+            _db.Entry(targetPorezi).State = EntityState.Modified;
+            await _db.SaveChangesAsync();
+            return;
+        }
+
+        var sourcePorezi = await _db.Porezi
+            .Where(p => p.Godina < targetGodina || (p.Godina == targetGodina && p.Mesec < targetMesec))
+            .OrderByDescending(p => p.Godina)
+            .ThenByDescending(p => p.Mesec)
+            .FirstOrDefaultAsync();
+
+        if (sourcePorezi != null)
+        {
+            await PrenesiParametreIzIzvoraAsync(sourcePorezi.Godina, sourcePorezi.Mesec, targetGodina, targetMesec, targetVrBoda, targetFondCasova);
         }
     }
 }

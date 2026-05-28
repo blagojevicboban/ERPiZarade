@@ -55,6 +55,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
             <!-- Card 1: Platni Spisak -->
@@ -82,7 +83,7 @@
                             <LineBreak/>• Obustave po kreditima i opštinskim samodoprinosima.
                             <LineBreak/>• Neto zaradu zaposlenog i konačni iznos za isplatu.
                             <LineBreak/><LineBreak/>
-                            Izveštaj se generiše u elegantnom i kompaktnom <Bold>A4 Landscape</Bold> formatu sa automatskim proračunom kolona i zbirnim redom na dnu.
+                            Izveštaj se generiše u elegantnom <Bold>A4 Landscape</Bold> formatu sa automatskim proračunom kolona i zbirnim redom na dnu.
                         </TextBlock>
                     </ScrollViewer>
 
@@ -96,7 +97,7 @@
             </Border>
 
             <!-- Card 2: Rekapitulacija -->
-            <Border Grid.Column="1" Style="{StaticResource Card}" Margin="12,0,0,0" Padding="24">
+            <Border Grid.Column="1" Style="{StaticResource Card}" Margin="6,0,6,0" Padding="24">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -127,6 +128,39 @@
 
                     <Button Grid.Row="2" Content="📊  Generiši zbirnu rekapitulaciju" Style="{StaticResource PrimaryButton}" 
                             Height="40" FontSize="14" FontWeight="SemiBold" Click="BtnGenerisiRekapitulaciju_Click"/>
+                </Grid>
+            </Border>
+
+            <!-- Card 3: Izveštaj za banke -->
+            <Border Grid.Column="2" Style="{StaticResource Card}" Margin="12,0,0,0" Padding="24">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0">
+                        <TextBlock Text="🏦 IZVEŠTAJI ZA BANKE" FontSize="16" FontWeight="Bold" Foreground="#1A237E" Margin="0,0,0,8"/>
+                        <Rectangle Height="2" Fill="#E0E0E0" HorizontalAlignment="Stretch" Margin="0,0,0,16"/>
+                    </StackPanel>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,0,20">
+                        <TextBlock TextWrapping="Wrap" FontSize="13" LineHeight="20" Foreground="#37474F">
+                            Izvoz i štampa platnih spiskova grupisanih po komercijalnim bankama za potrebe prenosa sredstava na tekuće račune zaposlenih.
+                            <LineBreak/><LineBreak/>
+                            Izveštaj generiše:
+                            <LineBreak/>• Pojedinačne stranice za svaku banku definisanu u SQLite šifrarniku <Bold>Banke</Bold> za odabrani mesec.
+                            <LineBreak/>• Prikaz reg. broja radnika, tekućeg računa i punog imena.
+                            <LineBreak/>• Neto iznos za isplatu za svakog zaposlenog (`NetoIsplata`).
+                            <LineBreak/>• Zbirnu sumu (rekord) za prenos po svakoj banci.
+                            <LineBreak/><LineBreak/>
+                            Izveštaj se generiše u elegantnom <Bold>A4 Portrait</Bold> formatu sa svim zakonskim i računovodstvenim elementima.
+                        </TextBlock>
+                    </ScrollViewer>
+
+                    <Button Grid.Row="2" Content="🏦  Generiši izveštaj za banke" Style="{StaticResource PrimaryButton}" 
+                            Height="40" FontSize="14" FontWeight="SemiBold" Click="BtnGenerisiBanke_Click"/>
                 </Grid>
             </Border>
         </Grid>

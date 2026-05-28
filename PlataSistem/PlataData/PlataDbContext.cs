@@ -21,6 +21,8 @@ public class PlataDbContext : DbContext
     public DbSet<Firma> Firme => Set<Firma>();
     public DbSet<PlatniRazred> PlatniRazredi => Set<PlatniRazred>();
     public DbSet<DoprinosiPoslodavca> DoprinosiPoslodavca => Set<DoprinosiPoslodavca>();
+    public DbSet<Banka> Banke => Set<Banka>();
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -306,6 +308,24 @@ public class PlataDbContext : DbContext
         }
         catch { }
 
+        // Bezbedno kreiranje tabele Banke ako ne postoji
+        try
+        {
+            ctx.Database.ExecuteSqlRaw(@"
+                CREATE TABLE IF NOT EXISTS Banke (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Godina INTEGER NOT NULL,
+                    Mesec INTEGER NOT NULL,
+                    Sifra TEXT NOT NULL DEFAULT '',
+                    Naziv TEXT NOT NULL DEFAULT '',
+                    ZiroRacun TEXT NOT NULL DEFAULT ''
+                );
+                CREATE INDEX IF NOT EXISTS IX_Banke_Godina_Mesec ON Banke(Godina, Mesec);
+            ");
+        }
+        catch { }
+
         return ctx;
     }
+
 }

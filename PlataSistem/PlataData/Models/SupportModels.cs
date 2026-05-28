@@ -143,3 +143,17 @@ public class PlatniRazred
     [Column(TypeName = "decimal(14,2)")] public decimal P8 { get; set; }
     [Column(TypeName = "decimal(14,2)")] public decimal P9 { get; set; }
 }
+
+/// <summary>Istorijski podaci o bankama za obračune — port BANKEI.DBF + BANKE.DBF</summary>
+[Table("Banke")]
+public class Banka
+{
+    [Key]
+    public int Id { get; set; }
+    public int Godina { get; set; }
+    public int Mesec { get; set; }
+    [MaxLength(10)] public string Sifra { get; set; } = "";
+    [MaxLength(60)] public string Naziv { get; set; } = "";
+    [MaxLength(30)] public string ZiroRacun { get; set; } = "";
+}
+

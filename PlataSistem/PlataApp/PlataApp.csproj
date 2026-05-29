@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <AssemblyName>PlataApp</AssemblyName>
+    <ApplicationIcon>plata.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

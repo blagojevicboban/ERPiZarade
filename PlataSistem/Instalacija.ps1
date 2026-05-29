@@ -66,7 +66,35 @@ if (Test-Path $dbSource) {
     }
 }
 
-# 7. Kreiranje prečica (Desktop i Start Menu)
+# 7. Kopiranje baza firmi - Ne prebrisivati ako vec postoje!
+$bazeSource = Join-Path $currentDir "Baze"
+$bazeDest = Join-Path $destDir "Baze"
+
+if (Test-Path $bazeSource) {
+    Write-Host "Kopiranje baza firmi..." -ForegroundColor Yellow
+    if (-not (Test-Path $bazeDest)) {
+        New-Item -ItemType Directory -Path $bazeDest -Force | Out-Null
+    }
+    $firmeDb = Get-ChildItem -Path $bazeSource -Filter "*.db"
+    $kopirano = 0
+    $preskoceno = 0
+    foreach ($firma in $firmeDb) {
+        $destFirma = Join-Path $bazeDest $firma.Name
+        if (Test-Path $destFirma) {
+            Write-Host "  [i] $($firma.Name) već postoji - preskače se." -ForegroundColor Green
+            $preskoceno++
+        } else {
+            Copy-Item -Path $firma.FullName -Destination $destFirma -Force
+            Write-Host "  -> $($firma.Name) kopirana." -ForegroundColor Gray
+            $kopirano++
+        }
+    }
+    Write-Host "Baze firmi: $kopirano novih kopirano, $preskoceno preskoceno." -ForegroundColor Cyan
+} else {
+    Write-Host "[i] Folder Baze/ nije pronađen u paketu - baze firmi se ne instaliraju." -ForegroundColor Gray
+}
+
+# 8. Kreiranje prečica (Desktop i Start Menu)
 Write-Host "Kreiranje prečica na sistemu..." -ForegroundColor Yellow
 try {
     $WshShell = New-Object -ComObject WScript.Shell
@@ -102,7 +130,7 @@ catch {
     Write-Host $_.Exception.Message -ForegroundColor Red
 }
 
-# 8. Kraj instalacije i instrukcije
+# 9. Kraj instalacije i instrukcije
 Write-Host ""
 Write-Host "==========================================================" -ForegroundColor Green
 Write-Host "         PLATA JE USPEŠNO INSTALIRANA NA RAČUNAR!         " -ForegroundColor Green

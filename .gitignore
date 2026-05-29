@@ -21,6 +21,7 @@ bld/
 publish_output/
 ReleasePackage/
 PlataSistem_Instalacija.zip
+PlataSetup_v*.exe
 
 # ─── SQLite baze podataka (sadrže stvarne i osetljive podatke o zaradama) ──────
 *.db

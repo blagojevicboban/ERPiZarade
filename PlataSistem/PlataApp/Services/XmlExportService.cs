@@ -136,7 +136,10 @@ public class XmlExportService
                         new XElement(tns + "IdentifikatorPrimaoca", obracun.Radnik.Jmbg),
                         new XElement(tns + "Prezime", prezime),
                         new XElement(tns + "Ime", ime),
-                        new XElement(tns + "OznakaPrebivalista", sedisteFirme),
+                        new XElement(tns + "OznakaPrebivalista", 
+                            !string.IsNullOrWhiteSpace(obracun.Radnik.SifraOpstine) 
+                                ? obracun.Radnik.SifraOpstine 
+                                : sedisteFirme),
                         new XElement(tns + "SVP", svp),
                         new XElement(tns + "BrojKalendarskihDana", "30"),
                         new XElement(tns + "BrojEfektivnihSati", efektivniSati.ToString()),

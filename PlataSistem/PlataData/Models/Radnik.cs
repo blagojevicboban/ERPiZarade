@@ -4,28 +4,35 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace PlataData.Models;
 
 /// <summary>
-/// Matična evidencija radnika — port RADNICI.DBF
+/// Evidencija radnika po obračunskim periodima — direktni port RADNICII.DBF + RADNICI.DBF
+/// Jedan red = jedan radnik u jednom obračunskom periodu (Godina + Mesec).
+/// Unikatna kombinacija: (BrojRadnika, Godina, Mesec).
 /// </summary>
 [Table("Radnici")]
 public class Radnik
 {
     [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    // Auto-increment — Id više nije isti kao BrojRadnika
     public int Id { get; set; }
 
-    // Identifikacija
+    // ── Obračunski period ────────────────────────────────────────────
+    public int Godina { get; set; }
+    public int Mesec { get; set; }
+
+    // ── Identifikacija ───────────────────────────────────────────────
+    /// <summary>RED_BROJ iz DBF — identifikator radnika (isti u svim periodima)</summary>
+    public int BrojRadnika { get; set; }
+
     [Required, MaxLength(60)]
     public string ImeIPrezime { get; set; } = "";
 
     [MaxLength(13)]
     public string Jmbg { get; set; } = "";
 
-    public int BrojRadnika { get; set; }
-
     [MaxLength(20)]
     public string MaticniBroj { get; set; } = "";
 
-    // Lični podaci
+    // ── Lični podaci ─────────────────────────────────────────────────
     public DateTime? DatumRodjenja { get; set; }
 
     [MaxLength(60)]
@@ -37,26 +44,36 @@ public class Radnik
     [MaxLength(40)]
     public string Mesto { get; set; } = "";
 
-    // Podaci o zaposlenju
+    [MaxLength(3)]
+    public string SifraOpstine { get; set; } = "";
+
+    // ── Podaci o zaposlenju ──────────────────────────────────────────
     public DateTime? DatumZaposlenja { get; set; }
     public DateTime? DatumPrestanka { get; set; }
 
     [MaxLength(10)]
     public string Kategorija { get; set; } = "";
 
+    /// <summary>SVP šifra (npr. 101101000) — RADNO_M iz DBF</summary>
     [MaxLength(60)]
     public string Radno_Mesto { get; set; } = "";
 
     public int BrojRadneJedinice { get; set; } = 1;
 
-    // Koeficijenti i osnova
+    /// <summary>MIN_RAD — broj godina minulog rada</summary>
+    public int MinuliRadGodine { get; set; }
+
+    // ── Koeficijenti i osnova ────────────────────────────────────────
     [Column(TypeName = "decimal(10,4)")]
     public decimal Koeficijent { get; set; }
+
+    [Column(TypeName = "decimal(10,4)")]
+    public decimal Koeficijent1 { get; set; }
 
     [Column(TypeName = "decimal(12,2)")]
     public decimal OsnovnaPlata { get; set; }
 
-    // Doprinosi i porezi
+    // ── Doprinosi i porezi ───────────────────────────────────────────
     [Column(TypeName = "decimal(6,4)")]
     public decimal StopaPio { get; set; }
 
@@ -66,25 +83,29 @@ public class Radnik
     [Column(TypeName = "decimal(6,4)")]
     public decimal StopaNezaposlenost { get; set; }
 
-    // Bankovski podaci
+    // ── Bankarski podaci ─────────────────────────────────────────────
     [MaxLength(25)]
     public string BankovniRacun { get; set; } = "";
 
     [MaxLength(30)]
     public string NazivBanke { get; set; } = "";
 
-    // Status
+    // ── Status ───────────────────────────────────────────────────────
     public bool Aktivan { get; set; } = true;
 
-    // Poresko oslobođenje
+    // ── Poresko oslobođenje ──────────────────────────────────────────
     [Column(TypeName = "decimal(12,2)")]
     public decimal LicnoOslobodjenje { get; set; }
 
-    // Evidencija
+    // ── Legacy / operativni podaci ───────────────────────────────────
+    [MaxLength(10)]
+    public string Operativni { get; set; } = "";
+
+    // ── Evidencija ───────────────────────────────────────────────────
     public DateTime DatumUnosa { get; set; } = DateTime.Now;
     public DateTime? DatumIzmene { get; set; }
 
-    // Navigaciona svojstva
+    // ── Navigaciona svojstva ─────────────────────────────────────────
     public ICollection<ObracunPlate> Obracuni { get; set; } = [];
     public ICollection<Kredit> Krediti { get; set; } = [];
     public ICollection<RadniSat> RadniSati { get; set; } = [];

@@ -52,7 +52,7 @@
                 <!-- Aktivni period -->
                 <Border x:Name="ActivePeriodBorder" DockPanel.Dock="Top" Margin="12,4,12,4"
                         Background="#15000000" CornerRadius="8" Padding="12,10"
-                        Cursor="Hand" MouseDown="FirmaBorder_MouseDown">
+                        Cursor="Hand" MouseDown="ActivePeriodBorder_MouseDown">
                     <StackPanel>
                         <TextBlock Text="Aktivni period:" FontSize="10" Foreground="#90CAF9"/>
                         <TextBlock x:Name="ActivePeriodText"
@@ -111,6 +111,9 @@
                         <Button x:Name="BtnBanke" Content="🏦  Banke"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnBanke_Click"/>
+                        <Button x:Name="BtnFirme" Content="🏢  Firme"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnFirme_Click"/>
                         <Button x:Name="BtnPodesavanja" Content="⚙️  Podešavanja"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnPodesavanja_Click"/>

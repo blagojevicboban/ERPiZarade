@@ -6,7 +6,7 @@ namespace PlataData;
 public class PlataDbContext : DbContext
 {
     private static readonly object _initLock = new();
-    private static bool _isInitialized = false;
+    private static readonly System.Collections.Generic.HashSet<string> _initializedDbs = new(System.StringComparer.OrdinalIgnoreCase);
 
     public PlataDbContext(DbContextOptions<PlataDbContext> options) : base(options) { }
 
@@ -50,7 +50,24 @@ public class PlataDbContext : DbContext
             .HasForeignKey(rs => rs.RadnikId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Indeks: brzo pretraži obračune po radniku/godini/mesecu (nije unique — može biti korekcija)
+        // Unique: jedan radnik po periodu
+        modelBuilder.Entity<Radnik>()
+            .HasIndex(r => new { r.BrojRadnika, r.Godina, r.Mesec })
+            .IsUnique();
+
+        // Indeks: brza pretraga po periodu
+        modelBuilder.Entity<Radnik>()
+            .HasIndex(r => new { r.Godina, r.Mesec });
+
+        // Indeks: brza pretraga po JMBG
+        modelBuilder.Entity<Radnik>()
+            .HasIndex(r => r.Jmbg);
+
+        // Indeks: brza pretraga po BrojRadnika
+        modelBuilder.Entity<Radnik>()
+            .HasIndex(r => r.BrojRadnika);
+
+        // Indeks: brzo pretraži obračune po radniku/godini/mesecu
         modelBuilder.Entity<ObracunPlate>()
             .HasIndex(o => new { o.RadnikId, o.Godina, o.Mesec });
 
@@ -58,14 +75,6 @@ public class PlataDbContext : DbContext
         modelBuilder.Entity<RadniSat>()
             .HasIndex(rs => new { rs.RadnikId, rs.Godina, rs.Mesec })
             .IsUnique();
-
-        // Indeks: brza pretraga radnika po JMBG
-        modelBuilder.Entity<Radnik>()
-            .HasIndex(r => r.Jmbg);
-
-        // Indeks: brza pretraga radnika po BrojRadnika
-        modelBuilder.Entity<Radnik>()
-            .HasIndex(r => r.BrojRadnika);
 
         // Radnik → DoprinosiPoslodavca (1:N)
         modelBuilder.Entity<DoprinosiPoslodavca>()
@@ -90,10 +99,11 @@ public class PlataDbContext : DbContext
 
         lock (_initLock)
         {
-            if (!_isInitialized)
+            var absolutePath = System.IO.Path.GetFullPath(dbPath);
+            if (!_initializedDbs.Contains(absolutePath))
             {
                 InitializeDatabase(ctx);
-                _isInitialized = true;
+                _initializedDbs.Add(absolutePath);
             }
         }
 
@@ -104,7 +114,24 @@ public class PlataDbContext : DbContext
     {
         ctx.Database.EnsureCreated();
 
-        // Bezbedno kreiranje tabele DoprinosiPoslodavca ako ne postoji
+        // ── Bezbedno dodavanje novih kolona (za starije baze) ──────────────
+
+        // Radnici: nova periodična arhitektura — Godina i Mesec
+        try { ctx.Database.ExecuteSqlRaw("ALTER TABLE Radnici ADD COLUMN Godina INTEGER NOT NULL DEFAULT 0;"); } catch { }
+        try { ctx.Database.ExecuteSqlRaw("ALTER TABLE Radnici ADD COLUMN Mesec INTEGER NOT NULL DEFAULT 0;"); } catch { }
+        try { ctx.Database.ExecuteSqlRaw("ALTER TABLE Radnici ADD COLUMN BrojRadnika INTEGER NOT NULL DEFAULT 0;"); } catch { }
+        try { ctx.Database.ExecuteSqlRaw("ALTER TABLE Radnici ADD COLUMN Koeficijent1 DECIMAL(10,4) NOT NULL DEFAULT 0;"); } catch { }
+        try { ctx.Database.ExecuteSqlRaw("ALTER TABLE Radnici ADD COLUMN MinuliRadGodine INTEGER NOT NULL DEFAULT 0;"); } catch { }
+        try { ctx.Database.ExecuteSqlRaw("ALTER TABLE Radnici ADD COLUMN Operativni TEXT NOT NULL DEFAULT '';"); } catch { }
+
+        // Migracija starih baza: BrojRadnika = Id (stara arhitektura)
+        try { ctx.Database.ExecuteSqlRaw("UPDATE Radnici SET BrojRadnika = Id WHERE BrojRadnika = 0 OR BrojRadnika IS NULL;"); } catch { }
+
+        // Kreiranje unique indeksa za novu arhitekturu
+        try { ctx.Database.ExecuteSqlRaw("CREATE UNIQUE INDEX IF NOT EXISTS IX_Radnici_BrojRadnika_Godina_Mesec ON Radnici (BrojRadnika, Godina, Mesec);"); } catch { }
+        try { ctx.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS IX_Radnici_Godina_Mesec ON Radnici (Godina, Mesec);"); } catch { }
+
+        // ── DoprinosiPoslodavca ─────────────────────────────────────────────
         try
         {
             ctx.Database.ExecuteSqlRaw(@"
@@ -128,78 +155,41 @@ public class PlataDbContext : DbContext
         }
         catch { }
 
-        // Bezbedno kreiranje indeksa za brzu pretragu po godini i mesecu
-        try
-        {
-            ctx.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS IX_ObracuniPlata_Godina_Mesec ON ObracuniPlata (Godina, Mesec);");
-        }
-        catch { }
+        try { ctx.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS IX_ObracuniPlata_Godina_Mesec ON ObracuniPlata (Godina, Mesec);"); } catch { }
+        try { ctx.Database.ExecuteSqlRaw("ALTER TABLE RadniSati ADD COLUMN Prosek DECIMAL(14,4) DEFAULT 0;"); } catch { }
+        try { ctx.Database.ExecuteSqlRaw("ALTER TABLE RadniSati ADD COLUMN Stimulacija DECIMAL(14,2) DEFAULT 0;"); } catch { }
+        try { ctx.Database.ExecuteSqlRaw("ALTER TABLE ObracuniPlata ADD COLUMN Prosek DECIMAL(14,4) DEFAULT 0;"); } catch { }
 
-        // Bezbedno dodavanje kolona u SQLite bez migracija
-        try
-        {
-            ctx.Database.ExecuteSqlRaw("ALTER TABLE RadniSati ADD COLUMN Prosek DECIMAL(14,4) DEFAULT 0;");
-        }
-        catch { /* Kolona vec postoji */ }
-
-        try
-        {
-            ctx.Database.ExecuteSqlRaw("ALTER TABLE RadniSati ADD COLUMN Stimulacija DECIMAL(14,2) DEFAULT 0;");
-        }
-        catch { /* Kolona vec postoji */ }
-
-        try
-        {
-            ctx.Database.ExecuteSqlRaw("ALTER TABLE ObracuniPlata ADD COLUMN Prosek DECIMAL(14,4) DEFAULT 0;");
-        }
-        catch { /* Kolona vec postoji */ }
-
-        // Nova polja za sate — RadniSati
-        string[] noviSatiKoloneRS = { 
+        string[] noviSatiKoloneRS = {
             "SmenskiSati", "RadPraznikomSati", "NocniRadPraznikomSati", "PlacenoOdsustvoSati",
-            "RadNedeljomSati", "PlacenoZakonskiSati", "BolovanjePreko60Sati", "PorodiljskoOdsustvoSati", 
+            "RadNedeljomSati", "PlacenoZakonskiSati", "BolovanjePreko60Sati", "PorodiljskoOdsustvoSati",
             "Bolovanje100Sati", "TopliObrokDani"
         };
         foreach (var col in noviSatiKoloneRS)
         {
-            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE RadniSati ADD COLUMN {col} INTEGER NOT NULL DEFAULT 0;"); }
-            catch { /* Kolona već postoji */ }
+            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE RadniSati ADD COLUMN {col} INTEGER NOT NULL DEFAULT 0;"); } catch { }
         }
 
-        try
-        {
-            ctx.Database.ExecuteSqlRaw("ALTER TABLE RadniSati ADD COLUMN RegresIznos DECIMAL(14,2) DEFAULT 0;");
-        }
-        catch { /* Kolona vec postoji */ }
+        try { ctx.Database.ExecuteSqlRaw("ALTER TABLE RadniSati ADD COLUMN RegresIznos DECIMAL(14,2) DEFAULT 0;"); } catch { }
 
-        // Nova polja za sate — ObracuniPlata
         string[] noviSatiKoloneOP = { "SmenskiSati", "RadPraznikomSati", "NocniRadPraznikomSati", "PlacenoOdsustvoSati" };
         foreach (var col in noviSatiKoloneOP)
         {
-            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} INTEGER NOT NULL DEFAULT 0;"); }
-            catch { /* Kolona već postoji */ }
+            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} INTEGER NOT NULL DEFAULT 0;"); } catch { }
         }
 
-
-
-        // Bezbedno dodavanje detaljnih bruto kolona
         string[] newCols = {
             "NetoZar", "NetoNerd", "NetoGOd", "NetoTo", "NetoReg",
             "Neto", "NetoBol", "NetoB100", "NetoPlac", "NetoPlZ",
             "NetoDrza", "NetoNocni", "NetoVezba", "NetoPrek", "NetoTer",
             "KorDod", "KorDod1", "Kumul", "NetoNede",
-            "LicniOdbitak"   // DBF: umanjenje = licni odbitak (SAMODOP.PRG: sum_umanj)
+            "LicniOdbitak"
         };
         foreach (var col in newCols)
         {
-            try
-            {
-                ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} DECIMAL(14,2) DEFAULT 0;");
-            }
-            catch { /* Kolona već postoji */ }
+            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} DECIMAL(14,2) DEFAULT 0;"); } catch { }
         }
 
-        // ── DODATNO MIGRIRANE LEGACY KOLONE IZ OBRACUN.DBF / OBRACUNI.DBF ──
         string[] decimalColsOP = {
             "Koeficijent", "UkupnoRadnihSatiLegacy", "FondSatiMesecni", "DodaciLegacy",
             "DodatakNaM1", "DodatakNaM2", "DodatakNaM3", "BrutoOsnovica", "TopliObrokIznos",
@@ -209,39 +199,31 @@ public class PlataDbContext : DbContext
         };
         foreach (var col in decimalColsOP)
         {
-            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} DECIMAL(14,2) DEFAULT 0;"); }
-            catch { /* Kolona već postoji */ }
+            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} DECIMAL(14,2) DEFAULT 0;"); } catch { }
         }
 
         string[] decimal5ColsOP = { "CenaSataRedovan", "CenaSataMinuliRad" };
         foreach (var col in decimal5ColsOP)
         {
-            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} DECIMAL(14,5) DEFAULT 0;"); }
-            catch { /* Kolona već postoji */ }
+            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} DECIMAL(14,5) DEFAULT 0;"); } catch { }
         }
 
         string[] intColsOP = { "MinuliRadGodine", "BrojRadneJedinice", "SifraSamodoprinosa1", "SifraSamodoprinosa2" };
         foreach (var col in intColsOP)
         {
-            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} INTEGER DEFAULT 0;"); }
-            catch { /* Kolona već postoji */ }
+            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} INTEGER DEFAULT 0;"); } catch { }
         }
 
         string[] stringColsOP = { "Kategorija", "Operativni", "Oznaka" };
         foreach (var col in stringColsOP)
         {
-            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} TEXT DEFAULT '';"); }
-            catch { /* Kolona već postoji */ }
+            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} TEXT DEFAULT '';"); } catch { }
         }
 
-        // Automatsko kopiranje 13-cifrenog JMBG-a iz MaticniBroj u Jmbg ako je Jmbg prazan
-        try
-        {
-            ctx.Database.ExecuteSqlRaw("UPDATE Radnici SET Jmbg = MaticniBroj WHERE (Jmbg IS NULL OR trim(Jmbg) = '') AND MaticniBroj IS NOT NULL AND length(trim(MaticniBroj)) = 13;");
-        }
-        catch { /* Tabela ili kolona ne postoji jos */ }
+        // Automatsko kopiranje 13-cifrenog JMBG-a
+        try { ctx.Database.ExecuteSqlRaw("UPDATE Radnici SET Jmbg = MaticniBroj WHERE (Jmbg IS NULL OR trim(Jmbg) = '') AND MaticniBroj IS NOT NULL AND length(trim(MaticniBroj)) = 13;"); } catch { }
 
-        // Automatsko kreiranje nedostajućih zapisa u RadniSati iz postojećih obračuna (istorijski DBF podaci)
+        // Kreiranje nedostajućih RadniSati iz obračuna
         try
         {
             ctx.Database.ExecuteSqlRaw(@"
@@ -249,14 +231,14 @@ public class PlataDbContext : DbContext
                 SELECT RadnikId, Godina, Mesec, MAX(RedovniSati), MAX(BolovanjeSati), MAX(PrekovremeneSati), MAX(GodisnjioOdmorSati), 0, 0, MAX(Prosek)
                 FROM ObracuniPlata o
                 WHERE NOT EXISTS (
-                    SELECT 1 FROM RadniSati rs 
+                    SELECT 1 FROM RadniSati rs
                     WHERE rs.RadnikId = o.RadnikId AND rs.Godina = o.Godina AND rs.Mesec = o.Mesec
                 )
                 GROUP BY RadnikId, Godina, Mesec;");
         }
-        catch { /* Tabela ne postoji još */ }
+        catch { }
 
-        // Bezbedno kreiranje tabele Firme ako ne postoji (EnsureCreated ne dodaje tabele u postojeću bazu)
+        // Firme
         try
         {
             ctx.Database.ExecuteSqlRaw(@"
@@ -274,59 +256,43 @@ public class PlataDbContext : DbContext
                     Napomena TEXT NOT NULL DEFAULT ''
                 );");
         }
-        catch { /* Tabela već postoji */ }
+        catch { }
 
-        // Bezbedno kreiranje tabele PlatniRazredi ako ne postoji
+        // PlatniRazredi
         try
         {
             ctx.Database.ExecuteSqlRaw(@"
                 CREATE TABLE IF NOT EXISTS PlatniRazredi (
                     Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    R1 DECIMAL(14,2) NOT NULL DEFAULT 0,
-                    R2 DECIMAL(14,2) NOT NULL DEFAULT 0,
-                    R3 DECIMAL(14,2) NOT NULL DEFAULT 0,
-                    R4 DECIMAL(14,2) NOT NULL DEFAULT 0,
-                    R5 DECIMAL(14,2) NOT NULL DEFAULT 0,
-                    R6 DECIMAL(14,2) NOT NULL DEFAULT 0,
-                    R7 DECIMAL(14,2) NOT NULL DEFAULT 0,
-                    R8 DECIMAL(14,2) NOT NULL DEFAULT 0,
-                    R9 DECIMAL(14,2) NOT NULL DEFAULT 0,
-                    P1 DECIMAL(14,2) NOT NULL DEFAULT 0,
-                    P2 DECIMAL(14,2) NOT NULL DEFAULT 0,
-                    P3 DECIMAL(14,2) NOT NULL DEFAULT 0,
-                    P4 DECIMAL(14,2) NOT NULL DEFAULT 0,
-                    P5 DECIMAL(14,2) NOT NULL DEFAULT 0,
-                    P6 DECIMAL(14,2) NOT NULL DEFAULT 0,
-                    P7 DECIMAL(14,2) NOT NULL DEFAULT 0,
-                    P8 DECIMAL(14,2) NOT NULL DEFAULT 0,
-                    P9 DECIMAL(14,2) NOT NULL DEFAULT 0
+                    R1 DECIMAL(14,2) NOT NULL DEFAULT 0, R2 DECIMAL(14,2) NOT NULL DEFAULT 0, R3 DECIMAL(14,2) NOT NULL DEFAULT 0,
+                    R4 DECIMAL(14,2) NOT NULL DEFAULT 0, R5 DECIMAL(14,2) NOT NULL DEFAULT 0, R6 DECIMAL(14,2) NOT NULL DEFAULT 0,
+                    R7 DECIMAL(14,2) NOT NULL DEFAULT 0, R8 DECIMAL(14,2) NOT NULL DEFAULT 0, R9 DECIMAL(14,2) NOT NULL DEFAULT 0,
+                    P1 DECIMAL(14,2) NOT NULL DEFAULT 0, P2 DECIMAL(14,2) NOT NULL DEFAULT 0, P3 DECIMAL(14,2) NOT NULL DEFAULT 0,
+                    P4 DECIMAL(14,2) NOT NULL DEFAULT 0, P5 DECIMAL(14,2) NOT NULL DEFAULT 0, P6 DECIMAL(14,2) NOT NULL DEFAULT 0,
+                    P7 DECIMAL(14,2) NOT NULL DEFAULT 0, P8 DECIMAL(14,2) NOT NULL DEFAULT 0, P9 DECIMAL(14,2) NOT NULL DEFAULT 0
                 );");
         }
-        catch { /* Tabela vec postoji */ }
+        catch { }
 
-        // Bezbedno dodavanje TopliObrokCena u Porezi (cena toplog obroka po danu)
-        try
-        {
-            ctx.Database.ExecuteSqlRaw("ALTER TABLE Porezi ADD COLUMN TopliObrokCena DECIMAL(14,2) DEFAULT 0;");
-        }
-        catch { /* Kolona već postoji */ }
+        try { ctx.Database.ExecuteSqlRaw("ALTER TABLE Porezi ADD COLUMN TopliObrokCena DECIMAL(14,2) DEFAULT 0;"); } catch { }
 
-        // Bezbedno inicijalno popunjavanje default platnih razreda ako je tabela prazna
         try
         {
             if (!ctx.PlatniRazredi.Any())
             {
                 ctx.PlatniRazredi.Add(new PlatniRazred
                 {
-                    R1 = 51297.00m, R2 = 51297.00m, R3 = 51297.00m, R4 = 51297.00m, R5 = 51297.00m, R6 = 51297.00m, R7 = 51297.00m, R8 = 51297.00m, R9 = 0m,
-                    P1 = 51297.00m, P2 = 51297.00m, P3 = 51297.00m, P4 = 51297.00m, P5 = 51297.00m, P6 = 51297.00m, P7 = 51297.00m, P8 = 51297.00m, P9 = 0m
+                    R1 = 51297.00m, R2 = 51297.00m, R3 = 51297.00m, R4 = 51297.00m, R5 = 51297.00m,
+                    R6 = 51297.00m, R7 = 51297.00m, R8 = 51297.00m, R9 = 0m,
+                    P1 = 51297.00m, P2 = 51297.00m, P3 = 51297.00m, P4 = 51297.00m, P5 = 51297.00m,
+                    P6 = 51297.00m, P7 = 51297.00m, P8 = 51297.00m, P9 = 0m
                 });
                 ctx.SaveChanges();
             }
         }
         catch { }
 
-        // Bezbedno kreiranje tabele Banke ako ne postoji
+        // Banke
         try
         {
             ctx.Database.ExecuteSqlRaw(@"

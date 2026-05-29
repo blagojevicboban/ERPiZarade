@@ -264,7 +264,7 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="{Binding SelectedObracun.Radnik.ImeIPrezime}" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding SelectedObracun.Radnik.MaticniBroj}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SelectedObracun.Radnik.Jmbg}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
                                 </Grid>
                                 <Grid Grid.Row="1">
                                     <Grid.ColumnDefinitions>

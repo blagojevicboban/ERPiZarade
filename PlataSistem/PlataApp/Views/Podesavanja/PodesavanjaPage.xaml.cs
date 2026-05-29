@@ -3,6 +3,8 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Media;
 using Microsoft.Win32;
 using PlataData;
 using PlataData.Models;
@@ -12,14 +14,11 @@ namespace PlataApp.Views.Podesavanja;
 public partial class PodesavanjaPage : Page
 {
     private PlataDbContext _db;
-    private Firma? _currentFirma;
 
     public PodesavanjaPage()
     {
         InitializeComponent();
         _db = PlataDbContext.Create(AppConfig.DbPath);
-
-        UcitajFirmaPodatke();
 
         // Inicijalizacija putanja za rezervnu kopiju
         try
@@ -29,86 +28,25 @@ public partial class PodesavanjaPage : Page
         }
         catch { }
 
-        // Učitaj korisničke postavke programa
+        // Učitaj korisčke postavke programa
         try
         {
             ChkPokretanjeMaximizovano.IsChecked = UserSettings.Instance.PokretanjeMaximizovano;
         }
         catch { }
+
+        // Učitaj istoriju rezervnih kopija
+        OsveziIstorijuKopija();
     }
 
-    private void UcitajFirmaPodatke()
+    private void OsveziIstorijuKopija()
     {
         try
         {
-            _currentFirma = _db.Firme.FirstOrDefault();
-            if (_currentFirma == null)
-            {
-                _currentFirma = new Firma();
-            }
-            PopuniFirmaFormu();
+            var kopije = Services.BackupService.Instance.UcitajIstorijuKopija();
+            LstIstorijaKopija.ItemsSource = kopije;
         }
-        catch (Exception ex)
-        {
-            StatusMessage.Text = $"Greška pri učitavanju podataka o firmi: {ex.Message}";
-        }
-    }
-
-    private void PopuniFirmaFormu()
-    {
-        if (_currentFirma == null) return;
-
-        TxtFirmaNaziv.Text = _currentFirma.Naziv;
-        TxtFirmaAdresa.Text = _currentFirma.Adresa;
-        TxtFirmaGrad.Text = _currentFirma.Grad;
-        TxtFirmaPib.Text = _currentFirma.Pib;
-        TxtFirmaMb.Text = _currentFirma.Mb;
-        TxtFirmaBankovniRacun.Text = _currentFirma.BankovniRacun;
-        TxtFirmaSifraPlacanja.Text = _currentFirma.SifraPlacanja;
-        TxtFirmaTelefon.Text = _currentFirma.Telefon;
-        TxtFirmaEmail.Text = _currentFirma.Email;
-        TxtFirmaNapomena.Text = _currentFirma.Napomena;
-    }
-
-    private void BtnSacuvajFirma_Click(object sender, RoutedEventArgs e)
-    {
-        if (_currentFirma == null) return;
-
-        try
-        {
-            _currentFirma.Naziv = TxtFirmaNaziv.Text.Trim();
-            _currentFirma.Adresa = TxtFirmaAdresa.Text.Trim();
-            _currentFirma.Grad = TxtFirmaGrad.Text.Trim();
-            _currentFirma.Pib = TxtFirmaPib.Text.Trim();
-            _currentFirma.Mb = TxtFirmaMb.Text.Trim();
-            _currentFirma.BankovniRacun = TxtFirmaBankovniRacun.Text.Trim();
-            _currentFirma.SifraPlacanja = TxtFirmaSifraPlacanja.Text.Trim();
-            _currentFirma.Telefon = TxtFirmaTelefon.Text.Trim();
-            _currentFirma.Email = TxtFirmaEmail.Text.Trim();
-            _currentFirma.Napomena = TxtFirmaNapomena.Text.Trim();
-
-            if (_currentFirma.Id == 0)
-            {
-                _db.Firme.Add(_currentFirma);
-            }
-            else
-            {
-                _db.Entry(_currentFirma).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
-            }
-
-            _db.SaveChanges();
-
-            // Osveži ime firme u sidebar-u glavnog prozora
-            var mainWindow = Application.Current.MainWindow as MainWindow;
-            mainWindow?.UcitajImeFirme();
-
-            StatusMessage.Text = "Podaci o firmi su uspešno sačuvani!";
-            MessageBox.Show("Podaci o firmi su uspešno sačuvani!", "Uspeh", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Greška pri čuvanju podataka o firmi: {ex.Message}", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
+        catch { }
     }
 
     private void ChkPostavke_Changed(object sender, RoutedEventArgs e)
@@ -146,12 +84,13 @@ public partial class PodesavanjaPage : Page
 
             if (dialog.ShowDialog() == true)
             {
-                File.Copy(dbPath, dialog.FileName, true);
+                Services.BackupService.Instance.NapraviRucniBackup(dialog.FileName);
                 StatusMessage.Text = $"Rezervna kopija je uspešno sačuvana na: {dialog.FileName}";
                 MessageBox.Show($"Rezervna kopija baze podataka je uspešno kreirana!", "Uspeh", MessageBoxButton.OK, MessageBoxImage.Information);
                 
-                // Osveži predloženo ime za sledeći put
+                // Osveži predloženo ime za sledeći put i listu istorije
                 TxtPredlozenoIme.Text = $"plata_backup_{DateTime.Now:yyyyMMdd_HHmmss}.db";
+                OsveziIstorijuKopija();
             }
         }
         catch (Exception ex)
@@ -164,7 +103,7 @@ public partial class PodesavanjaPage : Page
     {
         var result = MessageBox.Show(
             "Da li ste sigurni da želite da vratite bazu podataka iz rezervne kopije?\n\n" +
-            "UPOZORENJE: Ova operacija će u potpunosti zameniti sve trenutne podatke u sistemu! Preporučuje se da prvo napravite rezervnu kopiju trenutnog stanja baze.",
+            "UPOZORENJE: Ova operacija će u potpunosti zameniti sve trenutne podatke u sistemu za aktivnu firmu! Pre prepisivanja, biće automatski napravljena sigurnosna kopija trenutnog stanja baze.",
             "Potvrda vraćanja baze",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
@@ -185,30 +124,43 @@ public partial class PodesavanjaPage : Page
 
             if (dialog.ShowDialog() == true)
             {
-                var sourceFile = dialog.FileName;
-                var destFile = AppConfig.DbPath;
+                IzvrsiVracanjeBaze(dialog.FileName);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Greška pri otvaranju dijaloga: {ex.Message}", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 
-                // 1. Zatvori aktivni DbContext
-                _db.Dispose();
+    private void IzvrsiVracanjeBaze(string putanjaKopije)
+    {
+        try
+        {
+            // 1. Zatvori aktivni DbContext
+            _db.Dispose();
 
-                // 2. Oslobodi sve SQLite konekcije iz poola kako bismo skinuli lockove sa datoteke
-                Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-
-                // 3. Kopiraj fajl
-                File.Copy(sourceFile, destFile, true);
-
-                // 4. Ponovo inicijalizuj DbContext
-                _db = PlataDbContext.Create(destFile);
-
-                // 5. Osveži sve podatke na ekranu
-                UcitajFirmaPodatke();
-
-                // 6. Osveži ime firme u glavnom prozoru
-                var mainWindow = Application.Current.MainWindow as MainWindow;
-                mainWindow?.UcitajImeFirme();
+            // 2. Vrati backup baze (automatski radi ClearAllPools i kreira safety backup pre prepisivanja)
+            if (Services.BackupService.Instance.VratiBackup(putanjaKopije, out var greska))
+            {
+                // 3. Ponovo inicijalizuj DbContext
+                _db = PlataDbContext.Create(AppConfig.DbPath);
 
                 StatusMessage.Text = "Podaci su uspešno vraćeni iz rezervne kopije!";
                 MessageBox.Show("Baza podataka je uspešno vraćena iz rezervne kopije!", "Uspeh", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // 4. Osveži istoriju kopija
+                OsveziIstorijuKopija();
+
+                // 5. Restartuj i osveži MainWindow podatke i prikaze
+                var mainWindow = Application.Current.MainWindow as MainWindow;
+                mainWindow?.RestartujNakonPromeneBaze();
+            }
+            else
+            {
+                // Ponovo pokreni DbContext u slučaju neuspeha
+                _db = PlataDbContext.Create(AppConfig.DbPath);
+                MessageBox.Show($"Greška pri vraćanju podataka: {greska}", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         catch (Exception ex)
@@ -222,4 +174,81 @@ public partial class PodesavanjaPage : Page
             MessageBox.Show($"Greška pri vraćanju podataka: {ex.Message}", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
+
+    private void LstIstorijaKopija_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        BtnVratiIzIstorije.IsEnabled = LstIstorijaKopija.SelectedItem != null;
+    }
+
+    private void BtnVratiIzIstorije_Click(object sender, RoutedEventArgs e)
+    {
+        if (LstIstorijaKopija.SelectedItem is not Services.BackupItem selektovanaKopija)
+        {
+            return;
+        }
+
+        var result = MessageBox.Show(
+            $"Da li ste sigurni da želite da vratite bazu podataka iz izabrane kopije?\n\n" +
+            $"Kopija: {selektovanaKopija.NazivFajla} ({selektovanaKopija.DatumPrikaz})\n\n" +
+            $"UPOZORENJE: Trenutni podaci aktivne firme biće zamenjeni! Pre nego što to uradimo, automatski ćemo sačuvati trenutno stanje.",
+            "Potvrda brzog vraćanja",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            IzvrsiVracanjeBaze(selektovanaKopija.Putanja);
+        }
+    }
+
+    private void BtnOtvoriFolderKopija_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var dir = Services.BackupService.Instance.BackupDir;
+            Directory.CreateDirectory(dir);
+            System.Diagnostics.Process.Start("explorer.exe", dir);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Greška pri otvaranju foldera: {ex.Message}", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 }
+
+// ── Vrednosni Konverteri za Boje Tipa Rezervne Kopije ───────────────────
+
+public class TipBackupBackgroundConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+    {
+        if (value is string tip)
+        {
+            if (tip.Contains("Pre vraćanja"))
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FEE2E2")); // Crvenkasto
+            if (tip.Contains("Automatski"))
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#DBEAFE")); // Plavkasto
+        }
+        return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F3F4F6")); // Sivo
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) => throw new NotImplementedException();
+}
+
+public class TipBackupForegroundConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+    {
+        if (value is string tip)
+        {
+            if (tip.Contains("Pre vraćanja"))
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#991B1B"));
+            if (tip.Contains("Automatski"))
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1E40AF"));
+        }
+        return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#374151"));
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) => throw new NotImplementedException();
+}
+

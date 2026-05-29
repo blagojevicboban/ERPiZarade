@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
 using PlataData;
 using PlataData.Models;
 
@@ -446,18 +447,24 @@ public class ObracunService
             targetPeriods.Add((y, m));
         }
 
+        var targetRadnik = _db.Radnici.Find(radnikId);
+        if (targetRadnik == null) return 0m;
+        int targetBrojRadnika = targetRadnik.BrojRadnika;
+
         decimal psumbr = 0m;
         decimal psumcas = 0m;
 
         // Učitaj sve obračune i radne sate za tog radnika u tom opsegu
         var obracuni = _db.ObracuniPlata
-            .Where(o => o.RadnikId == radnikId)
+            .Include(o => o.Radnik)
+            .Where(o => o.Radnik.BrojRadnika == targetBrojRadnika)
             .ToList()
             .Where(o => targetPeriods.Any(p => p.Year == o.Godina && p.Month == o.Mesec))
             .ToList();
 
         var satiLista = _db.RadniSati
-            .Where(s => s.RadnikId == radnikId)
+            .Include(s => s.Radnik)
+            .Where(s => s.Radnik.BrojRadnika == targetBrojRadnika)
             .ToList()
             .Where(s => targetPeriods.Any(p => p.Year == s.Godina && p.Month == s.Mesec))
             .ToDictionary(s => (s.Godina, s.Mesec));
@@ -491,23 +498,17 @@ public class ObracunService
         }
 
         // Fallback na trenutnu osnovnu satnicu ako nema istorije
-        var radnik = _db.Radnici.Find(radnikId);
-        if (radnik != null)
+        decimal fondSati = 176m;
+        decimal hourlyBase = 0m;
+        if (targetRadnik.Koeficijent > 0)
         {
-            decimal fondSati = 176m;
-            decimal hourlyBase = 0m;
-            if (radnik.Koeficijent > 0)
-            {
-                hourlyBase = (radnik.Koeficijent * 1860.34m) / fondSati;
-            }
-            else if (radnik.OsnovnaPlata > 0)
-            {
-                hourlyBase = radnik.OsnovnaPlata / fondSati;
-            }
-            return Math.Round(hourlyBase, 4);
+            hourlyBase = (targetRadnik.Koeficijent * 1860.34m) / fondSati;
         }
-
-        return 0m;
+        else if (targetRadnik.OsnovnaPlata > 0)
+        {
+            hourlyBase = targetRadnik.OsnovnaPlata / fondSati;
+        }
+        return Math.Round(hourlyBase, 4);
     }
 
 }

@@ -11,6 +11,8 @@
 
     <Page.Resources>
         <local:BankCodeToNameConverter x:Key="BankCodeToNameConverter"/>
+        <local:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </Page.Resources>
 
 
@@ -114,7 +116,7 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Br." Binding="{Binding BrojRadnika}" Width="48"/>
                         <DataGridTextColumn Header="Ime i prezime" Binding="{Binding ImeIPrezime}" Width="*"/>
-                        <DataGridTextColumn Header="JMBG / Mat.br." Binding="{Binding MaticniBroj}" Width="130"/>
+                        <DataGridTextColumn Header="JMBG" Binding="{Binding Jmbg}" Width="130"/>
                         <DataGridTextColumn Header="Koef." Binding="{Binding Koeficijent, StringFormat=N2}" Width="65"/>
                         <DataGridTextColumn Header="Osnov. plata" Binding="{Binding OsnovnaPlata, StringFormat=N2}" Width="110"/>
                         <DataGridTextColumn Header="Banka" Binding="{Binding NazivBanke, Converter={StaticResource BankCodeToNameConverter}}" Width="150"/>
@@ -221,11 +223,44 @@
                                 <TextBox Text="{Binding EditingRadnik.Jmbg, UpdateSourceTrigger=PropertyChanged}" MaxLength="13"/>
                             </StackPanel>
 
-                            <!-- Matični broj -->
-                            <StackPanel Margin="0,0,0,12">
-                                <TextBlock Text="Matični broj" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                <TextBox Text="{Binding EditingRadnik.MaticniBroj, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
+                            <!-- Mesto i Opština -->
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                    <TextBlock Text="Mesto" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                    <ComboBox IsEditable="True"
+                                              ItemsSource="{Binding DataContext.AvailableMesta, RelativeSource={RelativeSource AncestorType=Page}}"
+                                              Text="{Binding EditingRadnik.Mesto, UpdateSourceTrigger=PropertyChanged}"
+                                              Height="32" VerticalContentAlignment="Center"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="Opština prebivališta" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="45"/>
+                                            <ColumnDefinition Width="8"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <TextBox Grid.Column="0" 
+                                                 Text="{Binding EditingRadnik.SifraOpstine, UpdateSourceTrigger=PropertyChanged}"
+                                                 MaxLength="3" Height="32" 
+                                                 HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                                        
+                                        <ComboBox Grid.Column="2" 
+                                                  ItemsSource="{Binding DataContext.AvailableOpstine, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                  SelectedValuePath="Sifra"
+                                                  DisplayMemberPath="Prikaz"
+                                                  SelectedValue="{Binding EditingRadnik.SifraOpstine, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  Height="32" VerticalContentAlignment="Center"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Grid>
 
                             <!-- Datum zaposlenja i prestanka -->
                             <Grid Margin="0,0,0,12">
@@ -259,10 +294,56 @@
                                 </StackPanel>
                             </Grid>
 
-                            <!-- Radno mesto -->
+                            <!-- Radno mesto / ŠVP za ePorezi -->
                             <StackPanel Margin="0,0,0,12">
-                                <TextBlock Text="Radno mesto" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                <TextBox Text="{Binding EditingRadnik.Radno_Mesto, UpdateSourceTrigger=PropertyChanged}"/>
+                                <Grid Margin="0,0,0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Radno mesto" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                    <CheckBox Grid.Column="1" Content="Standardni ŠVP poreski kod" FontSize="10" IsChecked="{Binding DaLiJeStandardniSvp}" VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <!-- Prikaz standardnih padajućih lista ako je izabran standardni ŠVP kod -->
+                                <StackPanel Visibility="{Binding DaLiJeStandardniSvp, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,2,0,0">
+                                    <!-- Tip primaoca prihoda -->
+                                    <TextBlock Text="Tip primaoca (PP)" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,3"/>
+                                    <ComboBox ItemsSource="{Binding OpcijePP}" 
+                                              SelectedValuePath="Sifra" 
+                                              DisplayMemberPath="Prikaz" 
+                                              SelectedValue="{Binding SelectedPP, Mode=TwoWay}"
+                                              Margin="0,0,0,8" Height="28" FontSize="12"/>
+
+                                    <!-- Olakšica -->
+                                    <TextBlock Text="Poreska olakšica (OL)" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,3"/>
+                                    <ComboBox ItemsSource="{Binding OpcijeOL}" 
+                                              SelectedValuePath="Sifra" 
+                                              DisplayMemberPath="Prikaz" 
+                                              SelectedValue="{Binding SelectedOL, Mode=TwoWay}"
+                                              Margin="0,0,0,8" Height="28" FontSize="12"/>
+
+                                    <!-- Beneficirani staž -->
+                                    <TextBlock Text="Beneficirani staž (B)" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,3"/>
+                                    <ComboBox ItemsSource="{Binding OpcijeB}" 
+                                              SelectedValuePath="Sifra" 
+                                              DisplayMemberPath="Prikaz" 
+                                              SelectedValue="{Binding SelectedB, Mode=TwoWay}"
+                                              Margin="0,0,0,8" Height="28" FontSize="12"/>
+
+                                    <!-- Prikaz generisanog koda -->
+                                    <Border Margin="0,4,0,4" Background="#F0F4F8" Padding="8,4" CornerRadius="4">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Generisana poreska šifra: " FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                            <TextBlock Text="{Binding EditingRadnik.Radno_Mesto}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource PrimaryLightBrush}"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- Slobodan tekstualni unos ako NIJE standardni ŠVP kod -->
+                                <TextBox Text="{Binding EditingRadnik.Radno_Mesto, UpdateSourceTrigger=PropertyChanged}" 
+                                         Visibility="{Binding DaLiJeStandardniSvp, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
+                                         Height="32" VerticalContentAlignment="Center"/>
                             </StackPanel>
 
                             <!-- Bankovni račun -->

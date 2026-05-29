@@ -19,6 +19,8 @@ public class UserSettings
 
     // ── Postavke ───────────────────────────────────────────
     public bool PokretanjeMaximizovano { get; set; } = false;
+    public int? ActiveFirmaId { get; set; }
+    public string? ActiveDbPath { get; set; }
 
     // ── Load / Save ────────────────────────────────────────
     public static UserSettings Load()

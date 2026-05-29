@@ -20,9 +20,19 @@ public partial class MainWindow : Window
         InicijalizujAktivniPeriod();
         // Otvori Obračuni kao početnu stranicu
         NavigateTo(null!, new Views.Obracuni.ObracuniPage());
+
+        // Automatski backup pri pokretanju (u pozadinskom threadu da ne usporava start)
+        System.Threading.Tasks.Task.Run(() =>
+        {
+            try
+            {
+                Services.BackupService.Instance.NapraviAutomatskiBackup();
+            }
+            catch { }
+        });
     }
 
-    private void InicijalizujAktivniPeriod()
+    public void InicijalizujAktivniPeriod()
     {
         try
         {
@@ -72,7 +82,20 @@ public partial class MainWindow : Window
         try
         {
             using var db = PlataData.PlataDbContext.Create(AppConfig.DbPath);
-            var firma = db.Firme.FirstOrDefault();
+            PlataData.Models.Firma? firma = null;
+            if (AppConfig.ActiveFirmaId.HasValue)
+            {
+                firma = db.Firme.Find(AppConfig.ActiveFirmaId.Value);
+            }
+            if (firma == null)
+            {
+                firma = db.Firme.FirstOrDefault();
+                if (firma != null)
+                {
+                    AppConfig.ActiveFirmaId = firma.Id;
+                }
+            }
+
             if (firma != null && !string.IsNullOrWhiteSpace(firma.Naziv))
             {
                 ImeFirmeText.Text = firma.Naziv;
@@ -122,6 +145,8 @@ public partial class MainWindow : Window
     private void BtnBanke_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnBanke, new Views.Banke.BankePage());
 
+    private void BtnFirme_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnFirme, new Views.Firme.FirmePage());
 
     private void BtnPodesavanja_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnPodesavanja, new Views.Podesavanja.PodesavanjaPage());
@@ -137,11 +162,28 @@ public partial class MainWindow : Window
 
     private void FirmaBorder_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
+        NavigateTo(BtnFirme, new Views.Firme.FirmePage());
+    }
+
+    private void ActivePeriodBorder_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
         NavigateTo(null!, new Views.Obracuni.ObracuniPage());
     }
 
     public void NavigateToObracun(int godina, int mesec)
     {
         NavigateTo(BtnObracun, new Views.Obracun.ObracunPage(godina, mesec));
+    }
+
+    public void RestartujNakonPromeneBaze()
+    {
+        UcitajImeFirme();
+        InicijalizujAktivniPeriod();
+        NavigateTo(null!, new Views.Obracuni.ObracuniPage());
+    }
+
+    public void OtvoriRadnike()
+    {
+        NavigateTo(BtnRadnici, new Views.Radnici.RadniciPage());
     }
 }

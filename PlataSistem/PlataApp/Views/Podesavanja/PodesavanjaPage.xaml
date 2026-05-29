@@ -1,10 +1,14 @@
 <Page x:Class="PlataApp.Views.Podesavanja.PodesavanjaPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:local="clr-namespace:PlataApp.Views.Podesavanja"
       Title="Podešavanja"
       Background="{StaticResource SurfaceBrush}">
 
     <Page.Resources>
+        <local:TipBackupBackgroundConverter x:Key="TipBackupBackgroundConverter"/>
+        <local:TipBackupForegroundConverter x:Key="TipBackupForegroundConverter"/>
+
         <!-- Modern TabControl / TabItem styles -->
         <Style TargetType="TabItem">
             <Setter Property="Background" Value="Transparent"/>
@@ -65,141 +69,108 @@
         <!-- ── TAB CONTROL CONTENT ─────────────────────────────────── -->
         <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0">
             
-            <!-- TAB 1: Podaci o firmi -->
-            <TabItem Header="🏢 Podaci o firmi">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,12,0,0">
-                    <Border Style="{StaticResource Card}" Margin="0,0,0,16">
-                        <StackPanel>
-                            <TextBlock Text="🏢 Podaci o firmi" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,4"/>
-                            <TextBlock Text="Pregled i izmena osnovnih identifikacionih podataka isplatioca zarada uvezenih iz korisnic.dbf" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,12"/>
-                            <Rectangle Height="1" Fill="{StaticResource BorderBrush}" Margin="0,0,0,16"/>
 
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-
-                                <!-- Naziv firme -->
-                                <StackPanel Grid.Column="0" Grid.Row="0" Margin="0,0,12,12">
-                                    <TextBlock Text="Naziv firme:" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                    <TextBox x:Name="TxtFirmaNaziv" Height="32" VerticalContentAlignment="Center"/>
-                                </StackPanel>
-
-                                <!-- Adresa -->
-                                <StackPanel Grid.Column="1" Grid.Row="0" Margin="12,0,0,12">
-                                    <TextBlock Text="Adresa:" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                    <TextBox x:Name="TxtFirmaAdresa" Height="32" VerticalContentAlignment="Center"/>
-                                </StackPanel>
-
-                                <!-- Grad -->
-                                <StackPanel Grid.Column="0" Grid.Row="1" Margin="0,0,12,12">
-                                    <TextBlock Text="Grad:" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                    <TextBox x:Name="TxtFirmaGrad" Height="32" VerticalContentAlignment="Center"/>
-                                </StackPanel>
-
-                                <!-- PIB -->
-                                <StackPanel Grid.Column="1" Grid.Row="1" Margin="12,0,0,12">
-                                    <TextBlock Text="Poreski identifikacioni broj (PIB):" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                    <TextBox x:Name="TxtFirmaPib" Height="32" VerticalContentAlignment="Center"/>
-                                </StackPanel>
-
-                                <!-- Matični Broj (MB) -->
-                                <StackPanel Grid.Column="0" Grid.Row="2" Margin="0,0,12,12">
-                                    <TextBlock Text="Matični broj (MB):" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                    <TextBox x:Name="TxtFirmaMb" Height="32" VerticalContentAlignment="Center"/>
-                                </StackPanel>
-
-                                <!-- Bankovni račun -->
-                                <StackPanel Grid.Column="1" Grid.Row="2" Margin="12,0,0,12">
-                                    <TextBlock Text="Bankovni tekući račun:" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                    <TextBox x:Name="TxtFirmaBankovniRacun" Height="32" VerticalContentAlignment="Center"/>
-                                </StackPanel>
-
-                                <!-- Šifra plaćanja -->
-                                <StackPanel Grid.Column="0" Grid.Row="3" Margin="0,0,12,12">
-                                    <TextBlock Text="Šifra plaćanja (podrazumevana):" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                    <TextBox x:Name="TxtFirmaSifraPlacanja" Height="32" VerticalContentAlignment="Center"/>
-                                </StackPanel>
-
-                                <!-- Telefon -->
-                                <StackPanel Grid.Column="1" Grid.Row="3" Margin="12,0,0,12">
-                                    <TextBlock Text="Telefon:" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                    <TextBox x:Name="TxtFirmaTelefon" Height="32" VerticalContentAlignment="Center"/>
-                                </StackPanel>
-
-                                <!-- Email -->
-                                <StackPanel Grid.Column="0" Grid.Row="4" Margin="0,0,12,12">
-                                    <TextBlock Text="Email adresa:" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                    <TextBox x:Name="TxtFirmaEmail" Height="32" VerticalContentAlignment="Center"/>
-                                </StackPanel>
-
-                                <!-- Napomena -->
-                                <StackPanel Grid.Column="1" Grid.Row="4" Margin="12,0,0,12">
-                                    <TextBlock Text="Napomena:" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                    <TextBox x:Name="TxtFirmaNapomena" Height="32" VerticalContentAlignment="Center"/>
-                                </StackPanel>
-                            </Grid>
-
-                            <Button x:Name="BtnSacuvajFirma" Content="💾 Sačuvaj podatke o firmi" Style="{StaticResource PrimaryButton}" Height="40" Margin="0,16,0,0" Click="BtnSacuvajFirma_Click"/>
-                        </StackPanel>
-                    </Border>
-                </ScrollViewer>
-            </TabItem>
 
             <!-- TAB 2: Rezervna kopija -->
             <TabItem Header="💾 Rezervna kopija">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,12,0,0">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+                <Grid Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="3*"/>
+                    </Grid.ColumnDefinitions>
 
-                        <!-- LEVO: Kreiranje rezervne kopije -->
-                        <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,8,16">
-                            <StackPanel>
-                                <TextBlock Text="💾 Kreiranje rezervne kopije (Backup)" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,4"/>
-                                <TextBlock Text="Sačuvajte trenutno stanje baze podataka na sigurnu lokaciju." FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,12"/>
+                    <!-- LEVO: Ručne akcije -->
+                    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" Margin="0,0,8,0">
+                        <StackPanel>
+                            <!-- KARTICA 1: Kreiranje rezervne kopije -->
+                            <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                                <StackPanel>
+                                    <TextBlock Text="💾 Kreiranje rezervne kopije (Backup)" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,4"/>
+                                    <TextBlock Text="Sačuvajte trenutno stanje baze podataka na sigurnu lokaciju." FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,12"/>
+                                    <Rectangle Height="1" Fill="{StaticResource BorderBrush}" Margin="0,0,0,16"/>
+
+                                    <TextBlock Text="Trenutna lokacija aktivne baze podataka:" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                    <TextBox x:Name="TxtAktivnaBazaPath" IsReadOnly="True" Background="#F3F4F6" Height="32" VerticalContentAlignment="Center" Margin="0,0,0,16"/>
+
+                                    <TextBlock Text="Preporučeno ime za rezervnu kopiju:" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                    <TextBox x:Name="TxtPredlozenoIme" IsReadOnly="True" Background="#F3F4F6" Height="32" VerticalContentAlignment="Center" Margin="0,0,0,24"/>
+
+                                    <Button x:Name="BtnKreirajBackup" Content="💾 Napravi rezervnu kopiju baze podataka" Style="{StaticResource PrimaryButton}" Height="40" Click="BtnKreirajBackup_Click"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- KARTICA 2: Vraćanje iz rezervne kopije -->
+                            <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                                <StackPanel>
+                                    <TextBlock Text="🔄 Vraćanje baze iz datoteke (Restore)" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,4"/>
+                                    <TextBlock Text="Učitajte prethodno sačuvanu bazu podataka iz izabranog fajla." FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,12"/>
+                                    <Rectangle Height="1" Fill="{StaticResource BorderBrush}" Margin="0,0,0,16"/>
+
+                                    <Border Background="#FFF3CD" CornerRadius="8" Padding="12" Margin="0,0,0,20" BorderBrush="#FFEBA0" BorderThickness="1">
+                                        <StackPanel>
+                                            <TextBlock Text="⚠️ VAŽNO UPOZORENJE" FontWeight="Bold" Foreground="#856404" FontSize="13" Margin="0,0,0,4"/>
+                                            <TextBlock Text="Vraćanje podataka iz rezervne kopije će u potpunosti zameniti sve trenutne podatke u sistemu za aktivnu firmu! Pre prepisivanja, biće automatski napravljena sigurnosna kopija trenutnog stanja baze." TextWrapping="Wrap" Foreground="#856404" FontSize="12"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Button x:Name="BtnVratiBackup" Content="📁 Izaberi i vrati bazu podataka iz kopije" Style="{StaticResource SecondaryButton}" BorderBrush="#DC3545" Foreground="#DC3545" Height="40" Click="BtnVratiBackup_Click"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- DESNO: Istorija automatskih i sigurnosnih kopija -->
+                    <Border Grid.Column="1" Style="{StaticResource Card}" Margin="8,0,0,16">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Naslov -->
+                            <StackPanel Grid.Row="0">
+                                <TextBlock Text="⏳ Istorija sigurnosnih i auto-kopija" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,4"/>
+                                <TextBlock Text="Lista kopija kreiranih pri pokretanju ili pre operacije vraćanja. Selektujte jednu da biste je brzo vratili." TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,12"/>
                                 <Rectangle Height="1" Fill="{StaticResource BorderBrush}" Margin="0,0,0,16"/>
-
-                                <TextBlock Text="Trenutna lokacija aktivne baze podataka:" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                <TextBox x:Name="TxtAktivnaBazaPath" IsReadOnly="True" Background="#F3F4F6" Height="32" VerticalContentAlignment="Center" Margin="0,0,0,16"/>
-
-                                <TextBlock Text="Preporučeno ime za rezervnu kopiju:" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                <TextBox x:Name="TxtPredlozenoIme" IsReadOnly="True" Background="#F3F4F6" Height="32" VerticalContentAlignment="Center" Margin="0,0,0,24"/>
-
-                                <Button x:Name="BtnKreirajBackup" Content="💾 Napravi rezervnu kopiju baze podataka" Style="{StaticResource PrimaryButton}" Height="40" Click="BtnKreirajBackup_Click"/>
                             </StackPanel>
-                        </Border>
 
-                        <!-- DESNO: Vraćanje iz rezervne kopije -->
-                        <Border Grid.Column="1" Style="{StaticResource Card}" Margin="8,0,0,16">
-                            <StackPanel>
-                                <TextBlock Text="🔄 Vraćanje podataka iz rezervne kopije (Restore)" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,4"/>
-                                <TextBlock Text="Učitajte prethodno sačuvane podatke. Pažnja: trenutni podaci će biti prepisani!" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,12"/>
-                                <Rectangle Height="1" Fill="{StaticResource BorderBrush}" Margin="0,0,0,16"/>
+                            <!-- Lista (ListView) -->
+                            <ListView x:Name="LstIstorijaKopija" Grid.Row="1" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Background="White" Margin="0,0,0,16" SelectionMode="Single" SelectionChanged="LstIstorijaKopija_SelectionChanged">
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Header="Tip kopije" Width="140">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Border Padding="6,2" CornerRadius="4" 
+                                                            Background="{Binding Tip, Converter={StaticResource TipBackupBackgroundConverter}}"
+                                                            HorizontalAlignment="Left">
+                                                        <TextBlock Text="{Binding Tip}" FontSize="11" FontWeight="SemiBold"
+                                                                   Foreground="{Binding Tip, Converter={StaticResource TipBackupForegroundConverter}}"/>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                        <GridViewColumn Header="Datum kreiranja" DisplayMemberBinding="{Binding DatumPrikaz}" Width="130"/>
+                                        <GridViewColumn Header="Veličina" DisplayMemberBinding="{Binding VelicinaPrikaz}" Width="80"/>
+                                        <GridViewColumn Header="Naziv fajla" DisplayMemberBinding="{Binding NazivFajla}" Width="250"/>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
 
-                                <Border Background="#FFF3CD" CornerRadius="8" Padding="12" Margin="0,0,0,20" BorderBrush="#FFEBA0" BorderThickness="1">
-                                    <StackPanel>
-                                        <TextBlock Text="⚠️ VAŽNO UPOZORENJE" FontWeight="Bold" Foreground="#856404" FontSize="13" Margin="0,0,0,4"/>
-                                        <TextBlock Text="Vraćanje podataka iz rezervne kopije će u potpunosti zameniti sve trenutne podatke u sistemu (radnike, obračune, poreske stope i podešavanja). Pre nego što nastavite, preporučuje se da napravite rezervnu kopiju trenutne baze." TextWrapping="Wrap" Foreground="#856404" FontSize="12"/>
-                                    </StackPanel>
-                                </Border>
+                            <!-- Akcije pod listom -->
+                            <Grid Grid.Row="2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
 
-                                <Button x:Name="BtnVratiBackup" Content="📁 Izaberi i vrati bazu podataka iz kopije" Style="{StaticResource SecondaryButton}" BorderBrush="#DC3545" Foreground="#DC3545" Height="40" Click="BtnVratiBackup_Click"/>
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-                </ScrollViewer>
+                                <Button x:Name="BtnVratiIzIstorije" Grid.Column="0" Content="🔄 Vrati bazu iz izabrane kopije" Style="{StaticResource PrimaryButton}" Height="40" Margin="0,0,8,0" Click="BtnVratiIzIstorije_Click" IsEnabled="False"/>
+                                <Button x:Name="BtnOtvoriFolderKopija" Grid.Column="1" Content="📂 Otvori folder sa kopijama" Style="{StaticResource SecondaryButton}" Height="40" Click="BtnOtvoriFolderKopija_Click"/>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </Grid>
             </TabItem>
 
             <!-- TAB 3: Postavke programa -->

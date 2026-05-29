@@ -143,8 +143,24 @@ public partial class NoviObracunWindow : Window
             TxtFondCasova.Text = fondIzBaze.ToString();
             int fondSati = fondIzBaze;
 
+            // 1. Ako nema radnika u ciljnom periodu, automatski ih kopiramo iz najbližeg prethodnog
+            var imaTargetRadnika = _db.Radnici.Any(r => r.Godina == godina && r.Mesec == mesec);
+            if (!imaTargetRadnika)
+            {
+                var sourcePeriod = _db.Radnici
+                    .OrderByDescending(r => r.Godina)
+                    .ThenByDescending(r => r.Mesec)
+                    .Select(r => new { r.Godina, r.Mesec })
+                    .FirstOrDefault();
+
+                if (sourcePeriod != null)
+                {
+                    KopirajRadnikeIzPerioda(sourcePeriod.Godina, sourcePeriod.Mesec, godina, mesec);
+                }
+            }
+
             var aktivniRadnici = _db.Radnici
-                .Where(r => r.Aktivan)
+                .Where(r => r.Aktivan && r.Godina == godina && r.Mesec == mesec)
                 .ToList();
 
             var postojeciSati = _db.RadniSati
@@ -157,7 +173,7 @@ public partial class NoviObracunWindow : Window
             if (radnikIdsSaSacuvanim.Count > 0)
             {
                 var dodatniRadnici = _db.Radnici
-                    .Where(r => !r.Aktivan && radnikIdsSaSacuvanim.Contains(r.Id))
+                    .Where(r => !r.Aktivan && r.Godina == godina && r.Mesec == mesec && radnikIdsSaSacuvanim.Contains(r.Id))
                     .ToList();
 
                 sviRelevantniRadnici = aktivniRadnici.Concat(dodatniRadnici)
@@ -476,12 +492,17 @@ public partial class NoviObracunWindow : Window
 
         try
         {
-            // Potraži sate za selektovani period u bazi
-            var prethodniSati = _db.RadniSati
+            // Potraži sate za selektovani period u bazi, joinovane sa Radnik da dobijemo BrojRadnika
+            var prethodniSatiList = await _db.RadniSati
                 .Where(s => s.Godina == prethodnaGodina && s.Mesec == prethodniMesec)
-                .ToDictionary(s => s.RadnikId);
+                .Include(s => s.Radnik)
+                .ToListAsync();
 
-            if (prethodniSati.Count == 0)
+            var prethodniSatiByBrojRadnika = prethodniSatiList
+                .Where(s => s.Radnik != null)
+                .ToDictionary(s => s.Radnik.BrojRadnika);
+
+            if (prethodniSatiByBrojRadnika.Count == 0)
             {
                 MessageBox.Show(
                     $"Nisu pronađeni sačuvani radni sati za izabrani mesec ({prethodniMesec}.{prethodnaGodina}) iz kojeg bi se preneli podaci.",
@@ -494,6 +515,12 @@ public partial class NoviObracunWindow : Window
             int godina = (int)ComboGodina.SelectedItem;
             int mesec = (int)ComboMesec.SelectedItem;
 
+            // Kopiraj aktivne radnike iz prethodnog meseca u novi ako još ne postoje
+            KopirajRadnikeIzPerioda(prethodnaGodina, prethodniMesec, godina, mesec);
+
+            // Ponovo učitaj radnike za tekući period u listu i UI grid
+            LoadAktivneRadnike();
+
             decimal.TryParse(TxtVrednostBoda.Text, out decimal vrednostBoda);
             if (vrednostBoda <= 0) vrednostBoda = 1860.34m;
             int.TryParse(TxtFondCasova.Text, out int fondSati);
@@ -505,7 +532,7 @@ public partial class NoviObracunWindow : Window
             int prenetoCount = 0;
             foreach (var r in _radniciSati)
             {
-                if (prethodniSati.TryGetValue(r.RadnikId, out var starSati))
+                if (prethodniSatiByBrojRadnika.TryGetValue(r.BrojRadnika, out var starSati))
                 {
                     r.RedovniSati = starSati.RedovniSati;
                     r.BolovanjeSati = starSati.BolovanjeSati;
@@ -663,22 +690,80 @@ public partial class NoviObracunWindow : Window
         var imaTargetSamo = await _db.Samodoprinosi.AnyAsync(s => s.Godina == targetGodina && s.Mesec == targetMesec);
         if (!imaTargetSamo)
         {
-            var sourceSamo = await _db.Samodoprinosi.Where(s => s.Godina == sourceGodina && s.Mesec == sourceMesec).ToListAsync();
+            var sourceSamo = await _db.Samodoprinosi
+                .Where(s => s.Godina == sourceGodina && s.Mesec == sourceMesec)
+                .Include(s => s.Radnik)
+                .ToListAsync();
+
+            var targetRadnici = await _db.Radnici
+                .Where(r => r.Godina == targetGodina && r.Mesec == targetMesec)
+                .ToDictionaryAsync(r => r.BrojRadnika, r => r.Id);
+
             foreach (var ss in sourceSamo)
             {
-                var newSamo = new Samodoprinosi
+                if (ss.Radnik != null && targetRadnici.TryGetValue(ss.Radnik.BrojRadnika, out var targetRadnikId))
                 {
-                    RadnikId = ss.RadnikId,
-                    Godina = targetGodina,
-                    Mesec = targetMesec,
-                    Iznos = ss.Iznos,
-                    Opis = ss.Opis
-                };
-                _db.Samodoprinosi.Add(newSamo);
+                    var newSamo = new Samodoprinosi
+                    {
+                        RadnikId = targetRadnikId,
+                        Godina = targetGodina,
+                        Mesec = targetMesec,
+                        Iznos = ss.Iznos,
+                        Opis = ss.Opis
+                    };
+                    _db.Samodoprinosi.Add(newSamo);
+                }
             }
         }
 
         await _db.SaveChangesAsync();
+    }
+
+    private void KopirajRadnikeIzPerioda(int sourceGodina, int sourceMesec, int targetGodina, int targetMesec)
+    {
+        var imaTarget = _db.Radnici.Any(r => r.Godina == targetGodina && r.Mesec == targetMesec);
+        if (imaTarget) return;
+
+        var sourceRadnici = _db.Radnici
+            .Where(r => r.Godina == sourceGodina && r.Mesec == sourceMesec && r.Aktivan)
+            .ToList();
+
+        foreach (var sr in sourceRadnici)
+        {
+            var newRadnik = new Radnik
+            {
+                Godina = targetGodina,
+                Mesec = targetMesec,
+                BrojRadnika = sr.BrojRadnika,
+                ImeIPrezime = sr.ImeIPrezime,
+                Jmbg = sr.Jmbg,
+                MaticniBroj = sr.MaticniBroj,
+                DatumRodjenja = sr.DatumRodjenja,
+                MestoRodjenja = sr.MestoRodjenja,
+                AdresaStanovanja = sr.AdresaStanovanja,
+                Mesto = sr.Mesto,
+                SifraOpstine = sr.SifraOpstine,
+                DatumZaposlenja = sr.DatumZaposlenja,
+                DatumPrestanka = sr.DatumPrestanka,
+                Kategorija = sr.Kategorija,
+                Radno_Mesto = sr.Radno_Mesto,
+                BrojRadneJedinice = sr.BrojRadneJedinice,
+                MinuliRadGodine = sr.MinuliRadGodine,
+                Koeficijent = sr.Koeficijent,
+                Koeficijent1 = sr.Koeficijent1,
+                OsnovnaPlata = sr.OsnovnaPlata,
+                StopaPio = sr.StopaPio,
+                StopaZdravstvo = sr.StopaZdravstvo,
+                StopaNezaposlenost = sr.StopaNezaposlenost,
+                BankovniRacun = sr.BankovniRacun,
+                NazivBanke = sr.NazivBanke,
+                Aktivan = sr.Aktivan,
+                LicnoOslobodjenje = sr.LicnoOslobodjenje,
+                Operativni = sr.Operativni
+            };
+            _db.Radnici.Add(newRadnik);
+        }
+        _db.SaveChanges();
     }
 
     private async Task OsigurajParametreZaCiljniMesecAsync(int targetGodina, int targetMesec, decimal targetVrBoda, int targetFondCasova)

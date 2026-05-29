@@ -198,6 +198,22 @@
                                 </Grid>
                             </Border>
 
+                            <!-- Stroga validacija JMBG-a -->
+                            <Border Background="#F8FAFF" CornerRadius="8" Padding="16,12" Margin="0,0,0,12" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="Stroga validacija JMBG-a" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="Omogući detaljnu proveru datuma rođenja i kontrolne cifre JMBG-a (modul 11) pri unosu radnika i izradi poreskih prijava." FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkValidacijaJmbgOmogucena" Grid.Column="1" VerticalAlignment="Center" Margin="16,0,0,0"
+                                              Checked="ChkPostavke_Changed" Unchecked="ChkPostavke_Changed"/>
+                                </Grid>
+                            </Border>
+
                             <TextBlock Text="Promene se primenjuju pri sledećem pokretanju programa." FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,8,0,0" FontStyle="Italic"/>
                         </StackPanel>
                     </Border>

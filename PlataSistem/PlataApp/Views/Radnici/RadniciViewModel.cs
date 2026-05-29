@@ -431,6 +431,18 @@ public class RadniciViewModel : INotifyPropertyChanged
         if (EditingRadnik == null) return;
         try
         {
+            // Validacija JMBG-a (ako je uključena u podešavanjima)
+            if (UserSettings.Instance.ValidacijaJmbgOmogucena && !JmbgValidator.Validate(EditingRadnik.Jmbg, out string jmbgError))
+            {
+                System.Windows.MessageBox.Show(
+                    $"Podaci o zaposlenom ne mogu biti sačuvani jer JMBG nije ispravan:\n\n• {jmbgError}\n\nMolimo vas da unesete validan JMBG ili isključite ovu proveru u Podešavanjima.",
+                    "Neispravan JMBG",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+                StatusPoruka = $"Greška pri čuvanju: {jmbgError}";
+                return;
+            }
+
             int godina = AppConfig.ActiveGodina ?? DateTime.Now.Year;
             int mesec = AppConfig.ActiveMesec ?? DateTime.Now.Month;
 

@@ -169,7 +169,7 @@ public class PlataDbContext : DbContext
         };
         foreach (var col in noviSatiKoloneRS)
         {
-            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE RadniSati ADD COLUMN {col} INTEGER NOT NULL DEFAULT 0;"); } catch { }
+            try { ctx.Database.ExecuteSqlRaw("ALTER TABLE RadniSati ADD COLUMN " + col + " INTEGER NOT NULL DEFAULT 0;"); } catch { }
         }
 
         try { ctx.Database.ExecuteSqlRaw("ALTER TABLE RadniSati ADD COLUMN RegresIznos DECIMAL(14,2) DEFAULT 0;"); } catch { }
@@ -177,7 +177,7 @@ public class PlataDbContext : DbContext
         string[] noviSatiKoloneOP = { "SmenskiSati", "RadPraznikomSati", "NocniRadPraznikomSati", "PlacenoOdsustvoSati" };
         foreach (var col in noviSatiKoloneOP)
         {
-            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} INTEGER NOT NULL DEFAULT 0;"); } catch { }
+            try { ctx.Database.ExecuteSqlRaw("ALTER TABLE ObracuniPlata ADD COLUMN " + col + " INTEGER NOT NULL DEFAULT 0;"); } catch { }
         }
 
         string[] newCols = {
@@ -189,7 +189,7 @@ public class PlataDbContext : DbContext
         };
         foreach (var col in newCols)
         {
-            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} DECIMAL(14,2) DEFAULT 0;"); } catch { }
+            try { ctx.Database.ExecuteSqlRaw("ALTER TABLE ObracuniPlata ADD COLUMN " + col + " DECIMAL(14,2) DEFAULT 0;"); } catch { }
         }
 
         string[] decimalColsOP = {
@@ -201,25 +201,25 @@ public class PlataDbContext : DbContext
         };
         foreach (var col in decimalColsOP)
         {
-            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} DECIMAL(14,2) DEFAULT 0;"); } catch { }
+            try { ctx.Database.ExecuteSqlRaw("ALTER TABLE ObracuniPlata ADD COLUMN " + col + " DECIMAL(14,2) DEFAULT 0;"); } catch { }
         }
 
         string[] decimal5ColsOP = { "CenaSataRedovan", "CenaSataMinuliRad" };
         foreach (var col in decimal5ColsOP)
         {
-            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} DECIMAL(14,5) DEFAULT 0;"); } catch { }
+            try { ctx.Database.ExecuteSqlRaw("ALTER TABLE ObracuniPlata ADD COLUMN " + col + " DECIMAL(14,5) DEFAULT 0;"); } catch { }
         }
 
         string[] intColsOP = { "MinuliRadGodine", "BrojRadneJedinice", "SifraSamodoprinosa1", "SifraSamodoprinosa2" };
         foreach (var col in intColsOP)
         {
-            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} INTEGER DEFAULT 0;"); } catch { }
+            try { ctx.Database.ExecuteSqlRaw("ALTER TABLE ObracuniPlata ADD COLUMN " + col + " INTEGER DEFAULT 0;"); } catch { }
         }
 
         string[] stringColsOP = { "Kategorija", "Operativni", "Oznaka" };
         foreach (var col in stringColsOP)
         {
-            try { ctx.Database.ExecuteSqlRaw($"ALTER TABLE ObracuniPlata ADD COLUMN {col} TEXT DEFAULT '';"); } catch { }
+            try { ctx.Database.ExecuteSqlRaw("ALTER TABLE ObracuniPlata ADD COLUMN " + col + " TEXT DEFAULT '';"); } catch { }
         }
 
         // Automatsko kopiranje 13-cifrenog JMBG-a

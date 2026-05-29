@@ -33,6 +33,7 @@ public partial class PodesavanjaPage : Page
         try
         {
             ChkPokretanjeMaximizovano.IsChecked = UserSettings.Instance.PokretanjeMaximizovano;
+            ChkValidacijaJmbgOmogucena.IsChecked = UserSettings.Instance.ValidacijaJmbgOmogucena;
         }
         catch { }
 
@@ -55,6 +56,7 @@ public partial class PodesavanjaPage : Page
         try
         {
             UserSettings.Instance.PokretanjeMaximizovano = ChkPokretanjeMaximizovano.IsChecked == true;
+            UserSettings.Instance.ValidacijaJmbgOmogucena = ChkValidacijaJmbgOmogucena.IsChecked == true;
             UserSettings.Instance.Save();
             StatusMessage.Text = "Postavke programa su sačuvane.";
         }

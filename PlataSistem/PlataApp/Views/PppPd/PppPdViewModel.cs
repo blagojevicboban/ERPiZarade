@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using PlataData;
 using PlataData.Models;
 using PlataApp.Views.Radnici; // Za RelayCommand
+using PlataApp.Services;
 
 namespace PlataApp.Views.PppPd;
 
@@ -182,9 +183,19 @@ public class PppPdViewModel : INotifyPropertyChanged
             {
                 ValidationAlerts.Add($"Zaposleni {o.Radnik.ImeIPrezime} nema upisan JMBG!");
             }
-            else if (jmbg.Length != 13 || !jmbg.All(char.IsDigit))
+            else
             {
-                ValidationAlerts.Add($"Zaposleni {o.Radnik.ImeIPrezime} ima neispravan format JMBG-a (mora imati tačno 13 cifara).");
+                if (UserSettings.Instance.ValidacijaJmbgOmogucena)
+                {
+                    if (!JmbgValidator.Validate(jmbg, out string jmbgError))
+                    {
+                        ValidationAlerts.Add($"Zaposleni {o.Radnik.ImeIPrezime} ima neispravan JMBG: {jmbgError}");
+                    }
+                }
+                else if (jmbg.Length != 13 || !jmbg.All(char.IsDigit))
+                {
+                    ValidationAlerts.Add($"Zaposleni {o.Radnik.ImeIPrezime} ima neispravan format JMBG-a (mora imati tačno 13 cifara).");
+                }
             }
             
             // 2. Provera imena i prezimena

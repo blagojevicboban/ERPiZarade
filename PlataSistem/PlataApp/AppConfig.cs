@@ -6,7 +6,7 @@ namespace PlataApp;
 
 public static class AppConfig
 {
-    public static string DefaultDbPath => @"C:\PLATA\PlataSistem\plata.db";
+    public static string DefaultDbPath => @"C:\PlataApp\plata.db";
     public static string BazeDir => Path.Combine(Path.GetDirectoryName(DefaultDbPath)!, "Baze");
 
     private static string? _dbPath = null;

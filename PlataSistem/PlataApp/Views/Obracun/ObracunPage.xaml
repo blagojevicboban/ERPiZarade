@@ -357,8 +357,8 @@
                                 <TextBlock Text="{Binding SelectedObracun.NetoReg, StringFormat=N2}" HorizontalAlignment="Right"/>
                             </Grid>
                             <Grid Margin="0,0,0,6">
-                                <TextBlock Text="Bruto dodatak:" FontSize="13" FontWeight="SemiBold" Foreground="#3730A3"/>
-                                <TextBlock Text="{Binding SelectedObracun.Varijabila, StringFormat=N2}" HorizontalAlignment="Right" FontWeight="SemiBold" Foreground="#3730A3"/>
+                                <TextBlock Text="Bruto dodatak:" FontSize="13"/>
+                                <TextBlock Text="{Binding SelectedObracun.Varijabila, StringFormat=N2}" HorizontalAlignment="Right"/>
                             </Grid>
                             <Grid Margin="0,0,0,6" Visibility="{Binding SelectedObracun.NetoPrek, Converter={x:Static local:NullToVisibilityConverter.Instance}}">
                                 <TextBlock Text="Bruto naknada - prekovremeni rad:" FontSize="13"/>

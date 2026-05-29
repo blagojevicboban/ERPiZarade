@@ -82,7 +82,8 @@ public class RekapitulacijaDocument
         decimal sumBrutoTO       = _obracuni.Sum(o => o.NetoTo);     // topli obrok
         decimal sumBrutoReg      = _obracuni.Sum(o => o.NetoReg);    // regres
         decimal sumBrutoTer      = _obracuni.Sum(o => o.NetoTer);    // terenski
-        decimal sumBrutoStim     = _obracuni.Sum(o => o.BrutoStimulacija); // varijabila
+        decimal sumBrutoStim     = _obracuni.Sum(o => o.BrutoStimulacija); // stimulacija %
+        decimal sumVarijabila    = _obracuni.Sum(o => o.Varijabila);        // bruto dodatak
         decimal sumKorDod        = _obracuni.Sum(o => o.KorDod);
         decimal sumKorDod1       = _obracuni.Sum(o => o.KorDod1);
 
@@ -236,7 +237,8 @@ public class RekapitulacijaDocument
             if (sumBrutoTO   != 0) Row("Bruto dodatak - topli obrok..........................", sumBrutoTO);
             if (sumBrutoReg  != 0) Row("Bruto dodatak - regres za god. odmor.................", sumBrutoReg);
             if (sumBrutoTer  != 0) Row("Bruto dodatak - terenski dodatak.....................", sumBrutoTer);
-            if (sumBrutoStim != 0) Row("Bruto naknada - varijabila...........................", sumBrutoStim);
+            if (sumBrutoStim  != 0) Row("Bruto naknada - stimulacija ..........................", sumBrutoStim);
+            if (sumVarijabila != 0) Row("Bruto dodatak (varijabila)...........................", sumVarijabila);
             if (sumKorDod    != 0) Row("Bruto korektivni dodatak ............................", sumKorDod);
             if (sumKorDod1   != 0) Row("Bruto korektivni dodatak 1 ..........................", sumKorDod1);
 

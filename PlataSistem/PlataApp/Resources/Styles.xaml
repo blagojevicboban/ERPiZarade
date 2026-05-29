@@ -164,7 +164,7 @@
         <Setter Property="Foreground" Value="#CBD5E1"/>
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="HorizontalContentAlignment" Value="Left"/>
-        <Setter Property="Padding" Value="16,12"/>
+        <Setter Property="Padding" Value="16,7"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">

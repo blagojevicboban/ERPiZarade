@@ -95,10 +95,10 @@ Name: "{app}\Baze"
 
 [Icons]
 ; Prečica na desktopu (zajednicki za sve korisnike, admin install)
-Name: "{commondesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"; Comment: "{#AppFullName}"; Tasks: desktopicon
+Name: "{commondesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\plata.ico"; WorkingDir: "{app}"; Comment: "{#AppFullName}"; Tasks: desktopicon
 
 ; Prečica u Start Meniju
-Name: "{commonprograms}\{#AppName}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"; Comment: "{#AppFullName}"; Tasks: startmenuicon
+Name: "{commonprograms}\{#AppName}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\plata.ico"; WorkingDir: "{app}"; Comment: "{#AppFullName}"; Tasks: startmenuicon
 Name: "{commonprograms}\{#AppName}\Deinstaliraj {#AppName}"; Filename: "{uninstallexe}"; Tasks: startmenuicon
 
 [Run]

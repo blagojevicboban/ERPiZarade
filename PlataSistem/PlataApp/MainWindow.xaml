@@ -16,6 +16,82 @@
 
         <!-- ══ SIDEBAR ══════════════════════════════════════════════ -->
         <Border Grid.Column="0" CornerRadius="0,0,0,0">
+            <Border.Resources>
+                <!-- Transparent RepeatButton for Track -->
+                <Style x:Key="ScrollBarTrackButton" TargetType="RepeatButton">
+                    <Setter Property="OverridesDefaultStyle" Value="true"/>
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="Focusable" Value="false"/>
+                    <Setter Property="IsTabStop" Value="false"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="RepeatButton">
+                                <Border Background="Transparent"/>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+
+                <!-- Modern ScrollBar Thumb Style for Dark Background -->
+                <Style x:Key="SidebarScrollBarThumb" TargetType="Thumb">
+                    <Setter Property="OverridesDefaultStyle" Value="true"/>
+                    <Setter Property="IsTabStop" Value="false"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="Thumb">
+                                <Border x:Name="rectangle"
+                                        CornerRadius="3"
+                                        Background="#40FFFFFF"
+                                        Margin="2,0,2,0"
+                                        Width="6"
+                                        HorizontalAlignment="Center"/>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="true">
+                                        <Setter TargetName="rectangle" Property="Background" Value="#80FFFFFF"/>
+                                        <Setter TargetName="rectangle" Property="Width" Value="8"/>
+                                    </Trigger>
+                                    <Trigger Property="IsDragging" Value="true">
+                                        <Setter TargetName="rectangle" Property="Background" Value="#A0FFFFFF"/>
+                                        <Setter TargetName="rectangle" Property="Width" Value="8"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+
+                <!-- Style for ScrollBar within the Sidebar -->
+                <Style TargetType="ScrollBar">
+                    <Setter Property="OverridesDefaultStyle" Value="true"/>
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Style.Triggers>
+                        <Trigger Property="Orientation" Value="Vertical">
+                            <Setter Property="Width" Value="10"/>
+                            <Setter Property="Height" Value="Auto"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ScrollBar">
+                                        <Grid x:Name="Bg" Background="Transparent">
+                                            <Track x:Name="PART_Track" IsDirectionReversed="true">
+                                                <Track.DecreaseRepeatButton>
+                                                    <RepeatButton Command="ScrollBar.PageUpCommand" Style="{StaticResource ScrollBarTrackButton}"/>
+                                                </Track.DecreaseRepeatButton>
+                                                <Track.IncreaseRepeatButton>
+                                                    <RepeatButton Command="ScrollBar.PageDownCommand" Style="{StaticResource ScrollBarTrackButton}"/>
+                                                </Track.IncreaseRepeatButton>
+                                                <Track.Thumb>
+                                                    <Thumb Style="{StaticResource SidebarScrollBarThumb}"/>
+                                                </Track.Thumb>
+                                            </Track>
+                                        </Grid>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Resources>
+
             <Border.Background>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                     <GradientStop Color="#1A237E" Offset="0"/>
@@ -25,7 +101,7 @@
 
             <DockPanel>
                 <!-- Logo -->
-                <StackPanel DockPanel.Dock="Top" Margin="20,24,20,16">
+                <StackPanel DockPanel.Dock="Top" Margin="20,16,20,10">
                     <TextBlock Text="💼 PLATA" FontSize="22" FontWeight="Bold"
                                Foreground="White"/>
                     <TextBlock Text="Sistem za obračun zarada" FontSize="11"
@@ -37,8 +113,8 @@
                            Fill="#20FFFFFF"/>
 
                 <!-- Ime firme -->
-                <Border DockPanel.Dock="Top" Margin="12,12,12,4"
-                        Background="#20FFFFFF" CornerRadius="8" Padding="12,10"
+                <Border DockPanel.Dock="Top" Margin="12,6,12,3"
+                        Background="#20FFFFFF" CornerRadius="8" Padding="12,7"
                         Cursor="Hand" MouseDown="FirmaBorder_MouseDown">
                     <StackPanel>
                         <TextBlock Text="Firma:" FontSize="10" Foreground="#90CAF9"/>
@@ -50,8 +126,8 @@
                 </Border>
 
                 <!-- Aktivni period -->
-                <Border x:Name="ActivePeriodBorder" DockPanel.Dock="Top" Margin="12,4,12,4"
-                        Background="#15000000" CornerRadius="8" Padding="12,10"
+                <Border x:Name="ActivePeriodBorder" DockPanel.Dock="Top" Margin="12,3,12,3"
+                        Background="#15000000" CornerRadius="8" Padding="12,7"
                         Cursor="Hand" MouseDown="ActivePeriodBorder_MouseDown">
                     <StackPanel>
                         <TextBlock Text="Aktivni period:" FontSize="10" Foreground="#90CAF9"/>
@@ -69,9 +145,9 @@
 
                 <!-- Navigacija -->
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" BorderThickness="0">
-                    <StackPanel Margin="0,12,0,0">
+                    <StackPanel Margin="0,8,0,0">
                         <TextBlock Text="EVIDENCIJA" FontSize="10" FontWeight="SemiBold"
-                                   Foreground="#7986CB" Margin="24,8,0,4"/>
+                                   Foreground="#7986CB" Margin="24,6,0,3"/>
                         <Button x:Name="BtnRadnici" Content="👤  Radnici"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnRadnici_Click"/>
@@ -92,7 +168,7 @@
                                 Click="BtnPlatniRazredi_Click"/>
 
                         <TextBlock Text="ŠTAMPA" FontSize="10" FontWeight="SemiBold"
-                                   Foreground="#7986CB" Margin="24,16,0,4"/>
+                                   Foreground="#7986CB" Margin="24,10,0,3"/>
                         <Button x:Name="BtnListici" Content="🧾  Platni listići"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnListici_Click"/>
@@ -104,7 +180,7 @@
                                 Click="BtnPppPd_Click"/>
 
                         <TextBlock Text="ŠIFARNICI" FontSize="10" FontWeight="SemiBold"
-                                   Foreground="#7986CB" Margin="24,16,0,4"/>
+                                   Foreground="#7986CB" Margin="24,10,0,3"/>
                         <Button x:Name="BtnKrediti" Content="💳  Krediti"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnKrediti_Click"/>

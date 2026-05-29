@@ -89,7 +89,9 @@ $issScript = Join-Path $baseDir "PlataSetup.iss"
 $isccPaths = @(
     "C:\Program Files (x86)\Inno Setup 6\iscc.exe",
     "C:\Program Files\Inno Setup 6\iscc.exe",
-    "C:\Program Files (x86)\Inno Setup 5\iscc.exe"
+    "C:\Program Files (x86)\Inno Setup 5\iscc.exe",
+    "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe",
+    "$env:LOCALAPPDATA\Programs\Inno Setup 6\iscc.exe"
 )
 $isccExe = $null
 foreach ($p in $isccPaths) {
@@ -97,7 +99,8 @@ foreach ($p in $isccPaths) {
 }
 # Pokušaj i putem PATH-a
 if (-not $isccExe) {
-    $isccExe = (Get-Command "iscc.exe" -ErrorAction SilentlyContinue)?.Source
+    $isccCmd = Get-Command "iscc.exe" -ErrorAction SilentlyContinue
+    if ($isccCmd) { $isccExe = $isccCmd.Source }
 }
 
 if ($isccExe -and (Test-Path $issScript)) {

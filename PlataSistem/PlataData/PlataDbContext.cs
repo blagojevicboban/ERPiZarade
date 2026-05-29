@@ -159,6 +159,8 @@ public class PlataDbContext : DbContext
         try { ctx.Database.ExecuteSqlRaw("ALTER TABLE RadniSati ADD COLUMN Prosek DECIMAL(14,4) DEFAULT 0;"); } catch { }
         try { ctx.Database.ExecuteSqlRaw("ALTER TABLE RadniSati ADD COLUMN Stimulacija DECIMAL(14,2) DEFAULT 0;"); } catch { }
         try { ctx.Database.ExecuteSqlRaw("ALTER TABLE ObracuniPlata ADD COLUMN Prosek DECIMAL(14,4) DEFAULT 0;"); } catch { }
+        try { ctx.Database.ExecuteSqlRaw("ALTER TABLE RadniSati ADD COLUMN Varijabila DECIMAL(14,2) DEFAULT 0;"); } catch { }
+        try { ctx.Database.ExecuteSqlRaw("ALTER TABLE ObracuniPlata ADD COLUMN Varijabila DECIMAL(14,2) DEFAULT 0;"); } catch { }
 
         string[] noviSatiKoloneRS = {
             "SmenskiSati", "RadPraznikomSati", "NocniRadPraznikomSati", "PlacenoOdsustvoSati",

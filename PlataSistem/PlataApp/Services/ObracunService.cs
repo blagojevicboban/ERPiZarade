@@ -119,7 +119,8 @@ public class ObracunService
 
         decimal totalBruto = brutoRedovni + brutoBolovanje + brutoPrekovremeni + brutoGodisnji + brutoPraznik + brutoNeradniPraznik + brutoNocni + brutoNedelja + brutoMinuliRad + brutoStimulacija 
                            + topliObrokIznos + regresIznos 
-                           + brutoBolovanje100 + brutoPlacenoOdsustvo + brutoPlacenoZakonski + brutoBolovanjePreko60 + brutoPorodiljsko;
+                           + brutoBolovanje100 + brutoPlacenoOdsustvo + brutoPlacenoZakonski + brutoBolovanjePreko60 + brutoPorodiljsko
+                           + sati.Varijabila;
 
         // 5. Tax parameters
         decimal taxRate = DefaultTaxRate;
@@ -423,6 +424,7 @@ public class ObracunService
             Prosek = Math.Round(prosek, 2),
             CenaSataRedovan = Math.Round(hourlyBase, 5),
             CenaSataMinuliRad = Math.Round(min_po_cas, 5),
+            Varijabila = Math.Round(sati.Varijabila, 2),
             Zakljucen = false,
             DatumObracuna = DateTime.Now,
             Napomena = $"Obračun kreiran {DateTime.Now:dd.MM.yyyy HH:mm}"

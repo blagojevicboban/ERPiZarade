@@ -24,7 +24,8 @@ public partial class PodesavanjaPage : Page
         try
         {
             TxtAktivnaBazaPath.Text = AppConfig.DbPath;
-            TxtPredlozenoIme.Text = $"plata_backup_{DateTime.Now:yyyyMMdd_HHmmss}.db";
+            var dbName = !string.IsNullOrEmpty(AppConfig.DbPath) ? Path.GetFileNameWithoutExtension(AppConfig.DbPath) : "plata";
+            TxtPredlozenoIme.Text = $"{dbName}_backup_{DateTime.Now:yyyyMMdd_HHmmss}.db";
         }
         catch { }
 
@@ -74,11 +75,12 @@ public partial class PodesavanjaPage : Page
                 return;
             }
 
+            var dbName = !string.IsNullOrEmpty(dbPath) ? Path.GetFileNameWithoutExtension(dbPath) : "plata";
             var dialog = new SaveFileDialog
             {
                 Title = "Sačuvaj rezervnu kopiju baze podataka",
                 Filter = "SQLite baza podataka (*.db)|*.db|Sve datoteke (*.*)|*.*",
-                FileName = $"plata_backup_{DateTime.Now:yyyyMMdd_HHmmss}.db",
+                FileName = $"{dbName}_backup_{DateTime.Now:yyyyMMdd_HHmmss}.db",
                 DefaultExt = ".db"
             };
 
@@ -89,7 +91,8 @@ public partial class PodesavanjaPage : Page
                 MessageBox.Show($"Rezervna kopija baze podataka je uspešno kreirana!", "Uspeh", MessageBoxButton.OK, MessageBoxImage.Information);
                 
                 // Osveži predloženo ime za sledeći put i listu istorije
-                TxtPredlozenoIme.Text = $"plata_backup_{DateTime.Now:yyyyMMdd_HHmmss}.db";
+                var dbNameNew = !string.IsNullOrEmpty(AppConfig.DbPath) ? Path.GetFileNameWithoutExtension(AppConfig.DbPath) : "plata";
+                TxtPredlozenoIme.Text = $"{dbNameNew}_backup_{DateTime.Now:yyyyMMdd_HHmmss}.db";
                 OsveziIstorijuKopija();
             }
         }

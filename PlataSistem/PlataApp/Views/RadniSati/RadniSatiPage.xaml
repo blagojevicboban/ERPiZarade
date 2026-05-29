@@ -334,6 +334,15 @@
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
+                    <DataGridTextColumn Header="Bruto dodatak" Binding="{Binding Varijabila, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}" Width="110">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                                <Setter Property="Margin" Value="10,0"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
                     <DataGridTextColumn Header="Prosek (12m)" Binding="{Binding Prosek, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}" Width="105">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">

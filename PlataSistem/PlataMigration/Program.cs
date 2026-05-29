@@ -135,6 +135,7 @@ async Task<int> GetOrCreateRadnikId(PlataDbContext context, int brojRadnika, int
     if (string.IsNullOrWhiteSpace(newRadnik.ImeIPrezime))
     {
         newRadnik.ImeIPrezime = $"[Bivši zaposleni #{brojRadnika}]";
+        newRadnik.Aktivan = false;
     }
     newRadnik.DatumUnosa = DateTime.Now;
 
@@ -190,7 +191,7 @@ if (File.Exists(radniciiDbf))
                 Jmbg             = jmbgStr,
                 Koeficijent      = GetDecimal(reader, columns, "KOEFIC", "KOEFICIJE", "KOEF"),
                 Koeficijent1     = GetDecimal(reader, columns, "KOEFIC1"),
-                Kategorija       = GetString(reader, columns, "RAZRED", "KAT", "KATEGORIJ"),
+                Kategorija       = GetIntAsString(reader, columns, "RAZRED", "KAT", "KATEGORIJ"),
                 MinuliRadGodine  = GetInt(reader, columns, "MIN_RAD"),
                 BrojRadneJedinice = GetInt(reader, columns, "RAD_JED"),
                 NazivBanke       = GetIntAsString(reader, columns, "BANKA"),
@@ -285,7 +286,7 @@ if (File.Exists(radniciDbf))
                 MaticniBroj      = matBroj,
                 Jmbg             = jmbgStr,
                 Koeficijent      = GetDecimal(reader, columns, "KOEFIC", "KOEFICIJE", "KOEF"),
-                Kategorija       = GetString(reader, columns, "RAZRED", "KAT", "KATEGORIJ"),
+                Kategorija       = GetIntAsString(reader, columns, "RAZRED", "KAT", "KATEGORIJ"),
                 BrojRadneJedinice = GetInt(reader, columns, "RAD_JED"),
                 NazivBanke       = GetIntAsString(reader, columns, "BANKA"),
                 BankovniRacun    = GetString(reader, columns, "BROJ_TR", "ZIRO", "RACUN"),
@@ -543,6 +544,7 @@ async Task ImportObracuniDbf(string dbfPath, string label, int defaultGodina, in
                 NocniSati          = GetInt(reader, columns, "NOCNI"),
                 BrutoMinuliRad    = GetDecimal(reader, columns, "MIN_RAD_IZ"),
                 Prosek            = GetDecimal(reader, columns, "PROSEK"),
+                Varijabila        = GetDecimal(reader, columns, "VARIJABILA"),
                 NetoZar           = GetDecimal(reader, columns, "NETO_ZAR"),
                 NetoNerd          = GetDecimal(reader, columns, "NETO_NERD"),
                 NetoGOd           = GetDecimal(reader, columns, "NETO_G_OD"),
@@ -777,7 +779,8 @@ async Task ImportRadSatiDbf(string dbfPath, string label, int defaultGodina, int
                 TopliObrokDani     = GetInt(reader, columns, "TO"),
                 RegresIznos        = GetDecimal(reader, columns, "NETO_REG"),
                 Stimulacija        = GetDecimal(reader, columns, "STIMULACIJ", "STIMULACIJA"),
-                Prosek             = GetDecimal(reader, columns, "PROSEK")
+                Prosek             = GetDecimal(reader, columns, "PROSEK"),
+                Varijabila         = GetDecimal(reader, columns, "VARIJABILA")
             });
 
             cnt++;

@@ -61,6 +61,9 @@ public class RadniSat
     [Column(TypeName = "decimal(14,4)")]
     public decimal Prosek { get; set; }
 
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal Varijabila { get; set; }
+
     public Radnik Radnik { get; set; } = null!;
 }
 

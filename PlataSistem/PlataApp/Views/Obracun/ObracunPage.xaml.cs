@@ -253,7 +253,7 @@ public partial class ObracunPage : Page
                             table.Cell().PaddingVertical(1).AlignRight().Text($"{val:N2}").Style(bold ? TextStyle.Default.Bold().FontSize(8) : TextStyle.Default.FontSize(8));
                         }
 
-                        decimal totalBruto = o.BrutoZarada;
+                        decimal totalBruto = o.Neto; // totalBruto iz obračuna (sve komponente)
 
                         // Bruto delovi (iz DBF kolona)
                         if (o.NetoZar > 0)
@@ -331,6 +331,10 @@ public partial class ObracunPage : Page
                         if (o.NetoNede > 0)
                         {
                             AddRow("Bruto naknada - rad nedeljom", o.NetoNede);
+                        }
+                        if (o.Varijabila > 0)
+                        {
+                            AddRow("Bruto dodatak", o.Varijabila);
                         }
 
                         // Linija razdvajanja

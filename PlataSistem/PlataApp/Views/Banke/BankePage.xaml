@@ -126,7 +126,7 @@
                             <!-- Šifra banke -->
                             <StackPanel Margin="0,0,0,12">
                                 <TextBlock Text="Šifra banke (kolona BANKA u radnicima)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                <TextBox x:Name="TxtSifra" Height="32" VerticalContentAlignment="Center"/>
+                                <TextBox x:Name="TxtSifra" Height="32" VerticalContentAlignment="Center" IsReadOnly="True" Background="#F3F4F6"/>
                             </StackPanel>
 
                             <!-- Naziv banke -->
@@ -147,6 +147,9 @@
                     <StackPanel Grid.Row="2">
                         <Button x:Name="BtnSacuvaj" Content="💾  Sačuvaj izmene" Style="{StaticResource PrimaryButton}"
                                 Height="40" Margin="0,0,0,10" Click="BtnSacuvaj_Click"/>
+                        
+                        <Button x:Name="BtnOtkazi" Content="❌  Odustani" Style="{StaticResource SecondaryButton}"
+                                Height="36" Margin="0,0,0,10" Click="BtnOtkazi_Click"/>
                         
                         <Button x:Name="BtnObrisi" Content="🗑️  Obriši zapis" Style="{StaticResource SecondaryButton}"
                                 Foreground="#E11D48" BorderBrush="#FECDD3" Height="36" Click="BtnObrisi_Click"/>

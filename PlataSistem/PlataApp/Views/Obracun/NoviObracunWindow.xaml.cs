@@ -408,6 +408,13 @@ public partial class NoviObracunWindow : Window
 
             await _db.SaveChangesAsync();
 
+            // Aktivirati novi mesec
+            AppConfig.ActiveGodina = godina;
+            AppConfig.ActiveMesec = mesec;
+
+            var mainWindow = Application.Current.MainWindow as MainWindow;
+            mainWindow?.OsveziAktivniPeriodPrikaz();
+
             MessageBox.Show($"Uspešno obračunate plate za {calculatedCount} radnika za period {mesec}.{godina}.", "Uspeh", MessageBoxButton.OK, MessageBoxImage.Information);
             
             DialogResult = true;

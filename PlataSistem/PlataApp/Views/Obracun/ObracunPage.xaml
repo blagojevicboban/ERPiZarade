@@ -161,6 +161,7 @@
                         <DataGridTextColumn Header="Bruto Naknade" Binding="{Binding BrutoNaknade, StringFormat=N2}" Width="100"/>
                         <DataGridTextColumn Header="Bruto Stimulacija" Binding="{Binding BrutoStimulacija, StringFormat=N2}" Width="110"/>
                         <DataGridTextColumn Header="Bruto Minuli rad" Binding="{Binding BrutoMinuliRad, StringFormat=N2}" Width="110"/>
+                        <DataGridTextColumn Header="Bruto dodatak" Binding="{Binding Varijabila, StringFormat=N2}" Width="100"/>
                         
                         <!-- Detaljni bruto delovi (Neto zarada/naknade) -->
                         <DataGridTextColumn Header="Zarada (redovan)" Binding="{Binding NetoZar, StringFormat=N2}" Width="110"/>
@@ -355,6 +356,10 @@
                                 <TextBlock Text="Bruto dodatak - regres:" FontSize="13"/>
                                 <TextBlock Text="{Binding SelectedObracun.NetoReg, StringFormat=N2}" HorizontalAlignment="Right"/>
                             </Grid>
+                            <Grid Margin="0,0,0,6">
+                                <TextBlock Text="Bruto dodatak:" FontSize="13" FontWeight="SemiBold" Foreground="#3730A3"/>
+                                <TextBlock Text="{Binding SelectedObracun.Varijabila, StringFormat=N2}" HorizontalAlignment="Right" FontWeight="SemiBold" Foreground="#3730A3"/>
+                            </Grid>
                             <Grid Margin="0,0,0,6" Visibility="{Binding SelectedObracun.NetoPrek, Converter={x:Static local:NullToVisibilityConverter.Instance}}">
                                 <TextBlock Text="Bruto naknada - prekovremeni rad:" FontSize="13"/>
                                 <TextBlock Text="{Binding SelectedObracun.NetoPrek, StringFormat=N2}" HorizontalAlignment="Right"/>
@@ -369,7 +374,7 @@
                             </Grid>
                             <Grid Margin="0,0,0,6">
                                 <TextBlock Text="UKUPAN BRUTO:" FontSize="13" FontWeight="Bold"/>
-                                <TextBlock Text="{Binding SelectedObracun.BrutoZarada, StringFormat=N2}" HorizontalAlignment="Right" FontWeight="Bold"/>
+                                <TextBlock Text="{Binding SelectedObracun.Neto, StringFormat=N2}" HorizontalAlignment="Right" FontWeight="Bold"/>
                             </Grid>
 
                             

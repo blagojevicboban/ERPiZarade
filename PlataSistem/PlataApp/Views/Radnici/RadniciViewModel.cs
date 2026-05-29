@@ -193,6 +193,19 @@ public class RadniciViewModel : INotifyPropertyChanged
         new() { Sifra = "4", Naziv = "Stepen uvećanja 12/15 (cifra 4)" }
     };
 
+    public List<SvpOption> OpcijeStrucneSpreme { get; } = new()
+    {
+        new() { Sifra = "1", Naziv = "I/II - stepen - 4/8 razreda osnovne škole" },
+        new() { Sifra = "2", Naziv = "II - stepen - osnovna škola" },
+        new() { Sifra = "3", Naziv = "III - stepen - srednja škola" },
+        new() { Sifra = "4", Naziv = "IV - stepen - srednja škola" },
+        new() { Sifra = "5", Naziv = "V - stepen - VKV srednja škola" },
+        new() { Sifra = "6", Naziv = "VI - stepen - viša škola" },
+        new() { Sifra = "7", Naziv = "VII - stepen - visoka škola" },
+        new() { Sifra = "72", Naziv = "VII-2 - stepen - specijalizacija/magistratura" },
+        new() { Sifra = "8", Naziv = "VIII - stepen - doktorat" }
+    };
+
     private void AzurirajKombinovanaSvpPolja()
     {
         if (EditingRadnik == null) return;
@@ -244,11 +257,58 @@ public class RadniciViewModel : INotifyPropertyChanged
             int godina = AppConfig.ActiveGodina ?? DateTime.Now.Year;
             int mesec = AppConfig.ActiveMesec ?? DateTime.Now.Month;
 
-            // Ako uopšte nema radnika u tekućem periodu, prekopiraj ih iz najbližeg prethodnog
-            var imaTargetRadnika = await _db.Radnici.AnyAsync(r => r.Godina == godina && r.Mesec == mesec);
-            if (!imaTargetRadnika)
+            // Automatska ispravka: Deaktiviraj sve '[Bivši zaposleni]' zapise u svim periodima
+            var bivsiAktivni = await _db.Radnici
+                .Where(r => r.ImeIPrezime.Contains("Bivši zaposleni") && r.Aktivan)
+                .ToListAsync();
+            if (bivsiAktivni.Count > 0)
             {
+                foreach (var b in bivsiAktivni)
+                {
+                    b.Aktivan = false;
+                }
+                await _db.SaveChangesAsync();
+            }
+
+            // Ako je '[Bivši zaposleni]' greškom kopiran u tekući period a nema sati ni obračuna, obriši ga
+            var bivsiTekuci = await _db.Radnici
+                .Where(r => r.Godina == godina && r.Mesec == mesec && r.ImeIPrezime.Contains("Bivši zaposleni"))
+                .ToListAsync();
+            if (bivsiTekuci.Count > 0)
+            {
+                var toDelete = new List<Radnik>();
+                foreach (var bt in bivsiTekuci)
+                {
+                    var imaSate = await _db.RadniSati.AnyAsync(s => s.RadnikId == bt.Id && (s.RedovniSati > 0 || s.BolovanjeSati > 0 || s.PrekovremeneSati > 0 || s.GodisnjiOdmorSati > 0 || s.DrzavniPraznikSati > 0 || s.NocniSati > 0 || s.Stimulacija > 0));
+                    var imaObracun = await _db.ObracuniPlata.AnyAsync(o => o.RadnikId == bt.Id);
+                    if (!imaSate && !imaObracun)
+                    {
+                        toDelete.Add(bt);
+                    }
+                }
+                if (toDelete.Count > 0)
+                {
+                    await SafeDeleteWorkersAsync(_db, toDelete);
+                    await _db.SaveChangesAsync();
+                }
+            }
+
+            // Ako uopšte nema aktivnih radnika u tekućem periodu, a nema ni obračuna zarada u ovom mesecu
+            var imaAktivnihRadnika = await _db.Radnici.AnyAsync(r => r.Godina == godina && r.Mesec == mesec && r.Aktivan);
+            var imaObracunaUMesecu = await _db.ObracuniPlata.AnyAsync(o => o.Godina == godina && o.Mesec == mesec);
+            if (!imaAktivnihRadnika && !imaObracunaUMesecu)
+            {
+                // Izbriši sve neaktivne iz tekućeg meseca ako nema obračuna, da bismo uradili čist re-import
+                var neaktivniTekuci = await _db.Radnici.Where(r => r.Godina == godina && r.Mesec == mesec).ToListAsync();
+                if (neaktivniTekuci.Count > 0)
+                {
+                    await SafeDeleteWorkersAsync(_db, neaktivniTekuci);
+                    await _db.SaveChangesAsync();
+                }
+
+                // Nađi najbliži prethodni period koji ima aktivne radnike (koji je strogo pre tekućeg)
                 var sourcePeriod = await _db.Radnici
+                    .Where(r => r.Godina < godina || (r.Godina == godina && r.Mesec < mesec))
                     .OrderByDescending(r => r.Godina)
                     .ThenByDescending(r => r.Mesec)
                     .Select(r => new { r.Godina, r.Mesec })
@@ -437,6 +497,29 @@ public class RadniciViewModel : INotifyPropertyChanged
             await LoadAsync();
         }
         catch (Exception ex) { StatusPoruka = $"Greška: {ex.Message}"; }
+    }
+
+    private static async Task SafeDeleteWorkersAsync(PlataDbContext db, List<Radnik> workersToDelete)
+    {
+        if (workersToDelete == null || workersToDelete.Count == 0) return;
+        var ids = workersToDelete.Select(w => w.Id).ToList();
+
+        var dpRows = await db.DoprinosiPoslodavca.Where(dp => ids.Contains(dp.RadnikId)).ToListAsync();
+        if (dpRows.Count > 0) db.DoprinosiPoslodavca.RemoveRange(dpRows);
+
+        var rsRows = await db.RadniSati.Where(rs => ids.Contains(rs.RadnikId)).ToListAsync();
+        if (rsRows.Count > 0) db.RadniSati.RemoveRange(rsRows);
+
+        var opRows = await db.ObracuniPlata.Where(op => ids.Contains(op.RadnikId)).ToListAsync();
+        if (opRows.Count > 0) db.ObracuniPlata.RemoveRange(opRows);
+
+        var kRows = await db.Krediti.Where(k => ids.Contains(k.RadnikId)).ToListAsync();
+        if (kRows.Count > 0) db.Krediti.RemoveRange(kRows);
+
+        var sdRows = await db.Samodoprinosi.Where(sd => ids.Contains(sd.RadnikId)).ToListAsync();
+        if (sdRows.Count > 0) db.Samodoprinosi.RemoveRange(sdRows);
+
+        db.Radnici.RemoveRange(workersToDelete);
     }
 
     private static Radnik CopyRadnik(Radnik src) => new()

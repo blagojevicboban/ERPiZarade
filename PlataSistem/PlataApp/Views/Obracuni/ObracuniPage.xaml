@@ -172,6 +172,13 @@
             <Grid>
                 <TextBlock x:Name="StatusMessage" Text="Učitavanje..." FontSize="12"
                             Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                <Button x:Name="BtnRetroaktivniDoprinosi"
+                        Content="🔄  Preračunaj doprinose poslodavca (retroaktivno)"
+                        HorizontalAlignment="Right"
+                        Style="{StaticResource SecondaryButton}"
+                        Padding="12,4"
+                        Click="BtnRetroaktivniDoprinosi_Click"
+                        ToolTip="Preračunava doprinose na teret poslodavca za sve istorijske obračune gde su vrednosti 0"/>
             </Grid>
         </Border>
     </Grid>

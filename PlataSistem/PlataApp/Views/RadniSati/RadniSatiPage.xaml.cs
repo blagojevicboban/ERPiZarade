@@ -227,6 +227,7 @@ public partial class RadniSatiPage : Page
                     postojeciObracun.BolovanjePreko60SatiLegacy = rs.BolovanjePreko60Sati;
                     postojeciObracun.PorodiljskoOdsustvoSatiLegacy = rs.PorodiljskoOdsustvoSati;
                     postojeciObracun.Bolovanje100SatiLegacy = rs.Bolovanje100Sati;
+                    postojeciObracun.Varijabila = rs.Varijabila;
 
                     postojeciObracun.Prosek = noviObracun.Prosek;
                     postojeciObracun.DatumObracuna = DateTime.Now;
@@ -536,6 +537,7 @@ public partial class RadniSatiPage : Page
                 postojeciObracun.BolovanjePreko60SatiLegacy = rs.BolovanjePreko60Sati;
                 postojeciObracun.PorodiljskoOdsustvoSatiLegacy = rs.PorodiljskoOdsustvoSati;
                 postojeciObracun.Bolovanje100SatiLegacy = rs.Bolovanje100Sati;
+                postojeciObracun.Varijabila = rs.Varijabila;
 
                 postojeciObracun.Prosek = noviObracun.Prosek;
                 postojeciObracun.DatumObracuna = DateTime.Now;
@@ -579,6 +581,7 @@ public partial class RadniSatiPage : Page
             new() { DisplayName = "Topli obrok (iznos RSD)", PropertyName = nameof(RadniSat.TopliObrokDani), PropertyType = typeof(int) },
             new() { DisplayName = "Regres (iznos)", PropertyName = nameof(RadniSat.RegresIznos), PropertyType = typeof(decimal) },
             new() { DisplayName = "Stimulacija (%)", PropertyName = nameof(RadniSat.Stimulacija), PropertyType = typeof(decimal) },
+            new() { DisplayName = "Bruto dodatak", PropertyName = nameof(RadniSat.Varijabila), PropertyType = typeof(decimal) },
             new() { DisplayName = "Prosek (12m)", PropertyName = nameof(RadniSat.Prosek), PropertyType = typeof(decimal) }
         };
         ComboBulkKolona.ItemsSource = list;
@@ -723,6 +726,7 @@ public partial class RadniSatiPage : Page
                     postojeciObracun.BolovanjePreko60SatiLegacy = rs.BolovanjePreko60Sati;
                     postojeciObracun.PorodiljskoOdsustvoSatiLegacy = rs.PorodiljskoOdsustvoSati;
                     postojeciObracun.Bolovanje100SatiLegacy = rs.Bolovanje100Sati;
+                    postojeciObracun.Varijabila = rs.Varijabila;
 
                     postojeciObracun.Prosek = noviObracun.Prosek;
                     postojeciObracun.DatumObracuna = DateTime.Now;

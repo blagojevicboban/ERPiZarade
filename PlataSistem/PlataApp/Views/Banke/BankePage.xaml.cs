@@ -41,6 +41,7 @@ public partial class BankePage : Page
                 .ToList();
 
             OsveziTabelu();
+            OcistiFormu();
 
             if (aktivnaGodina.HasValue && aktivniMesec.HasValue)
             {
@@ -87,10 +88,15 @@ public partial class BankePage : Page
         {
             _selectedBanka = selektovana;
             FormTitle.Text = "📝 Uredi podatke o banci";
+            
             TxtSifra.Text = _selectedBanka.Sifra;
             TxtNaziv.Text = _selectedBanka.Naziv;
             TxtZiroRacun.Text = _selectedBanka.ZiroRacun;
-            BtnObrisi.IsEnabled = true;
+            
+            BtnSacuvaj.Content = "💾  Sačuvaj izmene";
+            BtnOtkazi.Content = "❌  Odustani";
+            BtnOtkazi.Visibility = Visibility.Visible;
+            BtnObrisi.Visibility = Visibility.Visible;
         }
         else
         {
@@ -98,18 +104,49 @@ public partial class BankePage : Page
         }
     }
 
+    private string GenerisiSledecuSifru()
+    {
+        int godina = AppConfig.ActiveGodina ?? DateTime.Now.Year;
+        int mesec = AppConfig.ActiveMesec ?? DateTime.Now.Month;
+        
+        var postojeceSifre = _db.Banke
+            .Where(b => b.Godina == godina && b.Mesec == mesec)
+            .Select(b => b.Sifra)
+            .ToList();
+
+        int maxVal = 0;
+        foreach (var s in postojeceSifre)
+        {
+            if (int.TryParse(s, out int val) && val > maxVal)
+            {
+                maxVal = val;
+            }
+        }
+        return (maxVal + 1).ToString();
+    }
+
     private void OcistiFormu()
     {
         _selectedBanka = null;
         FormTitle.Text = "➕ Dodaj novu banku";
         
-        TxtSifra.Text = "";
+        TxtSifra.Text = GenerisiSledecuSifru();
         TxtNaziv.Text = "";
         TxtZiroRacun.Text = "";
-        BtnObrisi.IsEnabled = false;
+        
+        BtnSacuvaj.Content = "➕  Dodaj novu banku";
+        BtnOtkazi.Content = "❌  Očisti polja";
+        BtnOtkazi.Visibility = Visibility.Visible;
+        BtnObrisi.Visibility = Visibility.Collapsed;
     }
 
     private void BtnNovaBanka_Click(object sender, RoutedEventArgs e)
+    {
+        GridBanke.SelectedItem = null;
+        OcistiFormu();
+    }
+
+    private void BtnOtkazi_Click(object sender, RoutedEventArgs e)
     {
         GridBanke.SelectedItem = null;
         OcistiFormu();

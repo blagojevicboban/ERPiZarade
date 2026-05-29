@@ -252,6 +252,190 @@ public partial class ObracuniPage : Page
             mainWindow.NavigateToObracun(summary.Godina, summary.Mesec);
         }
     }
+
+    private async void BtnRetroaktivniDoprinosi_Click(object sender, RoutedEventArgs e)
+    {
+        var rez = MessageBox.Show(
+            "Ova akcija će preračunati doprinose na teret POSLODAVCA za sve obračune gde su trenutno 0.\n\n" +
+            "Stope se uzimaju iz tabele Doprinosi za odgovarajući mesec (ili najbliži prethodni).\n" +
+            "Osnovica = BrutoZarada + BrutoBolovanje (kao u redovnom obračunu).\n\n" +
+            "Da li želite da nastavite?",
+            "Retroaktivni preračun doprinosa poslodavca",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (rez == MessageBoxResult.No) return;
+
+        BtnRetroaktivniDoprinosi.IsEnabled = false;
+        StatusMessage.Text = "Retroaktivni preračun u toku... Molimo sačekajte.";
+
+        try
+        {
+            // Učitaj sve obračune gde su doprinosi poslodavca = 0
+            var obracuniZaAzuriranje = await _db.ObracuniPlata
+                .Include(o => o.Radnik)
+                .Where(o => o.DoprinosPioPoslodavac == 0
+                         && o.DoprinosZdravstvoPoslodavac == 0
+                         && o.DoprinosNezaposlenostPoslodavac == 0)
+                .ToListAsync();
+
+            if (obracuniZaAzuriranje.Count == 0)
+            {
+                MessageBox.Show("Svi obračuni već imaju preračunate doprinose poslodavca. Nema šta da se ažurira.",
+                    "Informacija", MessageBoxButton.OK, MessageBoxImage.Information);
+                StatusMessage.Text = "Nema obračuna za ažuriranje.";
+                BtnRetroaktivniDoprinosi.IsEnabled = true;
+                return;
+            }
+
+            // Učitaj sve periode doprinosa iz baze (keš za performanse)
+            var sviDoprinosi = await _db.Doprinosi.ToListAsync();
+
+            // Učitaj sve platne razrede
+            var platniRazredi = await _db.PlatniRazredi.FirstOrDefaultAsync();
+            decimal defaultMinBase = 51297.00m;
+
+            int azurirano = 0;
+            foreach (var o in obracuniZaAzuriranje)
+            {
+                // Pronađi stope doprinosa za ovaj period
+                var doprinosiZaPeriod = sviDoprinosi
+                    .Where(d => d.Godina == o.Godina && d.Mesec == o.Mesec)
+                    .ToList();
+
+                if (!doprinosiZaPeriod.Any())
+                {
+                    // Nađi najbliži prethodni period
+                    var closest = sviDoprinosi
+                        .Where(d => d.Godina < o.Godina || (d.Godina == o.Godina && d.Mesec < o.Mesec))
+                        .OrderByDescending(d => d.Godina)
+                        .ThenByDescending(d => d.Mesec)
+                        .FirstOrDefault();
+
+                    if (closest != null)
+                    {
+                        doprinosiZaPeriod = sviDoprinosi
+                            .Where(d => d.Godina == closest.Godina && d.Mesec == closest.Mesec)
+                            .ToList();
+                    }
+                }
+
+                // Standard rates variables initialized to defaults
+                decimal bossPio = 0.1000m;
+                decimal bossZdr = 0.0515m;
+                decimal bossNez = 0.0000m;
+
+                // Dinamička inicijalizacija stopa za poslodavca na osnovu perioda ukoliko nema vrednosti u bazi
+                if (o.Godina >= 2023)
+                {
+                    bossPio = 0.1000m;
+                    bossNez = 0.0000m;
+                }
+                else if (o.Godina == 2022)
+                {
+                    bossPio = 0.1100m;
+                    bossNez = 0.0000m;
+                }
+                else if (o.Godina >= 2020 || (o.Godina == 2019 && o.Mesec == 12))
+                {
+                    bossPio = 0.1150m;
+                    bossNez = 0.0000m;
+                }
+                else
+                {
+                    bossPio = 0.1200m;
+                    bossNez = 0.0075m;
+                }
+
+                // Overlay sa bazom podataka
+                if (doprinosiZaPeriod.Any())
+                {
+                    var pioRec = doprinosiZaPeriod.FirstOrDefault(d => d.RedniBroj == 1);
+                    if (pioRec != null && pioRec.ProcPosl > 0)
+                    {
+                        bossPio = pioRec.ProcPosl / 100m;
+                    }
+
+                    var zdrRec = doprinosiZaPeriod.FirstOrDefault(d => d.RedniBroj == 2);
+                    if (zdrRec != null && zdrRec.ProcPosl > 0)
+                    {
+                        bossZdr = zdrRec.ProcPosl / 100m;
+                    }
+
+                    var nezRec = doprinosiZaPeriod.FirstOrDefault(d => d.RedniBroj == 3);
+                    if (nezRec != null && nezRec.ProcPosl > 0)
+                    {
+                        bossNez = nezRec.ProcPosl / 100m;
+                    }
+                }
+
+                // Penzioneri (radno mesto počinje sa "109") — nema doprinosa za nezaposlenost
+                bool jePenzioner = !string.IsNullOrWhiteSpace(o.Radnik?.Radno_Mesto)
+                                   && o.Radnik.Radno_Mesto.TrimStart().StartsWith("109");
+                if (jePenzioner)
+                {
+                    bossNez = 0m;
+                }
+
+                decimal totalBruto = o.BrutoZarada + o.BrutoBolovanje;
+
+                // Određivanje minimalne osnovice
+                decimal minBase = defaultMinBase;
+                if (platniRazredi != null && o.Radnik != null && !string.IsNullOrEmpty(o.Radnik.Kategorija))
+                {
+                    int.TryParse(o.Radnik.Kategorija, out int katId);
+                    minBase = katId switch
+                    {
+                        1 => platniRazredi.R1,
+                        2 => platniRazredi.R2,
+                        3 => platniRazredi.R3,
+                        4 => platniRazredi.R4,
+                        5 => platniRazredi.R5,
+                        6 => platniRazredi.R6,
+                        7 => platniRazredi.R7,
+                        8 => platniRazredi.R8,
+                        _ => defaultMinBase
+                    };
+                }
+                else if (o.Radnik?.Kategorija == "9")
+                {
+                    minBase = 0m;
+                }
+
+                // Korekcija osnovice po razredu (isti pattern kao u ObracunService)
+                decimal brutoOsn = totalBruto;
+                if (brutoOsn < minBase / 2m)
+                    brutoOsn = minBase / 2m;
+                else if (brutoOsn < minBase)
+                    brutoOsn = minBase;
+
+                o.DoprinosPioPoslodavac = Math.Round(brutoOsn * bossPio, 2);
+                o.DoprinosZdravstvoPoslodavac = Math.Round(brutoOsn * bossZdr, 2);
+                o.DoprinosNezaposlenostPoslodavac = Math.Round(brutoOsn * bossNez, 2);
+
+                _db.Entry(o).State = EntityState.Modified;
+                azurirano++;
+            }
+
+            await _db.SaveChangesAsync();
+
+            MessageBox.Show(
+                $"Uspešno preračunati doprinosi poslodavca za {azurirano} obračuna.",
+                "Uspeh", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            StatusMessage.Text = $"Retroaktivno ažurirano {azurirano} obračuna sa doprinosima poslodavca.";
+            UcitajPeriodiSummary();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Greška prilikom retroaktivnog preračuna: {ex.Message}", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+            StatusMessage.Text = "Greška pri retroaktivnom preračunu.";
+        }
+        finally
+        {
+            BtnRetroaktivniDoprinosi.IsEnabled = true;
+        }
+    }
 }
 
 public class ObracunPeriodSummary

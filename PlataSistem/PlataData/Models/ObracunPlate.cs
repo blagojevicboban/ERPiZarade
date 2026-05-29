@@ -246,6 +246,9 @@ public class ObracunPlate
     [Column(TypeName = "decimal(14,2)")]
     public decimal NetoBezPoreza { get; set; }
 
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal Varijabila { get; set; }
+
 
     // ── NOT MAPPED HELPERS FOR UI BINDINGS ────────────────
     [NotMapped]

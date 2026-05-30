@@ -1012,7 +1012,9 @@ async Task ImportDoprinosiDbf(string dbfPath, string label, bool isHistory)
                 PozivNaB    = GetString(reader, columns, "POZIV_NA_B"),
                 PozivNa2    = GetString(reader, columns, "POZIV_NA_2"),
                 SifPlac     = GetString(reader, columns, "SIF_PLAC"),
-                SifPlacP    = GetString(reader, columns, "SIF_PLAC_P")
+                SifPlacP    = GetString(reader, columns, "SIF_PLAC_P"),
+                NajnizaOsnovica = (god == aktivnaGodina && mes == aktivniMesec) ? 51297.00m : 0m,
+                NajvisaOsnovica = (god == aktivnaGodina && mes == aktivniMesec) ? 732820.00m : 0m
             };
 
             db.Doprinosi.Add(d);

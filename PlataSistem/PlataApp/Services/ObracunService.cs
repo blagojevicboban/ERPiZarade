@@ -122,10 +122,45 @@ public class ObracunService
                            + brutoBolovanje100 + brutoPlacenoOdsustvo + brutoPlacenoZakonski + brutoBolovanjePreko60 + brutoPorodiljsko
                            + sati.Varijabila;
 
+        // Load contribution rates and bases from database
+        var dbDoprinosi = _db.Doprinosi
+            .Where(d => d.Godina == godina && d.Mesec == mesec)
+            .ToList();
+
+        // Fallback: load closest past month's rates if current doesn't exist
+        if (!dbDoprinosi.Any())
+        {
+            var closestPeriod = _db.Doprinosi
+                .Where(d => d.Godina < godina || (d.Godina == godina && d.Mesec < mesec))
+                .OrderByDescending(d => d.Godina)
+                .ThenByDescending(d => d.Mesec)
+                .FirstOrDefault();
+
+            if (closestPeriod != null)
+            {
+                dbDoprinosi = _db.Doprinosi
+                    .Where(d => d.Godina == closestPeriod.Godina && d.Mesec == closestPeriod.Mesec)
+                    .ToList();
+            }
+        }
+
+        // Try to read NajnizaOsnovica and NajvisaOsnovica from database doprinosi (e.g. PIO / RedniBroj 1)
+        decimal minBase = DefaultMinContributionBase;
+        decimal maxBase = 0m;
+
+        if (dbDoprinosi.Any())
+        {
+            var pioRec = dbDoprinosi.FirstOrDefault(d => d.RedniBroj == 1);
+            if (pioRec != null)
+            {
+                if (pioRec.NajnizaOsnovica > 0) minBase = pioRec.NajnizaOsnovica;
+                if (pioRec.NajvisaOsnovica > 0) maxBase = pioRec.NajvisaOsnovica;
+            }
+        }
+
         // 5. Tax parameters
         decimal taxRate = DefaultTaxRate;
         decimal taxExemption = DefaultPoreskoOslobodjenje;
-        decimal minBase = DefaultMinContributionBase;
 
         if (pParams != null)
         {
@@ -227,26 +262,11 @@ public class ObracunService
             brutPioOsn = granicaPIO;
         }
 
-        // Load contribution rates from database
-        var dbDoprinosi = _db.Doprinosi
-            .Where(d => d.Godina == godina && d.Mesec == mesec)
-            .ToList();
-
-        // Fallback: load closest past month's rates if current doesn't exist
-        if (!dbDoprinosi.Any())
+        // Apply highest base clamp (Najviša bruto osnovica) from above
+        if (maxBase > 0)
         {
-            var closestPeriod = _db.Doprinosi
-                .Where(d => d.Godina < godina || (d.Godina == godina && d.Mesec < mesec))
-                .OrderByDescending(d => d.Godina)
-                .ThenByDescending(d => d.Mesec)
-                .FirstOrDefault();
-
-            if (closestPeriod != null)
-            {
-                dbDoprinosi = _db.Doprinosi
-                    .Where(d => d.Godina == closestPeriod.Godina && d.Mesec == closestPeriod.Mesec)
-                    .ToList();
-            }
+            if (brutoOsn > maxBase) brutoOsn = maxBase;
+            if (brutPioOsn > maxBase) brutPioOsn = maxBase;
         }
 
         // Standard rates variables initialized to defaults

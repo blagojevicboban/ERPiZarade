@@ -84,13 +84,40 @@
                         Command="{Binding NewCommand}"
                         Margin="0,0,8,0"/>
                 <Button Grid.Column="3" Content="✏️  Izmeni"
-                        Style="{StaticResource SecondaryButton}"
-                        IsEnabled="{Binding SelectedRadnik, Converter={x:Static local:NullToBoolConverter.Instance}}"
-                        Click="BtnIzmeni_Click"
-                        Margin="0,0,8,0"/>
+                        Margin="0,0,8,0"
+                        Click="BtnIzmeni_Click">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+                            <Setter Property="IsEnabled" Value="False"/>
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding SelectedRadnik, Converter={x:Static local:NullToBoolConverter.Instance}}" Value="True"/>
+                                        <Condition Binding="{Binding IsEditing}" Value="False"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="IsEnabled" Value="True"/>
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
                 <Button Grid.Column="4" Content="🗑️  Deaktiviraj"
-                        Style="{StaticResource SecondaryButton}"
-                        Command="{Binding DeleteCommand}"/>
+                        Command="{Binding DeleteCommand}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+                            <Setter Property="IsEnabled" Value="False"/>
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding SelectedRadnik, Converter={x:Static local:NullToBoolConverter.Instance}}" Value="True"/>
+                                        <Condition Binding="{Binding IsEditing}" Value="False"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="IsEnabled" Value="True"/>
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
             </Grid>
         </Border>
 

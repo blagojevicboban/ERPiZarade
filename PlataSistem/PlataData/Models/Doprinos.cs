@@ -73,4 +73,10 @@ public class Doprinos
 
     [MaxLength(10)]
     public string SifPlacP { get; set; } = ""; // Šifra plaćanja 2
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal NajnizaOsnovica { get; set; } // Najniža bruto osnovica
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal NajvisaOsnovica { get; set; } // Najviša bruto osnovica
 }

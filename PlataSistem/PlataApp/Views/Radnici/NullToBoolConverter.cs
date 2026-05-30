@@ -10,7 +10,9 @@ public class NullToBoolConverter : IValueConverter
 
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        return value != null;
+        if (value == null || value == System.Windows.DependencyProperty.UnsetValue)
+            return false;
+        return true;
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

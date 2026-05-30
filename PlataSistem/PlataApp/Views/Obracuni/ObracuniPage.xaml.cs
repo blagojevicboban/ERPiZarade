@@ -379,8 +379,20 @@ public partial class ObracuniPage : Page
 
                 decimal totalBruto = o.BrutoZarada + o.BrutoBolovanje;
 
-                // Određivanje minimalne osnovice
+                // Određivanje minimalne osnovice i maksimalne osnovice iz šifrarnika
                 decimal minBase = defaultMinBase;
+                decimal maxBase = 0m;
+
+                if (doprinosiZaPeriod.Any())
+                {
+                    var pioRec = doprinosiZaPeriod.FirstOrDefault(d => d.RedniBroj == 1);
+                    if (pioRec != null)
+                    {
+                        if (pioRec.NajnizaOsnovica > 0) minBase = pioRec.NajnizaOsnovica;
+                        if (pioRec.NajvisaOsnovica > 0) maxBase = pioRec.NajvisaOsnovica;
+                    }
+                }
+
                 if (platniRazredi != null && o.Radnik != null && !string.IsNullOrEmpty(o.Radnik.Kategorija))
                 {
                     int.TryParse(o.Radnik.Kategorija, out int katId);
@@ -394,7 +406,7 @@ public partial class ObracuniPage : Page
                         6 => platniRazredi.R6,
                         7 => platniRazredi.R7,
                         8 => platniRazredi.R8,
-                        _ => defaultMinBase
+                        _ => minBase
                     };
                 }
                 else if (o.Radnik?.Kategorija == "9")
@@ -408,6 +420,11 @@ public partial class ObracuniPage : Page
                     brutoOsn = minBase / 2m;
                 else if (brutoOsn < minBase)
                     brutoOsn = minBase;
+
+                if (maxBase > 0 && brutoOsn > maxBase)
+                {
+                    brutoOsn = maxBase;
+                }
 
                 o.DoprinosPioPoslodavac = Math.Round(brutoOsn * bossPio, 2);
                 o.DoprinosZdravstvoPoslodavac = Math.Round(brutoOsn * bossZdr, 2);

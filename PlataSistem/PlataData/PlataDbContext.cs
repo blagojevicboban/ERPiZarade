@@ -277,6 +277,8 @@ public class PlataDbContext : DbContext
         catch { }
 
         try { ctx.Database.ExecuteSqlRaw("ALTER TABLE Porezi ADD COLUMN TopliObrokCena DECIMAL(14,2) DEFAULT 0;"); } catch { }
+        try { ctx.Database.ExecuteSqlRaw("ALTER TABLE Doprinosi ADD COLUMN NajnizaOsnovica DECIMAL(14,2) NOT NULL DEFAULT 0;"); } catch { }
+        try { ctx.Database.ExecuteSqlRaw("ALTER TABLE Doprinosi ADD COLUMN NajvisaOsnovica DECIMAL(14,2) NOT NULL DEFAULT 0;"); } catch { }
 
         try
         {

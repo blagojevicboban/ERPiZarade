@@ -111,7 +111,18 @@ public partial class ObracunPage : Page
                 }
 
                 // Rekonstrukcija vrednosti boda i formule: bod - min_plata% = neto_bod
-                decimal bod = 1860.34m; // Standardna vrednost boda
+                decimal bod = 1860.34m; // Standardna/fallback vrednost boda
+                try
+                {
+                    using var dbDetails = PlataData.PlataDbContext.Create(PlataApp.AppConfig.DbPath);
+                    var poreziRecord = dbDetails.Porezi
+                        .FirstOrDefault(p => p.Godina == o.Godina && p.Mesec == o.Mesec);
+                    if (poreziRecord != null && poreziRecord.VrBoda > 0)
+                    {
+                        bod = poreziRecord.VrBoda;
+                    }
+                }
+                catch {}
                 decimal minPlataPercent = 0m;
                 if (o.Radnik.OsnovnaPlata > 0 && o.Radnik.OsnovnaPlata <= 100)
                 {
@@ -120,15 +131,20 @@ public partial class ObracunPage : Page
                 decimal netoBod = bod * (1 - minPlataPercent / 100);
 
                 // Računanje godina staža za minuli rad
-                int yearsOfTenure = 0;
-                if (o.Radnik.DatumZaposlenja.HasValue)
+                int yearsOfTenure = o.MinuliRadGodine;
+                decimal procMinul = 0.40m;
+                try
                 {
-                    var obracunDate = new DateTime(o.Godina, o.Mesec, 1);
-                    yearsOfTenure = (int)((obracunDate - o.Radnik.DatumZaposlenja.Value).TotalDays / 365.0);
-                    if (yearsOfTenure < 0) yearsOfTenure = 0;
-                    if (yearsOfTenure > 99) yearsOfTenure = 99;
+                    using var dbDetails = PlataData.PlataDbContext.Create(PlataApp.AppConfig.DbPath);
+                    var poreziRecord = dbDetails.Porezi
+                        .FirstOrDefault(p => p.Godina == o.Godina && p.Mesec == o.Mesec);
+                    if (poreziRecord != null)
+                    {
+                        procMinul = poreziRecord.ProcMinul;
+                    }
                 }
-                decimal minuliRadPercent = yearsOfTenure * 0.40m;
+                catch {}
+                decimal minuliRadPercent = yearsOfTenure * procMinul;
 
                 // Header
                 page.Header().Row(row =>
@@ -353,7 +369,15 @@ public partial class ObracunPage : Page
                         }
 
                         // Osnovica za doprinose (iznad doprinosa na teret radnika)
-                        AddRow("Osnovica za obračun doprinosa", totalBruto);
+                        if (o.BrutoOsnovica == o.BrutoPioOsnovica)
+                        {
+                            AddRow("Osnovica za obračun doprinosa", o.BrutoOsnovica);
+                        }
+                        else
+                        {
+                            AddRow("Osnovica za obračun doprinosa (PIO)", o.BrutoPioOsnovica);
+                            AddRow("Osnovica za obračun doprinosa (zdr. i nez.)", o.BrutoOsnovica);
+                        }
 
                         // Doprinosi zaposlenog
                         if (o.DoprinosPioRadnik > 0)

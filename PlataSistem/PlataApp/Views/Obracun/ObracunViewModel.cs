@@ -23,6 +23,8 @@ public class ObracunViewModel : INotifyPropertyChanged
     private string _searchText = "";
     private ObracunPlate? _selectedObracun;
     private string _statusText = "";
+    private decimal _selectedVrBoda;
+    private decimal _selectedMinuliRadPercent;
 
     public ObracunViewModel()
     {
@@ -145,6 +147,18 @@ public class ObracunViewModel : INotifyPropertyChanged
         get => _statusText;
         set { _statusText = value; OnPropertyChanged(); }
     }
+    
+    public decimal SelectedVrBoda
+    {
+        get => _selectedVrBoda;
+        set { _selectedVrBoda = value; OnPropertyChanged(); }
+    }
+
+    public decimal SelectedMinuliRadPercent
+    {
+        get => _selectedMinuliRadPercent;
+        set { _selectedMinuliRadPercent = value; OnPropertyChanged(); }
+    }
 
     public ICommand LoadCommand { get; }
     public ICommand ClearFilterCommand { get; }
@@ -178,6 +192,14 @@ public class ObracunViewModel : INotifyPropertyChanged
     {
         try
         {
+            // Učitaj vrednost boda za tu godinu i mesec iz baze podataka
+            var porez = await _db.Porezi
+                .FirstOrDefaultAsync(p => p.Godina == o.Godina && p.Mesec == o.Mesec);
+            SelectedVrBoda = porez?.VrBoda ?? 1860.34m;
+
+            decimal procMinul = porez?.ProcMinul ?? 0.40m;
+            SelectedMinuliRadPercent = o.MinuliRadGodine * procMinul;
+
             // Učitaj doprinose za tu godinu i mesec iz baze podataka
             var stope = await _db.Doprinosi
                 .Where(d => d.Godina == o.Godina && d.Mesec == o.Mesec)

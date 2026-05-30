@@ -117,8 +117,20 @@ public class ObracunPlate
     [Column(TypeName = "decimal(14,2)")]
     public decimal PorezNaDohodak { get; set; }
 
+    private decimal _poreskaOsnovica;
     [Column(TypeName = "decimal(14,2)")]
-    public decimal PoreskaOsnovica { get; set; }
+    public decimal PoreskaOsnovica
+    {
+        get
+        {
+            if (_poreskaOsnovica == 0 && PorezNaDohodak > 0)
+            {
+                return Math.Max(0, Neto - LicniOdbitak);
+            }
+            return _poreskaOsnovica;
+        }
+        set => _poreskaOsnovica = value;
+    }
 
     /// <summary>DBF polje 'umanjenje' = licni odbitak (SAMODOP.PRG: sum_umanj)</summary>
     [Column(TypeName = "decimal(14,2)")]

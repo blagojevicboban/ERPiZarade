@@ -551,7 +551,9 @@ public class RadniciViewModel : INotifyPropertyChanged
         Kategorija = src.Kategorija,
         Radno_Mesto = src.Radno_Mesto,
         BrojRadneJedinice = src.BrojRadneJedinice,
+        MinuliRadGodine = src.MinuliRadGodine,
         Koeficijent = src.Koeficijent,
+        Koeficijent1 = src.Koeficijent1,
         OsnovnaPlata = src.OsnovnaPlata,
         StopaPio = src.StopaPio,
         StopaZdravstvo = src.StopaZdravstvo,
@@ -560,6 +562,7 @@ public class RadniciViewModel : INotifyPropertyChanged
         NazivBanke = src.NazivBanke,
         Aktivan = src.Aktivan,
         LicnoOslobodjenje = src.LicnoOslobodjenje,
+        Operativni = src.Operativni,
         DatumUnosa = src.DatumUnosa,
         DatumIzmene = src.DatumIzmene
     };

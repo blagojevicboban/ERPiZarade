@@ -25,6 +25,7 @@ public class ObracunViewModel : INotifyPropertyChanged
     private string _statusText = "";
     private decimal _selectedVrBoda;
     private decimal _selectedMinuliRadPercent;
+    private decimal _selectedStimulacijaPercent;
 
     public ObracunViewModel()
     {
@@ -160,6 +161,12 @@ public class ObracunViewModel : INotifyPropertyChanged
         set { _selectedMinuliRadPercent = value; OnPropertyChanged(); }
     }
 
+    public decimal SelectedStimulacijaPercent
+    {
+        get => _selectedStimulacijaPercent;
+        set { _selectedStimulacijaPercent = value; OnPropertyChanged(); }
+    }
+
     public ICommand LoadCommand { get; }
     public ICommand ClearFilterCommand { get; }
 
@@ -199,6 +206,11 @@ public class ObracunViewModel : INotifyPropertyChanged
 
             decimal procMinul = porez?.ProcMinul ?? 0.40m;
             SelectedMinuliRadPercent = o.MinuliRadGodine * procMinul;
+
+            // Učitaj stimulaciju za tog radnika, godinu i mesec
+            var radniSati = await _db.RadniSati
+                .FirstOrDefaultAsync(r => r.RadnikId == o.RadnikId && r.Godina == o.Godina && r.Mesec == o.Mesec);
+            SelectedStimulacijaPercent = radniSati?.Stimulacija ?? 0m;
 
             // Učitaj doprinose za tu godinu i mesec iz baze podataka
             var stope = await _db.Doprinosi

@@ -250,6 +250,19 @@ public partial class ListiciPage : Page
         catch {}
         decimal minuliRadPercent = yearsOfTenure * procMinul;
 
+        decimal stimulacijaPercent = 0m;
+        try
+        {
+            using var dbDetails = PlataData.PlataDbContext.Create(PlataApp.AppConfig.DbPath);
+            var radniSatiRecord = dbDetails.RadniSati
+                .FirstOrDefault(r => r.RadnikId == o.RadnikId && r.Godina == o.Godina && r.Mesec == o.Mesec);
+            if (radniSatiRecord != null)
+            {
+                stimulacijaPercent = radniSatiRecord.Stimulacija;
+            }
+        }
+        catch {}
+
         // Header
         page.Header().Row(row =>
         {
@@ -319,28 +332,24 @@ public partial class ListiciPage : Page
                 table.Cell().Text("Redovan rad (sati po vremenu)").FontSize(8);
                 table.Cell().AlignRight().Text($"{o.RedovniSati:N2}").FontSize(8);
 
-                if (o.BolovanjeSati > 0)
-                {
-                    table.Cell().Text("Radni sati - bolovanje do 30 dana").FontSize(8);
-                    table.Cell().AlignRight().Text($"{o.BolovanjeSati:N2}").FontSize(8);
-                }
+                table.Cell().Text("Bolovanje (sati)").FontSize(8);
+                table.Cell().AlignRight().Text($"{o.BolovanjeSati:N2}").FontSize(8);
 
-                if (o.PrekovremeneSati > 0)
-                {
-                    table.Cell().Text("Radni sati - prekovremeni, noćni, praznici").FontSize(8);
-                    table.Cell().AlignRight().Text($"{o.PrekovremeneSati:N2}").FontSize(8);
-                }
+                table.Cell().Text("Prekovremeni rad (sati)").FontSize(8);
+                table.Cell().AlignRight().Text($"{o.PrekovremeneSati:N2}").FontSize(8);
 
-                if (o.GodisnjioOdmorSati > 0)
-                {
-                    table.Cell().Text("Godišnji odmor").FontSize(8);
-                    table.Cell().AlignRight().Text($"{o.GodisnjioOdmorSati:N2}").FontSize(8);
-                }
+                table.Cell().Text("Godišnji odmor (sati)").FontSize(8);
+                table.Cell().AlignRight().Text($"{o.GodisnjioOdmorSati:N2}").FontSize(8);
+
+                table.Cell().Text("Državni praznik (sati)").FontSize(8);
+                table.Cell().AlignRight().Text($"{o.DrzavniPraznikSati:N2}").FontSize(8);
+
+                table.Cell().Text("Noćni rad (sati)").FontSize(8);
+                table.Cell().AlignRight().Text($"{o.NocniSati:N2}").FontSize(8);
 
                 // Ukupno časova
-                int ukupnoSati = o.RedovniSati + o.BolovanjeSati + o.PrekovremeneSati + o.GodisnjioOdmorSati;
                 table.Cell().BorderTop(0.5f).BorderColor(Colors.Grey.Lighten1).PaddingVertical(2).Text("Ukupno radnih časova").Bold().FontSize(8);
-                table.Cell().BorderTop(0.5f).BorderColor(Colors.Grey.Lighten1).PaddingVertical(2).AlignRight().Text($"{ukupnoSati:N2}").Bold().FontSize(8);
+                table.Cell().BorderTop(0.5f).BorderColor(Colors.Grey.Lighten1).PaddingVertical(2).AlignRight().Text($"{o.UkupnoSati:N2}").Bold().FontSize(8);
             });
 
             // 3. Finansijski obračun
@@ -376,18 +385,11 @@ public partial class ListiciPage : Page
                 decimal totalBruto = o.Neto; // totalBruto iz obračuna (sve komponente)
 
                 // Bruto delovi (iz DBF kolona)
-                if (o.NetoZar > 0)
-                {
-                    AddRow("Bruto zarada (redovan rad)", o.NetoZar);
-                }
-                if (o.BrutoMinuliRad > 0)
-                {
-                    AddRow($"Bruto naknada - minuli rad ({minuliRadPercent:F2}%)", o.BrutoMinuliRad);
-                }
-                if (o.NetoBol > 0)
-                {
-                    AddRow("Bruto naknada - bolovanje do 30 dana", o.NetoBol);
-                }
+                AddRow("Bruto zarada (redovan rad)", o.NetoZar);
+                AddRow($"Bruto naknada - minuli rad ({minuliRadPercent:F2}%)", o.BrutoMinuliRad);
+                AddRow($"Bruto naknada - stimulacija ({stimulacijaPercent:F2}%)", o.BrutoStimulacija);
+                AddRow("Bruto naknada - bolovanje do 30 dana", o.NetoBol);
+
                 if (o.NetoB100 > 0)
                 {
                     AddRow("Bruto naknada - bolovanje 100%", o.NetoB100);
@@ -400,38 +402,21 @@ public partial class ListiciPage : Page
                 {
                     AddRow("Bruto naknada - plaćeno odsustvo zakonski", o.NetoPlZ);
                 }
-                if (o.NetoNerd > 0)
-                {
-                    AddRow("Bruto naknada - neradni državni praznik", o.NetoNerd);
-                }
-                if (o.NetoDrza > 0)
-                {
-                    AddRow("Bruto naknada - rad na državni praznik", o.NetoDrza);
-                }
-                if (o.NetoGOd > 0)
-                {
-                    AddRow("Bruto naknada - godišnji odmor", o.NetoGOd);
-                }
-                if (o.NetoNocni > 0)
-                {
-                    AddRow("Bruto naknada - noćni rad", o.NetoNocni);
-                }
+
+                AddRow("Bruto naknada - neradni državni praznik", o.NetoNerd);
+                AddRow("Bruto naknada - rad na državni praznik", o.NetoDrza);
+                AddRow("Bruto naknada - godišnji odmor", o.NetoGOd);
+                AddRow("Bruto naknada - noćni rad", o.NetoNocni);
+
                 if (o.NetoVezba > 0)
                 {
                     AddRow("Bruto naknada - vojna vežba", o.NetoVezba);
                 }
-                if (o.NetoPrek > 0)
-                {
-                    AddRow("Bruto naknada - prekovremeni rad", o.NetoPrek);
-                }
-                if (o.NetoTo > 0)
-                {
-                    AddRow("Bruto dodatak - topli obrok", o.NetoTo);
-                }
-                if (o.NetoReg > 0)
-                {
-                    AddRow("Bruto dodatak - regres", o.NetoReg);
-                }
+
+                AddRow("Bruto naknada - prekovremeni rad", o.NetoPrek);
+                AddRow("Bruto dodatak - topli obrok", o.NetoTo);
+                AddRow("Bruto dodatak - regres", o.NetoReg);
+
                 if (o.NetoTer > 0)
                 {
                     AddRow("Bruto dodatak - terenski dodatak", o.NetoTer);
@@ -452,10 +437,8 @@ public partial class ListiciPage : Page
                 {
                     AddRow("Bruto naknada - rad nedeljom", o.NetoNede);
                 }
-                if (o.Varijabila > 0)
-                {
-                    AddRow("Bruto dodatak", o.Varijabila);
-                }
+
+                AddRow("Bruto dodatak", o.Varijabila);
 
                 // Linija razdvajanja
                 table.Cell().ColumnSpan(4).PaddingVertical(1).LineHorizontal(0.5f).LineColor(Colors.Grey.Lighten1);

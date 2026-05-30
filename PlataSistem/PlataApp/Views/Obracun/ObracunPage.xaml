@@ -346,6 +346,14 @@
                                 </StackPanel>
                                 <TextBlock Text="{Binding SelectedObracun.BrutoMinuliRad, StringFormat=N2}" HorizontalAlignment="Right"/>
                             </Grid>
+                            <Grid Margin="0,0,0,6" Visibility="{Binding SelectedObracun.BrutoStimulacija, Converter={x:Static local:NullToVisibilityConverter.Instance}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Bruto naknada - stimulacija (" FontSize="13"/>
+                                    <TextBlock Text="{Binding SelectedStimulacijaPercent, StringFormat={}{0:F2}%}" FontSize="13"/>
+                                    <TextBlock Text="):" FontSize="13"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding SelectedObracun.BrutoStimulacija, StringFormat=N2}" HorizontalAlignment="Right"/>
+                            </Grid>
                             <Grid Margin="0,0,0,6" Visibility="{Binding SelectedObracun.NetoBol, Converter={x:Static local:NullToVisibilityConverter.Instance}}">
                                 <TextBlock Text="Bruto naknada - bolovanje do 30 dana:" FontSize="13"/>
                                 <TextBlock Text="{Binding SelectedObracun.NetoBol, StringFormat=N2}" HorizontalAlignment="Right"/>

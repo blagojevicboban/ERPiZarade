@@ -43,6 +43,12 @@ public class ObracunService
             if (yearsOfTenure > 99) yearsOfTenure = 99;
         }
 
+        // Koristi veću vrednost između dinamički izračunate i one koja je eksplicitno uneta u karton radnika (npr. prenesene iz DBF ili prethodnih perioda)
+        if (radnik.MinuliRadGodine > yearsOfTenure)
+        {
+            yearsOfTenure = radnik.MinuliRadGodine;
+        }
+
         // 2. Determine base hourly wage
         decimal hourlyBase = 0m;
         if (radnik.Koeficijent > 0)
@@ -447,7 +453,18 @@ public class ObracunService
             Varijabila = Math.Round(sati.Varijabila, 2),
             Zakljucen = false,
             DatumObracuna = DateTime.Now,
-            Napomena = $"Obračun kreiran {DateTime.Now:dd.MM.yyyy HH:mm}"
+            Napomena = $"Obračun kreiran {DateTime.Now:dd.MM.yyyy HH:mm}",
+
+            // Mapped legacy columns
+            Koeficijent = radnik.Koeficijent,
+            MinuliRadGodine = yearsOfTenure,
+            Kategorija = radnik.Kategorija,
+            BrojRadneJedinice = radnik.BrojRadneJedinice,
+            FondSatiMesecni = fondCasova,
+            BrutoOsnovica = Math.Round(brutoOsn, 2),
+            BrutoPioOsnovica = Math.Round(brutPioOsn, 2),
+            Operativni = radnik.Operativni,
+            MinimalnaPlataOsnovica = Math.Round(granica, 2)
         };
     }
 

@@ -109,15 +109,16 @@ try {
     $shortcut.Save()
     Write-Host "-> Prečica uspešno kreirana na Desktopu." -ForegroundColor Gray
     
-    # Prečica u Start meniju
+    # Prečica u Start meniju (direktno u Programs za Windows 11 Recommended i ispravnu ikonicu)
     $startMenuPath = [System.Environment]::GetFolderPath("Programs")
-    $plataStartDir = Join-Path $startMenuPath "PLATA"
+    $startShortcutPath = Join-Path $startMenuPath "PLATA.lnk"
     
-    if (-not (Test-Path $plataStartDir)) {
-        New-Item -ItemType Directory -Path $plataStartDir -Force | Out-Null
+    # Opciono čišćenje starog podfoldera iz prethodnih instalacija
+    $oldPlataStartDir = Join-Path $startMenuPath "PLATA"
+    if (Test-Path $oldPlataStartDir) {
+        Remove-Item -Path $oldPlataStartDir -Recurse -Force -ErrorAction SilentlyContinue
     }
     
-    $startShortcutPath = Join-Path $plataStartDir "PLATA.lnk"
     $startShortcut = $WshShell.CreateShortcut($startShortcutPath)
     $startShortcut.TargetPath = $exeDest
     $startShortcut.WorkingDirectory = $destDir

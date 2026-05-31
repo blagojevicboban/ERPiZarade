@@ -12,6 +12,7 @@ $appProj = Join-Path $baseDir "PlataApp\PlataApp.csproj"
 $dbFile = Join-Path $baseDir "plata.db"
 $releasePackageDir = Join-Path $baseDir "ReleasePackage"
 $publishOutputDir = Join-Path $baseDir "publish_output"
+$plataInstallDir = Join-Path $baseDir "PlataInstall"
 
 # 1. Čišćenje prethodnih paketa
 Write-Host "[1/7] Čišćenje starih instalacionih fajlova..." -ForegroundColor Yellow
@@ -21,6 +22,10 @@ if (Test-Path $releasePackageDir) {
 if (Test-Path $publishOutputDir) {
     Remove-Item -Path $publishOutputDir -Recurse -Force
 }
+if (Test-Path $plataInstallDir) {
+    Remove-Item -Path $plataInstallDir -Recurse -Force
+}
+New-Item -ItemType Directory -Path $plataInstallDir -Force | Out-Null
 
 # 2. dotnet publish - samostalna single-file aplikacija za 64-bitni Windows
 Write-Host "[2/7] Pokretanje 'dotnet publish' (Self-Contained win-x64)..." -ForegroundColor Yellow
@@ -54,12 +59,18 @@ if (Test-Path $dbFile) {
     Write-Host "UPOZORENJE: Baza podataka plata.db nije pronađena u $dbFile!" -ForegroundColor Red
 }
 
-# Kopiranje foldera sa bazama firmi u izlazni paket
+# Kopiranje foldera sa bazama firmi u izlazni paket - SIGURNI NAČIN (Samo šablonske baze, bez osetljivih podataka i backup-a)
 $bazeDir = Join-Path $baseDir "Baze"
 if (Test-Path $bazeDir) {
-    Write-Host "Kopiranje baza firmi iz foldera Baze/ u instalacioni paket..." -ForegroundColor Gray
+    Write-Host "Kopiranje šablonskih baza firmi u instalacioni paket..." -ForegroundColor Gray
     $bazeDestDir = Join-Path $releasePackageDir "Baze"
-    Copy-Item -Path $bazeDir -Destination $bazeDestDir -Recurse -Force
+    New-Item -ItemType Directory -Path $bazeDestDir -Force | Out-Null
+    
+    # Kopiramo samo šablonsku/test bazu (firma_123_*.db), preskačemo osetljive produkcione baze i backup folder RezervneKopije
+    Get-ChildItem -Path $bazeDir -File -Filter "firma_123_*.db" | ForEach-Object {
+        Copy-Item -Path $_.FullName -Destination $bazeDestDir -Force
+        Write-Host "  -> Uključena šablonska baza: $($_.Name)" -ForegroundColor Gray
+    }
 } else {
     Write-Host "NAPOMENA: Folder Baze/ nije pronađen - baze firmi neće biti uključene u paket." -ForegroundColor Yellow
 }
@@ -75,7 +86,7 @@ if (Test-Path $installerSource) {
 
 # 5. Kreiranje ZIP arhive za lakšu distribuciju
 Write-Host "[5/7] Kreiranje distributivne ZIP arhive..." -ForegroundColor Yellow
-$zipPath = Join-Path $baseDir "PlataSistem_Instalacija.zip"
+$zipPath = Join-Path $plataInstallDir "PlataSistem_Instalacija.zip"
 if (Test-Path $zipPath) {
     Remove-Item -Path $zipPath -Force
 }
@@ -108,7 +119,7 @@ if ($isccExe -and (Test-Path $issScript)) {
     Write-Host "Kompajliranje instalera..." -ForegroundColor Gray
     & $isccExe $issScript
     if ($LASTEXITCODE -eq 0) {
-        $setupExe = Get-ChildItem -Path $baseDir -Filter "PlataSetup_v*.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        $setupExe = Get-ChildItem -Path $plataInstallDir -Filter "PlataSetup_v*.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
         if ($setupExe) {
             Write-Host "-> Windows installer kreiran: $($setupExe.Name)" -ForegroundColor Green
         }
@@ -134,7 +145,7 @@ Write-Host "   USPEŠNO KREIRAN INSTALACIONI PAKET ZA APLIKACIJU!     " -Foregro
 Write-Host "==========================================================" -ForegroundColor Green
 Write-Host "Lokacija instalacionog paketa: $releasePackageDir" -ForegroundColor White
 Write-Host "Lokacija ZIP arhive za slanje: $zipPath" -ForegroundColor White
-$setupExeFinal = Get-ChildItem -Path $baseDir -Filter "PlataSetup_v*.exe" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+$setupExeFinal = Get-ChildItem -Path $plataInstallDir -Filter "PlataSetup_v*.exe" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 if ($setupExeFinal) {
     Write-Host "Windows installer (.exe):      $($setupExeFinal.FullName)" -ForegroundColor White
 }

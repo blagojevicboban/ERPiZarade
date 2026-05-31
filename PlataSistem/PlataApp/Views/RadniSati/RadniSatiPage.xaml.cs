@@ -72,6 +72,12 @@ public partial class RadniSatiPage : Page
                 .OrderBy(s => s.Radnik.BrojRadnika)
                 .ToList();
 
+            var obService = new ObracunService(_db);
+            foreach (var s in _allSati)
+            {
+                s.Prosek = obService.IzracunajProsekRadnika(s.RadnikId, godina, mesec);
+            }
+
             WarningBorder.Visibility = Visibility.Collapsed;
             ToolbarBorder.Visibility = Visibility.Visible;
             GridBorder.Visibility = Visibility.Visible;

@@ -207,6 +207,15 @@ public partial class NoviObracunWindow : Window
                         RadPraznikomSati = sacuvaniSati.RadPraznikomSati,
                         NocniRadPraznikomSati = sacuvaniSati.NocniRadPraznikomSati,
                         PlacenoOdsustvoSati = sacuvaniSati.PlacenoOdsustvoSati,
+                        Stimulacija = sacuvaniSati.Stimulacija,
+                        RadNedeljomSati = sacuvaniSati.RadNedeljomSati,
+                        PlacenoZakonskiSati = sacuvaniSati.PlacenoZakonskiSati,
+                        BolovanjePreko60Sati = sacuvaniSati.BolovanjePreko60Sati,
+                        PorodiljskoOdsustvoSati = sacuvaniSati.PorodiljskoOdsustvoSati,
+                        Bolovanje100Sati = sacuvaniSati.Bolovanje100Sati,
+                        TopliObrokDani = sacuvaniSati.TopliObrokDani,
+                        RegresIznos = sacuvaniSati.RegresIznos,
+                        Varijabila = sacuvaniSati.Varijabila,
                         Prosek = _obracunService.IzracunajProsekRadnika(r.Id, godina, mesec)
                     };
                 }
@@ -229,6 +238,15 @@ public partial class NoviObracunWindow : Window
                         RadPraznikomSati = 0,
                         NocniRadPraznikomSati = 0,
                         PlacenoOdsustvoSati = 0,
+                        Stimulacija = 0,
+                        RadNedeljomSati = 0,
+                        PlacenoZakonskiSati = 0,
+                        BolovanjePreko60Sati = 0,
+                        PorodiljskoOdsustvoSati = 0,
+                        Bolovanje100Sati = 0,
+                        TopliObrokDani = 0,
+                        RegresIznos = 0,
+                        Varijabila = 0,
                         Prosek = prosek
                     };
                 }
@@ -367,6 +385,15 @@ public partial class NoviObracunWindow : Window
                     RadPraznikomSati = input.RadPraznikomSati,
                     NocniRadPraznikomSati = input.NocniRadPraznikomSati,
                     PlacenoOdsustvoSati = input.PlacenoOdsustvoSati,
+                    Stimulacija = input.Stimulacija,
+                    RadNedeljomSati = input.RadNedeljomSati,
+                    PlacenoZakonskiSati = input.PlacenoZakonskiSati,
+                    BolovanjePreko60Sati = input.BolovanjePreko60Sati,
+                    PorodiljskoOdsustvoSati = input.PorodiljskoOdsustvoSati,
+                    Bolovanje100Sati = input.Bolovanje100Sati,
+                    TopliObrokDani = input.TopliObrokDani,
+                    RegresIznos = input.RegresIznos,
+                    Varijabila = input.Varijabila,
                     Prosek = input.Prosek
                 };
 
@@ -471,6 +498,15 @@ public partial class NoviObracunWindow : Window
                     RadPraznikomSati = 0,
                     NocniRadPraznikomSati = 0,
                     PlacenoOdsustvoSati = 0,
+                    Stimulacija = 0,
+                    RadNedeljomSati = 0,
+                    PlacenoZakonskiSati = 0,
+                    BolovanjePreko60Sati = 0,
+                    PorodiljskoOdsustvoSati = 0,
+                    Bolovanje100Sati = 0,
+                    TopliObrokDani = 0,
+                    RegresIznos = 0,
+                    Varijabila = 0,
                     Prosek = prosek
                 };
             }).ToList();
@@ -551,6 +587,15 @@ public partial class NoviObracunWindow : Window
                     r.RadPraznikomSati = starSati.RadPraznikomSati;
                     r.NocniRadPraznikomSati = starSati.NocniRadPraznikomSati;
                     r.PlacenoOdsustvoSati = starSati.PlacenoOdsustvoSati;
+                    r.Stimulacija = starSati.Stimulacija;
+                    r.RadNedeljomSati = starSati.RadNedeljomSati;
+                    r.PlacenoZakonskiSati = starSati.PlacenoZakonskiSati;
+                    r.BolovanjePreko60Sati = starSati.BolovanjePreko60Sati;
+                    r.PorodiljskoOdsustvoSati = starSati.PorodiljskoOdsustvoSati;
+                    r.Bolovanje100Sati = starSati.Bolovanje100Sati;
+                    r.TopliObrokDani = starSati.TopliObrokDani;
+                    r.RegresIznos = starSati.RegresIznos;
+                    r.Varijabila = starSati.Varijabila;
                     // Prosek se izračunava za NOVI (ciljni) period — ne prenosi se iz starog
                     r.Prosek = _obracunService.IzracunajProsekRadnika(r.RadnikId, godina, mesec);
                     prenetoCount++;
@@ -569,6 +614,16 @@ public partial class NoviObracunWindow : Window
         {
             MessageBox.Show($"Greška prilikom prenosa podataka: {ex.Message}", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private void LnkPorezi_Click(object sender, RoutedEventArgs e)
+    {
+        var mainWin = Application.Current.MainWindow as MainWindow;
+        if (mainWin != null)
+        {
+            mainWin.OtvoriPorezi();
+        }
+        Close();
     }
 
     private async Task PrenesiParametreIzIzvoraAsync(int sourceGodina, int sourceMesec, int targetGodina, int targetMesec, decimal targetVrBoda, int targetFondCasova)
@@ -838,5 +893,14 @@ public class RadnikSatiInput
     public int RadPraznikomSati { get; set; }
     public int NocniRadPraznikomSati { get; set; }
     public int PlacenoOdsustvoSati { get; set; }
+    public decimal Stimulacija { get; set; }
+    public int RadNedeljomSati { get; set; }
+    public int PlacenoZakonskiSati { get; set; }
+    public int BolovanjePreko60Sati { get; set; }
+    public int PorodiljskoOdsustvoSati { get; set; }
+    public int Bolovanje100Sati { get; set; }
+    public int TopliObrokDani { get; set; }
+    public decimal RegresIznos { get; set; }
+    public decimal Varijabila { get; set; }
     public decimal Prosek { get; set; }
 }

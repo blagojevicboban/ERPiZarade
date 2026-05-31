@@ -103,6 +103,7 @@ public class ObracunViewModel : INotifyPropertyChanged
         { 
             _selectedGodina = value; 
             OnPropertyChanged(); 
+            OnPropertyChanged(nameof(PeriodTitle));
             AppConfig.ActiveGodina = value;
         }
     }
@@ -114,7 +115,24 @@ public class ObracunViewModel : INotifyPropertyChanged
         { 
             _selectedMesec = value; 
             OnPropertyChanged(); 
+            OnPropertyChanged(nameof(PeriodTitle));
             AppConfig.ActiveMesec = value;
+        }
+    }
+
+    public string PeriodTitle
+    {
+        get
+        {
+            string[] meseciStr = {
+                "Januar", "Februar", "Mart", "April", "Maj", "Jun",
+                "Jul", "Avgust", "Septembar", "Oktobar", "Novembar", "Decembar"
+            };
+            if (SelectedMesec >= 1 && SelectedMesec <= 12)
+            {
+                return $"📊 Obračun za {meseciStr[SelectedMesec - 1]} {SelectedGodina}.";
+            }
+            return $"📊 Obračun za {SelectedMesec:D2}/{SelectedGodina}";
         }
     }
 
@@ -176,6 +194,7 @@ public class ObracunViewModel : INotifyPropertyChanged
         {
             StatusText = "Učitavanje obračuna...";
             var query = _db.ObracuniPlata
+                .AsNoTracking()
                 .Include(o => o.Radnik)
                 .Where(o => o.Godina == SelectedGodina && o.Mesec == SelectedMesec);
 

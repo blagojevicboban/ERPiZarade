@@ -470,42 +470,28 @@ public class ObracunService
 
     public decimal IzracunajProsekRadnika(int radnikId, int godina, int mesec)
     {
-        var targetPeriods = new List<(int Year, int Month)>();
-        int currentYear = godina;
-        int currentMonth = mesec;
-
-        for (int i = 1; i <= 12; i++)
-        {
-            int m = currentMonth - i;
-            int y = currentYear;
-            while (m <= 0)
-            {
-                m += 12;
-                y -= 1;
-            }
-            targetPeriods.Add((y, m));
-        }
-
         var targetRadnik = _db.Radnici.Find(radnikId);
         if (targetRadnik == null) return 0m;
         int targetBrojRadnika = targetRadnik.BrojRadnika;
 
+        int targetVal = godina * 12 + mesec;
+        int minVal = targetVal - 12;
+
         decimal psumbr = 0m;
         decimal psumcas = 0m;
 
-        // Učitaj sve obračune i radne sate za tog radnika u tom opsegu
+        // Učitaj samo obračune i radne sate za tog radnika u tačnom opsegu 12 meseci direktno iz baze (bez tracking-a)
         var obracuni = _db.ObracuniPlata
-            .Include(o => o.Radnik)
-            .Where(o => o.Radnik.BrojRadnika == targetBrojRadnika)
-            .ToList()
-            .Where(o => targetPeriods.Any(p => p.Year == o.Godina && p.Month == o.Mesec))
+            .AsNoTracking()
+            .Where(o => o.Radnik.BrojRadnika == targetBrojRadnika && 
+                        (o.Godina * 12 + o.Mesec >= minVal && o.Godina * 12 + o.Mesec < targetVal))
             .ToList();
 
         var satiLista = _db.RadniSati
-            .Include(s => s.Radnik)
-            .Where(s => s.Radnik.BrojRadnika == targetBrojRadnika)
+            .AsNoTracking()
+            .Where(s => s.Radnik.BrojRadnika == targetBrojRadnika && 
+                        (s.Godina * 12 + s.Mesec >= minVal && s.Godina * 12 + s.Mesec < targetVal))
             .ToList()
-            .Where(s => targetPeriods.Any(p => p.Year == s.Godina && p.Month == s.Mesec))
             .ToDictionary(s => (s.Godina, s.Mesec));
 
         foreach (var ob in obracuni)
@@ -513,21 +499,21 @@ public class ObracunService
             decimal casovi = 0;
             if (satiLista.TryGetValue((ob.Godina, ob.Mesec), out var s))
             {
-                casovi = s.RedovniSati + s.PrekovremeneSati + s.DrzavniPraznikSati + s.NocniSati;
+                casovi = s.RedovniSati + s.PrekovremeneSati + s.RadPraznikomSati + s.NocniSati + s.RadNedeljomSati;
             }
             else
             {
-                casovi = ob.RedovniSati + ob.PrekovremeneSati;
+                casovi = ob.RedovniSati + ob.PrekovremeneSati + ob.RadPraznikomSati + ob.NocniSati + ob.NedeljaSati;
             }
 
-            decimal netPay = ob.NetoIsplata + ob.KreditObustava + ob.Samodoprinosi;
-            
-            // Razdvajanje neto redovnog dela (bez bolovanja)
-            decimal totalGross = ob.BrutoZarada + ob.BrutoBolovanje + ob.BrutoNaknade + ob.BrutoMinuliRad;
-            decimal regularGross = ob.BrutoZarada + ob.BrutoNaknade + ob.BrutoMinuliRad;
-            decimal netRegular = totalGross > 0 ? netPay * (regularGross / totalGross) : netPay;
+            // Razdvajanje bruto redovnog dela (bez bolovanja, odmora, neradnih praznika i plaćenih odsustava)
+            decimal totalGross = ob.BrutoZarada + ob.BrutoBolovanje;
+            decimal nonWorkedGross = ob.BrutoBolovanje + ob.NetoGOd + ob.NetoNerd + ob.NetoB100 + ob.NetoPlac + ob.NetoPlZ 
+                                     + (ob.BolovanjePreko60SatiLegacy * ob.Prosek) 
+                                     + (ob.PorodiljskoOdsustvoSatiLegacy * ob.Prosek);
+            decimal regularGross = Math.Max(0, totalGross - nonWorkedGross);
 
-            psumbr += netRegular;
+            psumbr += regularGross;
             psumcas += casovi;
         }
 

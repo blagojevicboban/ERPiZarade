@@ -186,4 +186,9 @@ public partial class MainWindow : Window
     {
         NavigateTo(BtnRadnici, new Views.Radnici.RadniciPage());
     }
+
+    public void OtvoriPorezi()
+    {
+        NavigateTo(BtnPorezi, new Views.Porezi.PoreziPage());
+    }
 }

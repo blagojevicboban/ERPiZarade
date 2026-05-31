@@ -114,6 +114,10 @@ public class PlataDbContext : DbContext
     {
         ctx.Database.EnsureCreated();
 
+        // Optimizacija performansi SQLite-a na nivou same baze
+        try { ctx.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;"); } catch { }
+        try { ctx.Database.ExecuteSqlRaw("PRAGMA synchronous=NORMAL;"); } catch { }
+
         // ── Bezbedno dodavanje novih kolona (za starije baze) ──────────────
 
         // Radnici: nova periodična arhitektura — Godina i Mesec

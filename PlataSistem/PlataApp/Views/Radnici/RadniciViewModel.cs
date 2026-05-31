@@ -359,7 +359,7 @@ public class RadniciViewModel : INotifyPropertyChanged
                 }
             }
 
-            var query = _db.Radnici.Where(r => r.Godina == godina && r.Mesec == mesec);
+            var query = _db.Radnici.AsNoTracking().Where(r => r.Godina == godina && r.Mesec == mesec);
             if (PrikazujeSamoAktivne)
                 query = query.Where(r => r.Aktivan);
             if (!string.IsNullOrWhiteSpace(SearchText))
@@ -374,8 +374,9 @@ public class RadniciViewModel : INotifyPropertyChanged
             var list = await query.OrderBy(r => r.BrojRadnika).ToListAsync();
             Radnici = new ObservableCollection<Radnik>(list);
 
-            // Učitaj aktivne banke
+            // Učitaj aktivne banke bez tracking-a
             var bankeList = await _db.Banke
+                .AsNoTracking()
                 .Where(b => b.Godina == godina && b.Mesec == mesec)
                 .OrderBy(b => b.Naziv)
                 .ToListAsync();
@@ -383,6 +384,7 @@ public class RadniciViewModel : INotifyPropertyChanged
             if (bankeList.Count == 0)
             {
                 var closest = await _db.Banke
+                    .AsNoTracking()
                     .OrderByDescending(b => b.Godina)
                     .ThenByDescending(b => b.Mesec)
                     .FirstOrDefaultAsync();
@@ -390,6 +392,7 @@ public class RadniciViewModel : INotifyPropertyChanged
                 if (closest != null)
                 {
                     bankeList = await _db.Banke
+                        .AsNoTracking()
                         .Where(b => b.Godina == closest.Godina && b.Mesec == closest.Mesec)
                         .OrderBy(b => b.Naziv)
                         .ToListAsync();

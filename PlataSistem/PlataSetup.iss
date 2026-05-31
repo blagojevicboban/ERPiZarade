@@ -33,7 +33,7 @@ DefaultDirName={#AppInstallDir}
 DefaultGroupName={#AppName}
 
 ; Ime izlaznog fajla (npr. PlataSetup_v1.0.exe)
-OutputDir=.
+OutputDir=PlataInstall
 OutputBaseFilename=PlataSetup_v{#AppVersion}
 
 ; Kompresija
@@ -97,9 +97,12 @@ Name: "{app}\Baze"
 ; Prečica na desktopu (zajednicki za sve korisnike, admin install)
 Name: "{commondesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\plata.ico"; WorkingDir: "{app}"; Comment: "{#AppFullName}"; Tasks: desktopicon
 
-; Prečica u Start Meniju
-Name: "{commonprograms}\{#AppName}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\plata.ico"; WorkingDir: "{app}"; Comment: "{#AppFullName}"; Tasks: startmenuicon
-Name: "{commonprograms}\{#AppName}\Deinstaliraj {#AppName}"; Filename: "{uninstallexe}"; Tasks: startmenuicon
+; Prečica u Start Meniju - direktno u Programs folderu (za Windows 11 Recommended i ispravnu ikonicu)
+Name: "{commonprograms}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\plata.ico"; WorkingDir: "{app}"; Comment: "{#AppFullName}"; Tasks: startmenuicon; AppUserModelID: "VasePreduzece.Plata"
+
+[InstallDelete]
+; Brisanje starog Start Menu foldera iz prethodnih verzija ako postoji
+Type: filesandordirs; Name: "{commonprograms}\{#AppName}"
 
 [Run]
 ; Pokrenuti aplikaciju po završetku instalacije (opciono)
@@ -122,21 +125,41 @@ begin
   Result := DirExists(BazeDir);
 end;
 
+var
+  DeleteData: Boolean;
+
 // Prikazati upozorenje ako korisnik pokušava da deinstalira
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   if CurUninstallStep = usUninstall then
   begin
     if MsgBox(
-      'Da li ste sigurni da želite da deinstalirate PLATA aplikaciju?' + #13#10 + #13#10 +
-      'NAPOMENA: Vaše baze podataka firmi u folderu Baze/ i plata.db' + #13#10 +
-      'NEĆE biti obrisane i ostaju sačuvane na disku.' + #13#10 + #13#10 +
-      'Kliknite DA za nastavak deinstalacije, NE za odustajanje.',
+      'Da li ste sigurni da želite da deinstalirate PLATA aplikaciju?',
       mbConfirmation, MB_YESNO) = IDNO
     then
       Abort;
+
+    // Pitaj korisnika da li želi da ukloni i podatke
+    DeleteData := MsgBox(
+      'Da li želite da obrišete i sve baze podataka (plata.db i folder Baze) sa vašim podacima?' + #13#10 + #13#10 +
+      'PAŽNJA: Ako izaberete DA, svi vaši podaci o obračunima i firmama biće trajno obrisani!',
+      mbConfirmation, MB_YESNO) = IDYES;
+  end;
+
+  if CurUninstallStep = usPostUninstall then
+  begin
+    if DeleteData then
+    begin
+      // Brisati bazu podataka i folder Baze
+      DeleteFile(ExpandConstant('{app}\plata.db'));
+      DelTree(ExpandConstant('{app}\Baze'), True, True, True);
+      
+      // Pokušaj brisanja celog instalacionog foldera ako je nešto preostalo
+      DelTree(ExpandConstant('{app}'), True, True, True);
+    end;
   end;
 end;
+
 
 // Prikaz putanje instalacije na završnoj stranici
 procedure CurStepChanged(CurStep: TSetupStep);

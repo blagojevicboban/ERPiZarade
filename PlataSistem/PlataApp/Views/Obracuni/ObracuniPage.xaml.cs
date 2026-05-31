@@ -53,6 +53,7 @@ public partial class ObracuniPage : Page
                             COUNT(*) as BrojRadnika, 
                             SUM(o.NetoIsplata) as UkupnoNeto, 
                             SUM(o.BrutoZarada + o.BrutoBolovanje) as UkupnoBruto, 
+                            SUM(o.NetoIsplata + o.PorezNaDohodak + o.DoprinosPioRadnik + o.DoprinosZdravstvoRadnik + o.DoprinosNezaposlenostRadnik + o.KreditObustava + o.Samodoprinosi + o.DoprinosPioPoslodavac + o.DoprinosZdravstvoPoslodavac + o.DoprinosNezaposlenostPoslodavac) as UkupnoBruto2,
                             MAX(o.DatumObracuna) as PoslednjiDatum,
                             COALESCE(MAX(p.VrBoda), 1860.34) as VrBoda
                         FROM ObracuniPlata o
@@ -70,8 +71,9 @@ public partial class ObracuniPage : Page
                                 BrojRadnika = reader.GetInt32(2),
                                 UkupnoNeto = reader.IsDBNull(3) ? 0 : reader.GetDecimal(3),
                                 UkupnoBruto = reader.IsDBNull(4) ? 0 : reader.GetDecimal(4),
-                                PoslednjiDatum = reader.IsDBNull(5) ? DateTime.MinValue : reader.GetDateTime(5),
-                                VrednostBoda = reader.IsDBNull(6) ? 1860.34m : reader.GetDecimal(6)
+                                UkupnoBruto2 = reader.IsDBNull(5) ? 0 : reader.GetDecimal(5),
+                                PoslednjiDatum = reader.IsDBNull(6) ? DateTime.MinValue : reader.GetDateTime(6),
+                                VrednostBoda = reader.IsDBNull(7) ? 1860.34m : reader.GetDecimal(7)
                             });
                         }
                     }
@@ -480,6 +482,7 @@ public class ObracunPeriodSummary
     public decimal VrednostBoda { get; set; }
     public decimal UkupnoNeto { get; set; }
     public decimal UkupnoBruto { get; set; }
+    public decimal UkupnoBruto2 { get; set; }
     public DateTime PoslednjiDatum { get; set; }
 
     public bool IsActive => AppConfig.ActiveGodina == Godina && AppConfig.ActiveMesec == Mesec;

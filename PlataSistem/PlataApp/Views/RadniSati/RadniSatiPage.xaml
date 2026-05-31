@@ -141,6 +141,11 @@
                       ScrollViewer.VerticalScrollBarVisibility="Auto"
                       ScrollViewer.CanContentScroll="True"
                       EnableRowVirtualization="True"
+                      EnableColumnVirtualization="True"
+                      VirtualizingStackPanel.IsVirtualizing="True"
+                      VirtualizingStackPanel.VirtualizationMode="Recycling"
+                      VirtualizingStackPanel.CacheLengthUnit="Item"
+                      VirtualizingStackPanel.CacheLength="10,10"
                       FrozenColumnCount="4"
                       CellEditEnding="GridRadniSati_CellEditEnding">
                 <DataGrid.Columns>

@@ -119,6 +119,7 @@
                         <DataGridTextColumn Header="Broj zaposlenih" Binding="{Binding BrojRadnika}" Width="130" ElementStyle="{StaticResource CenterAlignedCell}"/>
                         <DataGridTextColumn Header="Vrednost boda" Binding="{Binding VrednostBoda, StringFormat=N4}" Width="130" ElementStyle="{StaticResource RightAlignedCell}"/>
                         <DataGridTextColumn Header="Ukupno Bruto" Binding="{Binding UkupnoBruto, StringFormat=N2}" Width="*" ElementStyle="{StaticResource RightAlignedCell}"/>
+                        <DataGridTextColumn Header="Ukupno Bruto 2" Binding="{Binding UkupnoBruto2, StringFormat=N2}" Width="*" ElementStyle="{StaticResource RightAlignedCell}"/>
                         <DataGridTextColumn Header="Ukupno za isplatu (Neto)" Binding="{Binding UkupnoNeto, StringFormat=N2}" Width="*" ElementStyle="{StaticResource RightAlignedCell}"/>
                         <DataGridTextColumn Header="Datum obračuna" Binding="{Binding PoslednjiDatum, StringFormat={}{0:dd.MM.yyyy}}" Width="180" ElementStyle="{StaticResource CenterAlignedCell}"/>
                         

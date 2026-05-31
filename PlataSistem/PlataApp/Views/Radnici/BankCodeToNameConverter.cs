@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Data;
+using Microsoft.EntityFrameworkCore;
 using PlataData;
 
 namespace PlataApp.Views.Radnici;
@@ -34,7 +35,7 @@ public class BankCodeToNameConverter : IValueConverter
         try
         {
             using var db = PlataDbContext.Create(AppConfig.DbPath);
-            var b = db.Banke.FirstOrDefault(x => x.Godina == godina && x.Mesec == mesec && x.Sifra == code);
+            var b = db.Banke.AsNoTracking().FirstOrDefault(x => x.Godina == godina && x.Mesec == mesec && x.Sifra == code);
             if (b != null)
             {
                 _bankNameCache[key] = b.Naziv;

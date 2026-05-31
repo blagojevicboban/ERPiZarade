@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using PlataApp.Views.Radnici;
@@ -159,6 +161,39 @@ public partial class MainWindow : Window
 
     private void BtnPlatniRazredi_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnPlatniRazredi, new Views.PlatniRazredi.PlatniRazrediPage());
+
+    private void BtnObracuni_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnObracuni, new Views.Obracuni.ObracuniPage());
+
+    private void BtnHelp_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            // Putanja do HTML uputstva pored exe-a
+            string helpPath = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "Resources", "Help", "uputstvo.html");
+
+            if (!File.Exists(helpPath))
+            {
+                MessageBox.Show(
+                    $"Datoteka uputstva nije pronađena:\n{helpPath}",
+                    "Uputstvo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = helpPath,
+                UseShellExecute = true  // otvara u default browser-u
+            });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Greška pri otvaranju uputstva: {ex.Message}",
+                "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 
     private void FirmaBorder_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {

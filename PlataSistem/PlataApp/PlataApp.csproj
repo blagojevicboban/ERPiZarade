@@ -24,4 +24,10 @@
     <ProjectReference Include="..\PlataData\PlataData.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Resources\Help\uputstvo.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

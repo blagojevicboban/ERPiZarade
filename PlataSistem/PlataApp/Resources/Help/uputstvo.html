@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlataApp — Korisničko uputstvo</title>
+    <style>
+        :root {
+            --primary: #3949AB;
+            --primary-light: #5C6BC0;
+            --primary-dark: #1A237E;
+            --accent: #00BCD4;
+            --success: #16A34A;
+            --warning: #D97706;
+            --danger: #DC2626;
+            --bg: #F4F6FB;
+            --card: #FFFFFF;
+            --text: #1E293B;
+            --text-muted: #64748B;
+            --border: #E2E8F0;
+            --sidebar-w: 280px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            min-height: 100vh;
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        /* ── SIDEBAR ── */
+        #sidebar {
+            width: var(--sidebar-w);
+            background: var(--primary-dark);
+            color: #fff;
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            overflow-y: auto;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-logo {
+            padding: 28px 20px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-logo h1 {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+        .sidebar-logo span {
+            font-size: 12px;
+            color: #90CAF9;
+            display: block;
+            margin-top: 2px;
+        }
+
+        .sidebar-nav {
+            padding: 16px 0;
+            flex: 1;
+        }
+        .nav-section-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            color: #90CAF9;
+            padding: 12px 20px 4px;
+            text-transform: uppercase;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 20px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 13.5px;
+            transition: background 0.15s, color 0.15s;
+            border-left: 3px solid transparent;
+        }
+        .nav-item:hover, .nav-item.active {
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            border-left-color: var(--accent);
+        }
+        .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+
+        /* ── MAIN ── */
+        #main {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            padding: 40px 48px 80px;
+            max-width: 960px;
+        }
+
+        /* ── SECTIONS ── */
+        .section { margin-bottom: 64px; scroll-margin-top: 24px; }
+
+        h2.section-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            padding-bottom: 12px;
+            border-bottom: 3px solid var(--accent);
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h3 {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 28px 0 10px;
+        }
+
+        h4 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin: 22px 0 8px;
+        }
+
+        p { margin-bottom: 12px; }
+
+        /* ── CARDS ── */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .feature-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 18px 20px;
+            border-top: 4px solid var(--primary);
+        }
+        .feature-card .icon { font-size: 28px; margin-bottom: 8px; }
+        .feature-card h3 { margin: 0 0 6px; font-size: 15px; }
+        .feature-card p { font-size: 13px; color: var(--text-muted); margin: 0; }
+
+        /* ── ALERT BOXES ── */
+        .alert {
+            padding: 14px 18px;
+            border-radius: 8px;
+            margin: 16px 0;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            font-size: 14px;
+        }
+        .alert-icon { font-size: 18px; flex-shrink: 0; }
+        .alert.info    { background: #EFF6FF; border-left: 4px solid #3B82F6; }
+        .alert.success { background: #F0FDF4; border-left: 4px solid #22C55E; }
+        .alert.warning { background: #FFFBEB; border-left: 4px solid #F59E0B; }
+        .alert.danger  { background: #FFF1F2; border-left: 4px solid #F43F5E; }
+
+        /* ── STEP LIST ── */
+        .steps { counter-reset: step; padding: 0; }
+        .step {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 18px;
+            align-items: flex-start;
+        }
+        .step-num {
+            counter-increment: step;
+            content: counter(step);
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+        }
+        .step-body { flex: 1; }
+        .step-body strong { display: block; margin-bottom: 2px; font-size: 15px; }
+        .step-body p { font-size: 13.5px; color: var(--text-muted); margin: 0; }
+
+        /* ── TABLE ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13.5px;
+            margin: 14px 0;
+            background: var(--card);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        th {
+            background: var(--primary);
+            color: #fff;
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 600;
+        }
+        td { padding: 9px 14px; border-bottom: 1px solid var(--border); }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #F8FAFF; }
+
+        /* ── BADGE ── */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+        .badge-blue   { background: #EEF2FF; color: #3730A3; }
+        .badge-green  { background: #F0FDF4; color: #166534; }
+        .badge-orange { background: #FFF7ED; color: #9A3412; }
+        .badge-red    { background: #FFF1F2; color: #9F1239; }
+
+        /* ── CODE ── */
+        code {
+            background: #F1F5F9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            color: #0F172A;
+        }
+
+        .formula-box {
+            background: #F8FAFF;
+            border: 1px solid #C7D2FE;
+            border-radius: 8px;
+            padding: 14px 18px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            color: #1E1B4B;
+            margin: 12px 0;
+        }
+
+        /* ── KEYBOARD ── */
+        kbd {
+            background: #F1F5F9;
+            border: 1px solid #CBD5E1;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-family: 'Consolas', monospace;
+        }
+
+        /* ── TOP HERO ── */
+        .hero {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 60%, var(--accent) 100%);
+            border-radius: 14px;
+            color: #fff;
+            padding: 36px 40px;
+            margin-bottom: 40px;
+        }
+        .hero h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+        .hero p { font-size: 15px; opacity: 0.85; margin: 0; }
+        .hero .version { display: inline-block; background: rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 12px; font-size: 12px; margin-top: 14px; }
+
+        ul, ol { padding-left: 22px; margin-bottom: 12px; }
+        li { margin-bottom: 5px; font-size: 14px; }
+
+        hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+        @media print {
+            #sidebar { display: none; }
+            #main { margin-left: 0; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══════════════ SIDEBAR ══════════════ -->
+<nav id="sidebar">
+    <div class="sidebar-logo">
+        <h1>💰 PlataApp</h1>
+        <span>Korisničko uputstvo v1.0</span>
+    </div>
+    <div class="sidebar-nav">
+        <div class="nav-section-label">Uvod</div>
+        <a href="#uvod" class="nav-item"><span class="icon">🏠</span> Pregled aplikacije</a>
+        <a href="#pocetak" class="nav-item"><span class="icon">🚀</span> Brzi start</a>
+
+        <div class="nav-section-label">Moduli</div>
+        <a href="#obracuni" class="nav-item"><span class="icon">📁</span> Obračunski periodi</a>
+        <a href="#radni-sati" class="nav-item"><span class="icon">⏱️</span> Radni sati</a>
+        <a href="#obracun-plate" class="nav-item"><span class="icon">📊</span> Obračun plate</a>
+        <a href="#radnici" class="nav-item"><span class="icon">👥</span> Radnici</a>
+        <a href="#stampa" class="nav-item"><span class="icon">📑</span> Štampa i izveštaji</a>
+        <a href="#sifrarnici" class="nav-item"><span class="icon">⚙️</span> Šifrarnici</a>
+        <a href="#ppd" class="nav-item"><span class="icon">🌐</span> PPP-PD XML</a>
+
+        <div class="nav-section-label">Kalkulacije</div>
+        <a href="#formule" class="nav-item"><span class="icon">🔢</span> Formule obračuna</a>
+        <a href="#minuli-rad" class="nav-item"><span class="icon">📅</span> Minuli rad</a>
+        <a href="#bolovanje" class="nav-item"><span class="icon">🏥</span> Bolovanje i naknade</a>
+
+        <div class="nav-section-label">Podrška</div>
+        <a href="#faq" class="nav-item"><span class="icon">❓</span> Česta pitanja</a>
+        <a href="#greske" class="nav-item"><span class="icon">🔧</span> Rešavanje problema</a>
+    </div>
+</nav>
+
+<!-- ══════════════ MAIN CONTENT ══════════════ -->
+<main id="main">
+
+    <!-- HERO -->
+    <div class="hero">
+        <h1>PlataApp — Sistem za obračun zarada</h1>
+        <p>Kompletno korisničko uputstvo za rad sa aplikacijom za obračun plata zaposlenih u skladu sa zakonima Republike Srbije.</p>
+        <span class="version">Verzija 1.0 · .NET 8 · SQLite</span>
+    </div>
+
+    <!-- ══ 1. UVOD ══ -->
+    <section class="section" id="uvod">
+        <h2 class="section-title">🏠 Pregled aplikacije</h2>
+        <p>
+            <strong>PlataApp</strong> je desktop aplikacija za Windows razvijena u .NET 8 (WPF) koja omogućava
+            kompletnu obradu mesečnih zarada zaposlenih — od unosa radnih sati do generisanja platnih spiskova,
+            rekapitulacija i izveštaja za banke.
+        </p>
+
+        <div class="card-grid" style="margin-top:24px">
+            <div class="feature-card">
+                <div class="icon">📁</div>
+                <h3>Obračunski periodi</h3>
+                <p>Kreiranje i upravljanje mesečnim obračunskim periodima sa arhivom svih prethodnih obračuna.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">⏱️</div>
+                <h3>Radni sati</h3>
+                <p>Unos i izmena svih vrsta radnih sati zaposlenih za aktivni period — redovni, prekovremeni, bolovanje, praznik…</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">📊</div>
+                <h3>Obračun plate</h3>
+                <p>Automatski obračun bruto/neto zarade, poreza, doprinosa i svih zakonskih stavki za svakog zaposlenog.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">👥</div>
+                <h3>Kadrovska evidencija</h3>
+                <p>Matična kartoteka radnika sa koeficijentima, stažom, tekućim računima i radnim jedinicama.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">📑</div>
+                <h3>Štampa i izveštaji</h3>
+                <p>Generisanje platnih spiskova, rekapitulacija i izveštaja za banke u PDF formatu za štampu.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🌐</div>
+                <h3>PPP-PD XML</h3>
+                <p>Automatsko generisanje XML poreske prijave za elektronsko podnošenje poreskoj upravi.</p>
+            </div>
+        </div>
+
+        <div class="alert info">
+            <span class="alert-icon">ℹ️</span>
+            <div>Svi obračuni se vrše u skladu sa <strong>Zakonom o radu RS</strong> i poreskim propisima koji važe u momentu obračuna. Poreski parametri (stope doprinosa, vrednost boda, fond sati) se unose po periodu.</div>
+        </div>
+    </section>
+
+    <!-- ══ 2. BRZI START ══ -->
+    <section class="section" id="pocetak">
+        <h2 class="section-title">🚀 Brzi start — tok rada</h2>
+        <p>Standardni mesečni tok rada obrade zarada odvija se kroz sledeće korake:</p>
+
+        <div class="steps">
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-body">
+                    <strong>Kreirajte novi obračunski period</strong>
+                    <p>U modulu <em>Obračuni</em>, kliknite na dugme „+ Novi obračun". Unesite godinu i mesec i kliknite „Sačuvaj". Sistem automatski kreira zapise radnih sati za sve aktivne radnike.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-body">
+                    <strong>Proverite/podesite parametre perioda</strong>
+                    <p>Na stranici <em>Radni sati</em>, u gornjoj traci proverite vrednost boda i fond časova za taj mesec. Ove vrednosti se mogu izmeniti pre snimanja.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-body">
+                    <strong>Unesite radne sate zaposlenih</strong>
+                    <p>U tabeli unesite sate po kolonama (redovni, bolovanje, prekovremeni, godišnji odmor, praznik, noćni…). Koristite funkciju „Brzo popunjavanje" za masovni unos iste vrednosti svim radnicima.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">4</div>
+                <div class="step-body">
+                    <strong>Sačuvajte i pokrenite preračunavanje</strong>
+                    <p>Kliknite dugme <strong>💾 Sačuvaj i preračunaj</strong>. Sistem automatski izračunava bruto zaradu, minuli rad, doprinose, porez i neto isplatu za svakog zaposlenog.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">5</div>
+                <div class="step-body">
+                    <strong>Pregledajte obračune</strong>
+                    <p>Pređite na modul <em>Obračun plate</em>. U listi su prikazani svi radnici sa iznosom za isplatu. Kliknite na radnika da vidite detaljan platni listić sa svim stavkama.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">6</div>
+                <div class="step-body">
+                    <strong>Odštampajte izveštaje</strong>
+                    <p>U modulu <em>Štampa</em> generišite platni spisak, rekapitulaciju i izveštaj za banke. Dokumenti se generišu kao PDF spreman za štampu.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert success">
+            <span class="alert-icon">✅</span>
+            <div>Obračun je uvek u vezi sa <strong>aktivnim periodom</strong>. Aktivni period je istaknut u zaglavlju svakog ekrana. Menjanje radnih sati u zatvorenim periodima nije moguće.</div>
+        </div>
+    </section>
+
+    <!-- ══ 3. OBRAČUNSKI PERIODI ══ -->
+    <section class="section" id="obracuni">
+        <h2 class="section-title">📁 Obračunski periodi</h2>
+        <p>
+            Modul <strong>Obračuni</strong> je centralna tačka sistema. Ovde se kreira novi mesečni obračun,
+            bira aktivni period i pregledaju arhivirani obračuni.
+        </p>
+
+        <h3>Kreiranje novog obračuna</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-body">
+                    <strong>Kliknite „+ Novi obračun"</strong>
+                    <p>Otvara se dijaloški prozor za unos perioda.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-body">
+                    <strong>Unesite godinu i mesec</strong>
+                    <p>Sistem automatski popunjava tekući mesec kao podrazumevani period.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-body">
+                    <strong>Kliknite „Sačuvaj"</strong>
+                    <p>Sistem kreira zapise radnih sati za sve aktivne radnike sa 0 sati. Vrednost boda i fond časova se preuzimaju iz poslednjeg definisanog perioda u tabeli Porezi.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert warning">
+            <span class="alert-icon">⚠️</span>
+            <div>Nije moguće kreirati dva obračuna za isti mesec i godinu. Ako je obračun već kreiran, sistem će prikazati odgovarajuće upozorenje.</div>
+        </div>
+
+        <h3>Postavljanje aktivnog perioda</h3>
+        <p>
+            Kliknite na red u listi obračuna i kliknite dugme <strong>📌 Postavi kao aktivan</strong>.
+            Aktivni period je istaknut u listi i prikazuje se u statusnoj traci na vrhu svakog modula.
+            Samo aktivni period se može uređivati.
+        </p>
+    </section>
+
+    <!-- ══ 4. RADNI SATI ══ -->
+    <section class="section" id="radni-sati">
+        <h2 class="section-title">⏱️ Radni sati</h2>
+        <p>
+            Ovaj modul omogućava unos i izmenu svih vrsta radnih sati za svakog zaposlenog u
+            <strong>aktivnom obračunskom periodu</strong>.
+        </p>
+
+        <div class="alert warning">
+            <span class="alert-icon">⚠️</span>
+            <div>Ako nije postavljen aktivni period, ekran prikazuje poruku „Nije izabran aktivni period". Potrebno je prvo aktivirati period u modulu <em>Obračuni</em>.</div>
+        </div>
+
+        <h3>Parametri perioda (gornja traka)</h3>
+        <table>
+            <tr><th>Parametar</th><th>Opis</th><th>Primer</th></tr>
+            <tr><td><strong>Bod (RSD)</strong></td><td>Vrednost obračunskog boda za dati mesec. Koristi se za izračunavanje bruto zarade na osnovu koeficijenta.</td><td>1.860,34</td></tr>
+            <tr><td><strong>Fond sati</strong></td><td>Ukupan fond radnih časova u datom mesecu (radni dani × 8h).</td><td>176 č</td></tr>
+        </table>
+        <p>Oba parametra se mogu ručno izmeniti u gornjoj traci. Izmena se primenjuje pri sledećem snimanju.</p>
+
+        <h3>Kolone tabele radnih sati</h3>
+        <table>
+            <tr><th>Kolona</th><th>Opis</th></tr>
+            <tr><td>Redovni sati</td><td>Efektivno odradeni sati u redovnom radnom vremenu. <strong>Osnova za bruto zaradu i minuli rad.</strong></td></tr>
+            <tr><td>Bolovanje</td><td>Sati odsustva zbog bolesti (do 30 dana na teret poslodavca, od 31. dana na teret RFZO).</td></tr>
+            <tr><td>Prekovremeni</td><td>Sati prekovremenog rada (uvećanje po stopi definisanoj u Poreskim parametrima, min. 26%).</td></tr>
+            <tr><td>Godišnji odmor</td><td>Sati godišnjeg odmora (naknada = osnovna zarada).</td></tr>
+            <tr><td>Državni praznik</td><td>Sati državnog praznika koji pada na neradni dan (naknada 110% ili po definisanoj stopi).</td></tr>
+            <tr><td>Noćni rad</td><td>Sati rada u noćnoj smeni između 22h i 6h (uvećanje min. 26%).</td></tr>
+            <tr><td>Smenski rad</td><td>Sati rada u smenskom sistemu.</td></tr>
+            <tr><td>Rad praznikom</td><td>Sati efektivnog rada na državni praznik koji pada na radni dan (uvećanje 110%).</td></tr>
+            <tr><td>Noćni rad praznikom</td><td>Sati noćnog rada na državni praznik (kombinovano uvećanje).</td></tr>
+            <tr><td>Plaćeno odsustvo</td><td>Plaćeno odsustvo po odobrenju (privatni razlozi, venčanje, smrt u porodici).</td></tr>
+            <tr><td>Rad nedeljom</td><td>Sati rada nedeljom (ako nije drugačije regulisano).</td></tr>
+            <tr><td>Plaćeno zakonski</td><td>Odsustvo plaćeno po zakonskoj osnovi (vojni rok, poziv suda i sl.).</td></tr>
+            <tr><td>Bolovanje &gt;60 dana</td><td>Bolovanje duže od 60 dana koje ide na teret RFZO.</td></tr>
+            <tr><td>Porodiljsko</td><td>Porodiljsko odsustvo i odsustvo radi nege deteta.</td></tr>
+            <tr><td>Bolovanje 100%</td><td>Bolovanje sa naknadom 100% (povrede na radu, profesionalne bolesti).</td></tr>
+            <tr><td>Topli obrok (iznos)</td><td>Ukupan iznos naknade za topli obrok u RSD (ne u danima).</td></tr>
+            <tr><td>Regres (iznos)</td><td>Iznos regresa za godišnji odmor u RSD.</td></tr>
+            <tr><td>Stimulacija (%)</td><td>Procenat stimulacije (bonus) koji se primenjuje na osnovnu zaradu.</td></tr>
+            <tr><td>Bruto dodatak</td><td>Slobodan dodatak u bruto iznosu (za posebna plaćanja).</td></tr>
+            <tr><td>Prosek (12m)</td><td>Manuelni unos prosečne zarade za obračun naknade. Ako je 0, sistem automatski izračunava prosek poslednjih 12 meseci.</td></tr>
+        </table>
+
+        <h3>Brzo popunjavanje svih radnika</h3>
+        <p>
+            Funkcija <strong>⚡ Brzo popunjavanje</strong> omogućava da se jednom vrednošću popuni ista kolona za sve zaposlene odjednom:
+        </p>
+        <div class="steps">
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-body">
+                    <strong>Izaberite kolonu</strong>
+                    <p>U padajućem meniju „Brzo popunjavanje" odaberite kolonnu (npr. „Redovni sati").</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-body">
+                    <strong>Unesite vrednost</strong>
+                    <p>U polje pored unesite željenu vrednost (npr. <code>176</code>).</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-body">
+                    <strong>Kliknite „🚀 Primeni na sve"</strong>
+                    <p>Sistem popunjava izabranu kolonu za sve vidljive radnike. Potom kliknite <strong>💾 Sačuvaj i preračunaj</strong>.</p>
+                </div>
+            </div>
+        </div>
+
+        <h3>Dodavanje i uklanjanje radnika iz perioda</h3>
+        <p>
+            U gornjoj traci nalaze se dugmad <strong>➕ Dodaj radnika</strong> i <strong>🗑️ Ukloni radnika</strong>.
+            Ovo je korisno kada novi radnik počne sredinom meseca ili kada treba izuzeti radnika koji nije radio.
+        </p>
+
+        <h3>Pretraga</h3>
+        <p>Koristite polje 🔍 za filtriranje tabele po imenu zaposlenog. Pretraga je u realnom vremenu.</p>
+
+        <h3>Snimanje i preračunavanje</h3>
+        <p>
+            Dugme <strong>💾 Sačuvaj i preračunaj</strong> istovremeno snima izmene u bazu i pokreće
+            kompletan obračun zarada za sve zaposlene u aktivnom periodu.
+        </p>
+        <div class="alert info">
+            <span class="alert-icon">ℹ️</span>
+            <div>Svako snimanje pokretanjem preračunavanja briše prethodne obračune za taj period i kreira nove. Ovo je sigurna operacija — stari podaci se uvek mogu obnoviti ponovnim snimanjem.</div>
+        </div>
+    </section>
+
+    <!-- ══ 5. OBRAČUN PLATE ══ -->
+    <section class="section" id="obracun-plate">
+        <h2 class="section-title">📊 Obračun plate</h2>
+        <p>
+            Modul prikazuje pregled svih obračunatih zarada za aktivni mesec. Leva strana sadrži
+            tabelarni pregled svih radnika, a desna panel prikazuje detaljan platni listić za
+            izabranog radnika.
+        </p>
+
+        <h3>Pregled liste obračuna</h3>
+        <p>Tabela na levoj strani prikazuje ključne iznose za svakog radnika:</p>
+        <table>
+            <tr><th>Kolona</th><th>Opis</th></tr>
+            <tr><td>Za isplatu (Neto)</td><td>Konačni iznos koji se isplaćuje na račun zaposlenog.</td></tr>
+            <tr><td>Bruto 1</td><td>Ukupna bruto zarada radnika (bez doprinosa poslodavca).</td></tr>
+            <tr><td>Bruto 2</td><td>Ukupni trošak zaposlenog = Bruto 1 + doprinosi poslodavca.</td></tr>
+            <tr><td>Porez na dohodak</td><td>Iznos poreza na zarade (10% od poreske osnovice).</td></tr>
+        </table>
+
+        <h3>Detaljan platni listić (desni panel)</h3>
+        <p>Kliknite na bilo koji red u tabeli da vidite kompletan platni listić koji prikazuje:</p>
+
+        <h4>Odrađeni sati i učinak</h4>
+        <ul>
+            <li>Redovni radni sati, bolovanje, prekovremeni, godišnji odmor, državni praznik, noćni rad</li>
+            <li>Ukupno radnih časova</li>
+        </ul>
+
+        <h4>Finansijska rekapitulacija</h4>
+        <ul>
+            <li>Bruto zarada (redovan rad) — osnovna zarada po koeficijentu</li>
+            <li>Bruto naknada — minuli rad (sa prikazom procenta)</li>
+            <li>Bruto naknada — stimulacija</li>
+            <li>Bruto naknade — bolovanje, praznik, godišnji odmor, topli obrok, regres</li>
+            <li>Bruto naknade — prekovremeni rad, noćni rad, rad na praznik</li>
+            <li><strong>Ukupan Bruto</strong></li>
+        </ul>
+
+        <h4>Poreski obračun</h4>
+        <ul>
+            <li>Poresko oslobođenje (lični odbitak)</li>
+            <li>Osnovica za porez</li>
+            <li>Porez na dohodak (10%)</li>
+        </ul>
+
+        <h4>Doprinosi na teret radnika</h4>
+        <table>
+            <tr><th>Doprinos</th><th>Stopa</th></tr>
+            <tr><td>PIO (penzijsko i invalidsko osiguranje)</td><td>Definiše se u Poreskim parametrima</td></tr>
+            <tr><td>Zdravstveno osiguranje</td><td>Definiše se u Poreskim parametrima</td></tr>
+            <tr><td>Osiguranje za slučaj nezaposlenosti</td><td>Definiše se u Poreskim parametrima</td></tr>
+        </table>
+
+        <h4>Obustave i odbici</h4>
+        <ul>
+            <li>Krediti i obustave</li>
+            <li>Samodoprinosi i ostalo</li>
+        </ul>
+
+        <h4>Rezultujući iznosi</h4>
+        <ul>
+            <li><strong>ZA ISPLATU</strong> — neto iznos za prenos na račun</li>
+            <li>Bruto 1 — troškovi zarade</li>
+            <li>Doprinosi na teret poslodavca (PIO, zdravstvo, nezaposlenost)</li>
+            <li><strong>BRUTO 2</strong> — ukupni trošak radne snage</li>
+        </ul>
+
+        <h3>Izvoz platnog listića</h3>
+        <p>
+            Na dnu desnog panela nalaze se dugmad:
+        </p>
+        <ul>
+            <li><strong>📄 Preuzmi PDF</strong> — generiše i otvara platni listić za izabranog radnika u PDF formatu</li>
+            <li><strong>🌐 Izvezi XML</strong> — generiše PPP-PD XML za izabranog radnika za poresku upravu</li>
+        </ul>
+    </section>
+
+    <!-- ══ 6. RADNICI ══ -->
+    <section class="section" id="radnici">
+        <h2 class="section-title">👥 Radnici</h2>
+        <p>
+            Modul za upravljanje kadrovskom evidencijom. Ovde se čuvaju matični podaci svih zaposlenih
+            koji se koriste u obračunu.
+        </p>
+
+        <h3>Podaci o radniku</h3>
+        <table>
+            <tr><th>Polje</th><th>Opis</th></tr>
+            <tr><td>Broj radnika</td><td>Interni registarski broj zaposlenog (jedinstven).</td></tr>
+            <tr><td>Ime i prezime</td><td>Puno ime i prezime zaposlenog.</td></tr>
+            <tr><td>JMBG</td><td>Jedinstveni matični broj građana — obavezan za PPP-PD prijavu.</td></tr>
+            <tr><td>Koeficijent</td><td>Koeficijent složenosti radnog mesta. Množi se sa vrednošću boda da bi se dobila osnovna satnica.</td></tr>
+            <tr><td>Osnovna plata</td><td>Alternativa koeficijentu — fiksni mesečni bruto iznos. Ako je unet, ima prednost nad koeficijentom.</td></tr>
+            <tr><td>Minuli rad (god.)</td><td>Broj punih godina radnog staža kod trenutnog poslodavca za obračun minulog rada.</td></tr>
+            <tr><td>Kategorija (razred)</td><td>Kategorizacija radnog mesta u platnom razredu.</td></tr>
+            <tr><td>Radna jedinica</td><td>Oznaka organizacione jedinice kojoj radnik pripada (koristi se za grupisanje u platnom spisku).</td></tr>
+            <tr><td>Tekući račun</td><td>Broj tekućeg računa za isplatu zarade.</td></tr>
+            <tr><td>Banka</td><td>Šifra banke iz šifarnika Banke.</td></tr>
+            <tr><td>Aktivan</td><td>Oznaka da li je radnik aktivan. Neaktivni radnici se ne uključuju u nove obračunske periode.</td></tr>
+        </table>
+
+        <h3>Dodavanje novog radnika</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-body">
+                    <strong>Kliknite „+ Novi radnik"</strong>
+                    <p>Otvara se forma za unos podataka.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-body">
+                    <strong>Popunite obavezna polja</strong>
+                    <p>Ime i prezime, JMBG, koeficijent (ili osnovna plata), minuli rad i radna jedinica su neophodni za ispravan obračun.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-body">
+                    <strong>Sačuvajte</strong>
+                    <p>Novi radnik biće uključen u naredni obračunski period.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert info">
+            <span class="alert-icon">ℹ️</span>
+            <div>Izmena koeficijenta ili staza radnika <strong>ne menja prethodne obračune</strong>. Novi podaci važe tek od sledećeg preračunavanja.</div>
+        </div>
+    </section>
+
+    <!-- ══ 7. ŠTAMPA ══ -->
+    <section class="section" id="stampa">
+        <h2 class="section-title">📑 Štampa i izveštaji</h2>
+        <p>
+            Modul generiše tri tipa dokumenta u PDF formatu. Period i radna jedinica se biraju u
+            filterima na vrhu stranice.
+        </p>
+
+        <div class="card-grid">
+            <div class="card">
+                <h3>📋 Mesečni platni spisak</h3>
+                <p>Kompletan tabelarni pregled svih obračuna za celo preduzeće ili odabranu radnu jedinicu. Format: <strong>A4 Landscape</strong>.</p>
+                <br>
+                <p><strong>Sadrži:</strong></p>
+                <ul>
+                    <li>Evidenciju sati rada po vrstama</li>
+                    <li>Bruto zaradu i sve naknade</li>
+                    <li>Poreske podstawice i davanja</li>
+                    <li>Doprinose radnika</li>
+                    <li>Obustave po kreditima</li>
+                    <li>Neto iznos za isplatu</li>
+                    <li>Zbirni red na dnu</li>
+                </ul>
+                <br>
+                <p>Dostupno i <strong>grupisano po radnim jedinicama</strong> (posebna stranica za svaku RJ).</p>
+            </div>
+            <div class="card">
+                <h3>📊 Mesečna rekapitulacija</h3>
+                <p>Zbirni knjigovodstveni izveštaj za knjiženje i finansijske analize. Format: <strong>A4 Portrait</strong>.</p>
+                <br>
+                <p><strong>Sadrži:</strong></p>
+                <ul>
+                    <li>Ukupne bruto troškove</li>
+                    <li>Sumiranu poresku osnovicu i porez</li>
+                    <li>Kumulativne doprinose radnika i poslodavca</li>
+                    <li>Opštinske samodoprinose</li>
+                    <li>Ukupne kredite</li>
+                    <li>Finale iznose za isplatu</li>
+                    <li>Potpisne linije za ovlašćena lica</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>🏦 Izveštaji za banke</h3>
+                <p>Platni spiskovi grupisani po komercijalnim bankama. Format: <strong>A4 Portrait</strong>.</p>
+                <br>
+                <p><strong>Sadrži (po svakoj banci):</strong></p>
+                <ul>
+                    <li>Reg. broj, tekući račun i ime radnika</li>
+                    <li>Neto iznos za isplatu</li>
+                    <li>Zbirnu sumu za prenos</li>
+                </ul>
+                <br>
+                <p>Posebna stranica se generiše za svaku banku iz šifarnika.</p>
+            </div>
+        </div>
+
+        <h3>Generisanje izveštaja</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-body">
+                    <strong>Proverite aktivni period</strong>
+                    <p>Godina i mesec su prikazani u filterima — oni se automatski postavljaju na aktivan period.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-body">
+                    <strong>Izaberite radnu jedinicu (opciono)</strong>
+                    <p>Za platni spisak možete izabrati konkretnu radnu jedinicu. Ostavite „Sve RJ" za celokupni preduzeće.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-body">
+                    <strong>Kliknite odgovarajuće dugme</strong>
+                    <p>PDF se generiše i automatski otvara u podrazumevanom PDF pregledaču za pregled i štampu.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══ 8. ŠIFRARNICI ══ -->
+    <section class="section" id="sifrarnici">
+        <h2 class="section-title">⚙️ Šifrarnici i podešavanja</h2>
+        <p>Sistem sadrži više šifarnika koji se podešavaju retko, ali su ključni za ispravan rad:</p>
+
+        <h3>Poreski parametri</h3>
+        <p>Nalaze se u modulu <strong>Porezi</strong>. Definišu se po periodu (godini i mesecu) i sadrže:</p>
+        <table>
+            <tr><th>Parametar</th><th>Opis</th><th>Tipična vrednost</th></tr>
+            <tr><td>Vrednost boda</td><td>Novčana vrednost jednog obračunskog boda u RSD</td><td>1.860,34 RSD</td></tr>
+            <tr><td>Fond sati</td><td>Mesečni fond radnih sati</td><td>160–184 h</td></tr>
+            <tr><td>% minulog rada</td><td>Uvećanje po godini staža kod poslodavca</td><td>0,4%</td></tr>
+            <tr><td>% prekovremenog rada</td><td>Uvećanje za prekovremeni rad</td><td>26%</td></tr>
+            <tr><td>% noćnog rada</td><td>Uvećanje za noćni rad</td><td>26%</td></tr>
+            <tr><td>% državnog praznika</td><td>Uvećanje za rad na praznik / naknada za neradni praznik</td><td>110%</td></tr>
+            <tr><td>% bolovanja</td><td>Stopa naknade tokom bolovanja</td><td>65%</td></tr>
+            <tr><td>Stopa PIO radnik</td><td>Doprinos za PIO na teret radnika</td><td>14%</td></tr>
+            <tr><td>Stopa zdravstvo radnik</td><td>Doprinos za zdravstvo na teret radnika</td><td>5,15%</td></tr>
+            <tr><td>Stopa nezaposlenost radnik</td><td>Doprinos za nezaposlenost na teret radnika</td><td>0,75%</td></tr>
+            <tr><td>Stopa PIO poslodavac</td><td>Doprinos za PIO na teret poslodavca</td><td>11,5%</td></tr>
+            <tr><td>Stopa zdravstvo poslodavac</td><td>Doprinos za zdravstvo na teret poslodavca</td><td>5,15%</td></tr>
+            <tr><td>Stopa nezaposlenost poslodavac</td><td>Doprinos za nezaposlenost na teret poslodavca</td><td>0,75%</td></tr>
+            <tr><td>Poresko oslobođenje</td><td>Mesečni iznos poreskog oslobođenja (lični odbitak)</td><td>Zakonski iznos</td></tr>
+        </table>
+
+        <h3>Banke</h3>
+        <p>Šifarnik komercijalnih banaka koji se koristi za grupisanje platnih naloga u izveštaju za banke. Sadrži šifru i naziv banke.</p>
+
+        <h3>Platni razredi</h3>
+        <p>Definisanje razreda plata sa koeficijentima za lakšu kategorizaciju radnih mesta.</p>
+
+        <h3>Firme</h3>
+        <p>Podaci o firmi (naziv, adresa, PIB, matični broj) koji se koriste u zaglavljima izveštaja i u PPP-PD XML prijavi.</p>
+
+        <h3>Doprinosi (stare tabele)</h3>
+        <p>Istorijat stopa doprinosa za migraciju iz legacy sistema. Trenutne stope se podešavaju u modulu <em>Porezi</em>.</p>
+    </section>
+
+    <!-- ══ 9. PPP-PD XML ══ -->
+    <section class="section" id="ppd">
+        <h2 class="section-title">🌐 PPP-PD XML prijava</h2>
+        <p>
+            Sistem automatski generiše XML datoteku za elektronsko podnošenje poreske prijave PPP-PD
+            (Poreska prijava o obračunatim porezima i doprinosima na zarade i naknade zarada).
+        </p>
+
+        <h3>Generisanje XML-a</h3>
+        <p>
+            Na modulu <em>PPP-PD</em> kliknite „Generiši XML" za izabrani period. Sistem kreira
+            validiranu XML datoteku prema šemi Poreske uprave RS koja se može direktno učitati
+            u ePortal ili ePorezi sistem.
+        </p>
+
+        <div class="alert info">
+            <span class="alert-icon">ℹ️</span>
+            <div>Za ispravno generisanje XML prijave neophodni su JMBG zaposlenih i PIB firme u podešavanjima. Proverite da li su svi JMBG-ovi ispravno uneti pre generisanja.</div>
+        </div>
+
+        <h3>Individualni XML iz platnog listića</h3>
+        <p>
+            Dugme <strong>🌐 Izvezi XML</strong> na desnom panelu modula <em>Obračun plate</em>
+            generiše XML samo za izabranog radnika (za kontrolu pre masovnog izvoza).
+        </p>
+    </section>
+
+    <!-- ══ 10. FORMULE ══ -->
+    <section class="section" id="formule">
+        <h2 class="section-title">🔢 Formule obračuna zarade</h2>
+        <p>
+            Sistem koristi standardnu metodologiju obračuna zarade primenjenu u skladu sa
+            <strong>Zakonom o radu RS</strong> i relevantnim poreskim propisima.
+        </p>
+
+        <h3>Osnovna bruto zarada</h3>
+        <div class="formula-box">
+            Cena_sata = Koeficijent × Vrednost_boda / Fond_sati<br>
+            Bruto_zarada = Redovni_sati × Cena_sata
+        </div>
+        <p>Ako radnik ima definisanu <em>Osnovna plata</em> umesto koeficijenta:</p>
+        <div class="formula-box">
+            Cena_sata = Osnovna_plata / Fond_sati
+        </div>
+
+        <h3>Prekovremeni rad</h3>
+        <div class="formula-box">
+            Bruto_prekovremeni = Prekovremeni_sati × Cena_sata × (1 + %_prekovremeni / 100)
+        </div>
+
+        <h3>Noćni rad</h3>
+        <div class="formula-box">
+            Bruto_nocni = Nocni_sati × Cena_sata × (1 + %_nocni / 100)
+        </div>
+
+        <h3>Rad na praznik</h3>
+        <div class="formula-box">
+            Bruto_praznik = Praznik_sati × Cena_sata × (1 + %_praznik / 100)
+        </div>
+
+        <h3>Stimulacija</h3>
+        <div class="formula-box">
+            Bruto_stimulacija = Bruto_zarada × (%_stimulacije / 100)
+        </div>
+
+        <h3>Ukupan Bruto (Bruto 1 osnova)</h3>
+        <div class="formula-box">
+            Ukupan_Bruto = Bruto_zarada + Minuli_rad + Stimulacija + Bolovanje + Praznik_naknada<br>
+                         + Godisnji_odmor + Topli_obrok + Regres + Bruto_dodatak<br>
+                         + Prekovremeni + Nocni_rad + Rad_praznikom + ...
+        </div>
+
+        <h3>Poreska osnova i porez</h3>
+        <div class="formula-box">
+            Poreska_osnovica = Ukupan_Bruto − Licni_odbitak<br>
+            Porez = Poreska_osnovica × 10%
+        </div>
+
+        <h3>Doprinosi</h3>
+        <div class="formula-box">
+            Doprinos_PIO_radnik = Ukupan_Bruto × Stopa_PIO_radnik<br>
+            Doprinos_ZDR_radnik = Ukupan_Bruto × Stopa_ZDR_radnik<br>
+            Doprinos_NEZ_radnik = Ukupan_Bruto × Stopa_NEZ_radnik<br>
+            Ukupni_doprinosi = Σ sva tri doprinosa
+        </div>
+
+        <h3>Neto za isplatu</h3>
+        <div class="formula-box">
+            Neto = Ukupan_Bruto − Porez − Ukupni_doprinosi − Krediti − Samodoprinosi
+        </div>
+
+        <h3>Bruto 2 (ukupni trošak poslodavca)</h3>
+        <div class="formula-box">
+            Bruto_2 = Ukupan_Bruto + Doprinos_PIO_poslodavac + Doprinos_ZDR_poslodavac + Doprinos_NEZ_poslodavac
+        </div>
+    </section>
+
+    <!-- ══ 11. MINULI RAD ══ -->
+    <section class="section" id="minuli-rad">
+        <h2 class="section-title">📅 Minuli rad</h2>
+        <p>
+            Minuli rad je uvećanje zarade koje pripada zaposlenom za svaku punu godinu radnog odnosa
+            ostvarenu kod <strong>trenutnog poslodavca</strong>, u skladu sa <strong>članom 108. Zakona o radu RS</strong>.
+        </p>
+
+        <div class="alert success">
+            <span class="alert-icon">✅</span>
+            <div><strong>Zakonski minimum:</strong> 0,4% od osnovne zarade za svaku punu godinu staža kod trenutnog poslodavca.</div>
+        </div>
+
+        <h3>Na šta se računa minuli rad?</h3>
+        <p>
+            Osnov za obračun minulog rada je isključivo <strong>osnovna zarada</strong> — zarada koja
+            odgovara redovnim radnim satima pomnožena sa koeficijentom i vrednošću boda:
+        </p>
+        <div class="formula-box">
+            Osnova_minulog_rada = Redovni_sati × (Koeficijent × Vrednost_boda / Fond_sati)<br>
+            Minuli_rad = Osnova × (%_minulog_rada / 100) × Broj_godina_staza
+        </div>
+
+        <div class="alert danger">
+            <span class="alert-icon">🚫</span>
+            <div>
+                <strong>Šta NE ulazi u osnov za minuli rad:</strong>
+                <ul style="margin-top:8px">
+                    <li>Prekovremeni rad</li>
+                    <li>Noćni rad</li>
+                    <li>Rad na praznike</li>
+                    <li>Stimulacije i bonusi</li>
+                    <li>Naknade (topli obrok, regres, putni troškovi)</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3>Primer obračuna</h3>
+        <div class="card">
+            <p><strong>Podaci:</strong> Koeficijent = 2,10 · Vrednost boda = 1.860,34 RSD · Fond sati = 176 h · Redovni sati = 176 h · Staž = 15 god. · % minulog rada = 0,4%</p>
+            <hr style="margin:12px 0; border-color:var(--border)">
+            <div class="formula-box">
+                Cena_sata = 2,10 × 1.860,34 / 176 = 22,19 RSD/h<br>
+                Osnova = 176 × 22,19 = 3.905,44 RSD<br>
+                Minuli_rad = 3.905,44 × (0,4/100) × 15 = <strong>234,33 RSD</strong>
+            </div>
+        </div>
+
+        <h3>Automatski izračun staza</h3>
+        <p>
+            Broj punih godina staza se unosi ručno u kadrovskim podacima radnika (polje <em>Minuli rad — god.</em>).
+            Sistem ne vrši automatski izračun staza na osnovu datuma zapošljavanja — odgovornost je korisnika
+            da ažurira ovo polje jedanput godišnje.
+        </p>
+    </section>
+
+    <!-- ══ 12. BOLOVANJE ══ -->
+    <section class="section" id="bolovanje">
+        <h2 class="section-title">🏥 Bolovanje i posebne naknade</h2>
+
+        <h3>Bolovanje do 30 dana (na teret poslodavca)</h3>
+        <div class="formula-box">
+            Prosek_zarade = Prosek poslednjih 12 meseci (izračunava se automatski)<br>
+            Bruto_bolovanje = Bolovanje_sati × (Prosek / Fond_sati) × (%_bolovanja / 100)
+        </div>
+        <p>Stopa naknade za bolovanje je minimalno 65% prosečne zarade.</p>
+
+        <h3>Prosečna zarada (osnov za bolovanje)</h3>
+        <p>
+            Sistem automatski izračunava prosek zarade iz poslednjih 12 meseci pre meseca obračuna.
+            Prosek se računa kao: <em>ukupno isplaćena bruto zarada u 12 meseci / ukupno odradeni redovni sati</em>.
+        </p>
+        <p>
+            Ako je u koloni <em>Prosek (12m)</em> na stranici Radni sati uneta vrednost veća od 0,
+            ta vrednost se koristi umesto automatskog izračuna.
+        </p>
+
+        <h3>Bolovanje na teret RFZO (od 31. dana)</h3>
+        <p>
+            Bolovanje koje traje duže od 30 dana i ide na teret RFZO unosi se u kolonu
+            <strong>Bolovanje &gt;60 dana</strong>. Sistem evidentira ove sate ali ih ne uključuje
+            u trošak poslodavca.
+        </p>
+
+        <h3>Bolovanje 100% (povrede na radu)</h3>
+        <p>
+            Naknade za bolovanje usled povrede na radu ili profesionalne bolesti isplaćuju se
+            sa stopom 100% prosečne zarade. Unose se u kolonu <strong>Bolovanje 100%</strong>.
+        </p>
+
+        <h3>Porodiljsko odsustvo</h3>
+        <p>
+            Porodiljsko odsustvo i odsustvo radi nege deteta unosi se u posebnu kolonu.
+            Naknadu u celosti refundira RFZO.
+        </p>
+
+        <h3>Godišnji odmor</h3>
+        <div class="formula-box">
+            Bruto_godisnji = Godisnji_sati × Cena_sata
+        </div>
+        <p>Naknada za godišnji odmor jednak je osnovnoj bruto zaradi zaposlenog.</p>
+
+        <h3>Neradni državni praznik (naknada)</h3>
+        <div class="formula-box">
+            Bruto_praznik_neradni = Praznik_neradni_sati × Cena_sata × (%_praznik / 100)
+        </div>
+    </section>
+
+    <!-- ══ 13. FAQ ══ -->
+    <section class="section" id="faq">
+        <h2 class="section-title">❓ Česta pitanja</h2>
+
+        <h3>Zašto se iznos minulog rada razlikuje od starog programa?</h3>
+        <p>
+            Novi program obračunava minuli rad isključivo na <strong>redovne radne sate</strong> (osnovna zarada),
+            što je zakonski ispravno po članu 108. Zakona o radu. Stari program je u nekim slučajevima
+            uključivao prekovremene i noćne sate u osnov, što je bilo netačno.
+        </p>
+
+        <h3>Kako da promenim vrednost boda za tekući mesec?</h3>
+        <p>
+            Na stranici <em>Radni sati</em>, u gornjoj traci kliknite na polje „Bod: _____ RSD",
+            unesite novu vrednost i kliknite van polja. Potom kliknite <strong>💾 Sačuvaj i preračunaj</strong>
+            da se izmena primeni u obračunu.
+        </p>
+
+        <h3>Šta je razlika između Bruto 1 i Bruto 2?</h3>
+        <p>
+            <strong>Bruto 1</strong> = ukupna bruto zarada radnika (ono što se vidi na platnom listiću).
+            <strong>Bruto 2</strong> = ukupni trošak za poslodavca = Bruto 1 + doprinosi koje poslodavac plaća
+            iz svog džepa (PIO, zdravstvo, nezaposlenost na teret poslodavca).
+        </p>
+
+        <h3>Radnik je radio samo deo meseca — kako da unesem sate?</h3>
+        <p>
+            Unesite tačan broj odrađenih sati u kolonui <em>Redovni sati</em>. Sistem automatski
+            preračunava proporcionalni iznos zarade. Fond sati ne morate menjati — on je fiksni
+            mesečni fond za celu firmu.
+        </p>
+
+        <h3>Kako da dodam novog radnika koji treba da bude u tekućem mesecu?</h3>
+        <p>
+            Prvo ga dodajte u modulu <em>Radnici</em>, a zatim idite na <em>Radni sati</em> i kliknite
+            <strong>➕ Dodaj radnika</strong> da ga ručno dodate u aktivan period.
+        </p>
+
+        <h3>Gde se čuva baza podataka?</h3>
+        <p>
+            Baza podataka je SQLite datoteka <code>plata.db</code> koja se nalazi u folderu aplikacije:
+            <code>PlataApp\plata.db</code>. Preporučuje se redovna izrada rezervnih kopija ove datoteke.
+        </p>
+
+        <h3>Mogu li da menjam prethodne obračune?</h3>
+        <p>
+            Da — postavite prethodni period kao aktivan, napravite izmene u radnim satima i
+            kliknite <strong>💾 Sačuvaj i preračunaj</strong>. Sistem će preračunati sve iznose za
+            taj period. Proverite da li su štampane kopije izveštaja usaglašene.
+        </p>
+    </section>
+
+    <!-- ══ 14. REŠAVANJE PROBLEMA ══ -->
+    <section class="section" id="greske">
+        <h2 class="section-title">🔧 Rešavanje problema</h2>
+
+        <table>
+            <tr><th>Problem</th><th>Uzrok</th><th>Rešenje</th></tr>
+            <tr>
+                <td>„Nije izabran aktivni period"</td>
+                <td>Nijedan period nije postavljen kao aktivan.</td>
+                <td>Idite na <em>Obračuni</em> i kliknite „📌 Postavi kao aktivan".</td>
+            </tr>
+            <tr>
+                <td>Obračun daje 0 RSD neto</td>
+                <td>Koeficijent je 0 ili vrednost boda nije unesena.</td>
+                <td>Proverite koeficijent radnika i vrednost boda u traci Radnih sati.</td>
+            </tr>
+            <tr>
+                <td>PDF se ne generiše</td>
+                <td>Nema instaliranog PDF čitača ili je problem sa dozvolama.</td>
+                <td>Proverite da li je instaliran Adobe Reader ili sličan PDF čitač. Proverite dozvole za pisanje u folderu aplikacije.</td>
+            </tr>
+            <tr>
+                <td>XML prijava se odbija</td>
+                <td>Nedostaje JMBG ili PIB firme.</td>
+                <td>Dopunite JMBG u modulu Radnici i PIB u modulu Firme.</td>
+            </tr>
+            <tr>
+                <td>Prosek bolovanja je netačan</td>
+                <td>Nema dovoljno istorije (prethodnih obračuna u sistemu).</td>
+                <td>Ručno unesite prosek u kolonu „Prosek (12m)" na stranici Radni sati.</td>
+            </tr>
+            <tr>
+                <td>Radnik se ne pojavljuje u listi</td>
+                <td>Radnik je označen kao neaktivan.</td>
+                <td>U modulu Radnici pronađite radnika i označite ga kao aktivnog.</td>
+            </tr>
+        </table>
+
+        <div class="alert warning">
+            <span class="alert-icon">⚠️</span>
+            <div>Pre kontaktiranja podrške, uvek napravite rezervnu kopiju datoteke <code>plata.db</code> kako se podaci ne bi izgubili tokom otklanjanja problema.</div>
+        </div>
+    </section>
+
+    <hr>
+    <p style="text-align:center; color:var(--text-muted); font-size:13px; margin-top:32px">
+        PlataApp v1.0 · Obračun zarada u skladu sa zakonodavstvom RS · © 2025
+    </p>
+
+</main>
+
+<script>
+    // Highlight active nav item based on scroll position
+    const sections = document.querySelectorAll('.section');
+    const navItems = document.querySelectorAll('.nav-item');
+
+    function updateActive() {
+        let current = '';
+        sections.forEach(s => {
+            if (window.scrollY >= s.offsetTop - 80) current = s.id;
+        });
+        navItems.forEach(a => {
+            a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+        });
+    }
+
+    window.addEventListener('scroll', updateActive, { passive: true });
+    updateActive();
+
+    // Smooth scroll for sidebar links
+    navItems.forEach(a => {
+        a.addEventListener('click', e => {
+            e.preventDefault();
+            const target = document.querySelector(a.getAttribute('href'));
+            if (target) target.scrollIntoView({ behavior: 'smooth' });
+        });
+    });
+</script>
+</body>
+</html>

@@ -138,6 +138,11 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Help dugme na dnu -->
+                <Button DockPanel.Dock="Bottom" Content="❓  Korisničko uputstvo"
+                        Style="{StaticResource NavButton}" Margin="0,0,0,2"
+                        Click="BtnHelp_Click"/>
+
                 <!-- Verzija na dnu -->
                 <TextBlock DockPanel.Dock="Bottom" Text="v1.0.0  •  2026"
                            FontSize="11" Foreground="#546E7A"
@@ -146,8 +151,14 @@
                 <!-- Navigacija -->
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" BorderThickness="0">
                     <StackPanel Margin="0,8,0,0">
-                        <TextBlock Text="EVIDENCIJA" FontSize="10" FontWeight="SemiBold"
+                        <TextBlock Text="OBRAČUNI" FontSize="10" FontWeight="SemiBold"
                                    Foreground="#7986CB" Margin="24,6,0,3"/>
+                        <Button x:Name="BtnObracuni" Content="📁  Obračunski periodi"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnObracuni_Click"/>
+
+                        <TextBlock Text="EVIDENCIJA" FontSize="10" FontWeight="SemiBold"
+                                   Foreground="#7986CB" Margin="24,10,0,3"/>
                         <Button x:Name="BtnRadnici" Content="👤  Radnici"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnRadnici_Click"/>

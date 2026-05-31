@@ -82,16 +82,22 @@
 
                 <!-- Parametri perioda -->
                 <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
-                    <Border Background="#EEF2FF" CornerRadius="6" Padding="12,6" Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Bod: " FontSize="12" FontWeight="SemiBold" Foreground="#3730A3"/>
-                            <TextBlock x:Name="TxtVrednostBoda" Text="1,860.34 RSD" FontSize="12" FontWeight="Bold" Foreground="#312E81"/>
+                    <Border Background="#EEF2FF" CornerRadius="6" Padding="8,4" Margin="0,0,8,0" BorderBrush="#C7D2FE" BorderThickness="1">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Bod: " FontSize="12" FontWeight="SemiBold" Foreground="#3730A3" VerticalAlignment="Center"/>
+                            <TextBox x:Name="TxtVrednostBoda" Text="1860.34" FontSize="12" FontWeight="Bold" Foreground="#312E81" Width="80" 
+                                     Background="Transparent" BorderThickness="0" VerticalAlignment="Center" TextAlignment="Right"
+                                     LostFocus="TxtVrednostBoda_LostFocus" GotFocus="Txt_GotFocus"/>
+                            <TextBlock Text=" RSD" FontSize="12" FontWeight="Bold" Foreground="#312E81" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
-                    <Border Background="#F0FDF4" CornerRadius="6" Padding="12,6">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Fond sati: " FontSize="12" FontWeight="SemiBold" Foreground="#166534"/>
-                            <TextBlock x:Name="TxtFondCasova" Text="176 č" FontSize="12" FontWeight="Bold" Foreground="#14532D"/>
+                    <Border Background="#F0FDF4" CornerRadius="6" Padding="8,4" BorderBrush="#BBF7D0" BorderThickness="1">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Fond sati: " FontSize="12" FontWeight="SemiBold" Foreground="#166534" VerticalAlignment="Center"/>
+                            <TextBox x:Name="TxtFondCasova" Text="176" FontSize="12" FontWeight="Bold" Foreground="#14532D" Width="40" 
+                                     Background="Transparent" BorderThickness="0" VerticalAlignment="Center" TextAlignment="Center"
+                                     LostFocus="TxtFondCasova_LostFocus" GotFocus="Txt_GotFocus"/>
+                            <TextBlock Text=" č" FontSize="12" FontWeight="Bold" Foreground="#14532D" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>

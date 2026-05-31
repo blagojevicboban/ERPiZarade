@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using Microsoft.EntityFrameworkCore;
 using PlataData;
 using PlataData.Models;
 
@@ -346,6 +347,147 @@ public partial class DoprinosiPage : Page
             
             StatusMessage.Text = $"Doprinos '{_selectedDoprinos.Naziv}' za {_selectedDoprinos.Mesec}.{_selectedDoprinos.Godina} je uspešno sačuvan!";
             MessageBox.Show($"Doprinos '{_selectedDoprinos.Naziv}' za {_selectedDoprinos.Mesec}.{_selectedDoprinos.Godina} je uspešno sačuvan!", "Uspeh", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            // AUTOMATSKO PRERAČUNAVANJE AKO POSTOJE OBRAČUNI
+            int godina = _selectedDoprinos.Godina;
+            int mesec = _selectedDoprinos.Mesec;
+
+            var radniSatiList = _db.RadniSati
+                .Include(s => s.Radnik)
+                .Where(s => s.Godina == godina && s.Mesec == mesec)
+                .ToList();
+
+            if (radniSatiList.Count > 0)
+            {
+                var rez = MessageBox.Show(
+                    $"Izmenili ste stope doprinosa za period {mesec}.{godina}.\n\n" +
+                    $"Pronađeno je {radniSatiList.Count} obračunatih plata za ovaj period.\n" +
+                    $"Da li želite da automatski preračunate sve plate sa novim stopama doprinosa?",
+                    "Preračunavanje plata",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question
+                );
+
+                if (rez == MessageBoxResult.Yes)
+                {
+                    try
+                    {
+                        var obracunService = new PlataApp.Services.ObracunService(_db);
+
+                        var porezi = _db.Porezi.FirstOrDefault(p => p.Godina == godina && p.Mesec == mesec);
+                        if (porezi == null)
+                        {
+                            porezi = _db.Porezi
+                                .Where(p => p.Godina < godina || (p.Godina == godina && p.Mesec < mesec))
+                                .OrderByDescending(p => p.Godina)
+                                .ThenByDescending(p => p.Mesec)
+                                .FirstOrDefault();
+                        }
+
+                        decimal vrednostBoda = porezi?.VrBoda ?? 1860.34m;
+                        int fondSati = porezi?.FondCasova ?? 176;
+                        int updatedCount = 0;
+
+                        foreach (var rs in radniSatiList)
+                        {
+                            var radnik = rs.Radnik;
+                            if (radnik == null) continue;
+
+                            var postojeciObracun = _db.ObracuniPlata
+                                .FirstOrDefault(o => o.RadnikId == rs.RadnikId && o.Godina == godina && o.Mesec == mesec);
+
+                            var noviObracun = obracunService.Calculate(radnik, rs, godina, mesec, vrednostBoda, fondSati);
+
+                            if (postojeciObracun != null)
+                            {
+                                postojeciObracun.BrutoZarada = noviObracun.BrutoZarada;
+                                postojeciObracun.BrutoBolovanje = noviObracun.BrutoBolovanje;
+                                postojeciObracun.BrutoNaknade = noviObracun.BrutoNaknade;
+                                postojeciObracun.BrutoStimulacija = noviObracun.BrutoStimulacija;
+                                postojeciObracun.BrutoMinuliRad = noviObracun.BrutoMinuliRad;
+
+                                postojeciObracun.NetoZar = noviObracun.NetoZar;
+                                postojeciObracun.NetoNerd = noviObracun.NetoNerd;
+                                postojeciObracun.NetoGOd = noviObracun.NetoGOd;
+                                postojeciObracun.NetoTo = noviObracun.NetoTo;
+                                postojeciObracun.TopliObrokIznos = noviObracun.TopliObrokIznos;
+                                postojeciObracun.NetoReg = noviObracun.NetoReg;
+                                postojeciObracun.Neto = noviObracun.Neto;
+                                postojeciObracun.NetoBol = noviObracun.NetoBol;
+                                postojeciObracun.NetoB100 = noviObracun.NetoB100;
+                                postojeciObracun.NetoPlac = noviObracun.NetoPlac;
+                                postojeciObracun.NetoPlZ = noviObracun.NetoPlZ;
+                                postojeciObracun.NetoDrza = noviObracun.NetoDrza;
+                                postojeciObracun.NetoNocni = noviObracun.NetoNocni;
+                                postojeciObracun.NetoVezba = noviObracun.NetoVezba;
+                                postojeciObracun.NetoPrek = noviObracun.NetoPrek;
+                                postojeciObracun.NetoTer = noviObracun.NetoTer;
+                                postojeciObracun.KorDod = noviObracun.KorDod;
+                                postojeciObracun.KorDod1 = noviObracun.KorDod1;
+                                postojeciObracun.Kumul = noviObracun.Kumul;
+                                postojeciObracun.NetoNede = noviObracun.NetoNede;
+
+                                postojeciObracun.DoprinosPioRadnik = noviObracun.DoprinosPioRadnik;
+                                postojeciObracun.DoprinosZdravstvoRadnik = noviObracun.DoprinosZdravstvoRadnik;
+                                postojeciObracun.DoprinosNezaposlenostRadnik = noviObracun.DoprinosNezaposlenostRadnik;
+
+                                postojeciObracun.DoprinosPioPoslodavac = noviObracun.DoprinosPioPoslodavac;
+                                postojeciObracun.DoprinosZdravstvoPoslodavac = noviObracun.DoprinosZdravstvoPoslodavac;
+                                postojeciObracun.DoprinosNezaposlenostPoslodavac = noviObracun.DoprinosNezaposlenostPoslodavac;
+
+                                postojeciObracun.PorezNaDohodak = noviObracun.PorezNaDohodak;
+                                postojeciObracun.PoreskaOsnovica = noviObracun.PoreskaOsnovica;
+                                postojeciObracun.LicniOdbitak = noviObracun.LicniOdbitak;
+                                postojeciObracun.KreditObustava = noviObracun.KreditObustava;
+                                postojeciObracun.Samodoprinosi = noviObracun.Samodoprinosi;
+                                postojeciObracun.OstaliOdbici = noviObracun.OstaliOdbici;
+                                postojeciObracun.NetoIsplata = noviObracun.NetoIsplata;
+
+                                postojeciObracun.RedovniSati = rs.RedovniSati;
+                                postojeciObracun.BolovanjeSati = rs.BolovanjeSati;
+                                postojeciObracun.PrekovremeneSati = rs.PrekovremeneSati;
+                                postojeciObracun.GodisnjioOdmorSati = rs.GodisnjiOdmorSati;
+                                postojeciObracun.DrzavniPraznikSati = rs.DrzavniPraznikSati;
+                                postojeciObracun.NocniSati = rs.NocniSati;
+                                postojeciObracun.SmenskiSati = rs.SmenskiSati;
+                                postojeciObracun.RadPraznikomSati = rs.RadPraznikomSati;
+                                postojeciObracun.NocniRadPraznikomSati = rs.NocniRadPraznikomSati;
+                                postojeciObracun.PlacenoOdsustvoSati = rs.PlacenoOdsustvoSati;
+                                postojeciObracun.NedeljaSati = rs.RadNedeljomSati;
+                                postojeciObracun.PlacenoZakonskiSatiLegacy = rs.PlacenoZakonskiSati;
+                                postojeciObracun.BolovanjePreko60SatiLegacy = rs.BolovanjePreko60Sati;
+                                postojeciObracun.PorodiljskoOdsustvoSatiLegacy = rs.PorodiljskoOdsustvoSati;
+                                postojeciObracun.Bolovanje100SatiLegacy = rs.Bolovanje100Sati;
+                                postojeciObracun.Varijabila = rs.Varijabila;
+
+                                postojeciObracun.Prosek = noviObracun.Prosek;
+                                postojeciObracun.DatumObracuna = DateTime.Now;
+                                postojeciObracun.Napomena = $"Ažurirano izmenom doprinosa {DateTime.Now:dd.MM.yyyy HH:mm}";
+
+                                _db.Entry(postojeciObracun).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+                            }
+                            else
+                            {
+                                _db.ObracuniPlata.Add(noviObracun);
+                            }
+
+                            updatedCount++;
+                        }
+
+                        _db.SaveChanges();
+                        MessageBox.Show(
+                            $"Uspešno preračunate plate za {updatedCount} zaposlenih sa novim stopama doprinosa.",
+                            "Uspeh",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information
+                        );
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Greška prilikom preračunavanja plata: {ex.Message}", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
         }
         catch (Exception ex)
         {

@@ -15,6 +15,8 @@ public partial class RadniSatiPage : Page
 {
     private PlataDbContext _db;
     private List<RadniSat> _allSati = new();
+    private decimal _lastVrednostBoda;
+    private int _lastFondCasova;
 
     public RadniSatiPage()
     {
@@ -62,8 +64,11 @@ public partial class RadniSatiPage : Page
             decimal vrednostBoda = porezi?.VrBoda ?? 1860.34m;
             int fondSati = porezi?.FondCasova ?? 176;
 
-            TxtVrednostBoda.Text = $"{vrednostBoda:N2} RSD";
-            TxtFondCasova.Text = $"{fondSati} č";
+            _lastVrednostBoda = vrednostBoda;
+            _lastFondCasova = fondSati;
+
+            TxtVrednostBoda.Text = $"{vrednostBoda:F2}";
+            TxtFondCasova.Text = $"{fondSati}";
 
             // Učitaj radne sate za aktivni period
             _allSati = _db.RadniSati
@@ -766,6 +771,312 @@ public partial class RadniSatiPage : Page
         {
             ActionBarButtons.IsEnabled = true;
             GridRadniSati.IsEnabled = true;
+        }
+    }
+
+    private void Txt_GotFocus(object sender, RoutedEventArgs e)
+    {
+        if (sender is TextBox textBox)
+        {
+            textBox.SelectAll();
+        }
+    }
+
+    private async void TxtVrednostBoda_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (!AppConfig.ActiveGodina.HasValue || !AppConfig.ActiveMesec.HasValue) return;
+
+        string input = TxtVrednostBoda.Text.Trim();
+        if (decimal.TryParse(input, out decimal valDec) && valDec > 0)
+        {
+            if (valDec == _lastVrednostBoda)
+            {
+                TxtVrednostBoda.Text = $"{valDec:F2}";
+                return;
+            }
+
+            try
+            {
+                int fondSati = _lastFondCasova;
+                await OsigurajParametreZaAktivniMesecAsync(valDec, fondSati);
+                _lastVrednostBoda = valDec;
+                TxtVrednostBoda.Text = $"{valDec:F2}";
+
+                await PreracunajSveRadnike();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Greška prilikom ažuriranja vrednosti boda: {ex.Message}", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+                LoadData();
+            }
+        }
+        else
+        {
+            MessageBox.Show("Molimo unesite ispravnu vrednost boda.", "Upozorenje", MessageBoxButton.OK, MessageBoxImage.Warning);
+            LoadData();
+        }
+    }
+
+    private async void TxtFondCasova_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (!AppConfig.ActiveGodina.HasValue || !AppConfig.ActiveMesec.HasValue) return;
+
+        string input = TxtFondCasova.Text.Trim();
+        if (int.TryParse(input, out int valInt) && valInt > 0)
+        {
+            if (valInt == _lastFondCasova)
+            {
+                TxtFondCasova.Text = $"{valInt}";
+                return;
+            }
+
+            try
+            {
+                decimal vrednostBoda = _lastVrednostBoda;
+                await OsigurajParametreZaAktivniMesecAsync(vrednostBoda, valInt);
+                _lastFondCasova = valInt;
+                TxtFondCasova.Text = $"{valInt}";
+
+                var rez = MessageBox.Show(
+                    $"Izmenili ste fond časova na {valInt}.\n\nDa li želite da automatski ažurirate 'Redovne sate' na {valInt} za sve zaposlene u tabeli?",
+                    "Ažuriranje redovnih sati",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question
+                );
+
+                if (rez == MessageBoxResult.Yes)
+                {
+                    foreach (var rs in _allSati)
+                    {
+                        rs.RedovniSati = valInt;
+                        _db.Entry(rs).State = EntityState.Modified;
+                    }
+                    await _db.SaveChangesAsync();
+                }
+
+                await PreracunajSveRadnike();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Greška prilikom ažuriranja fonda časova: {ex.Message}", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+                LoadData();
+            }
+        }
+        else
+        {
+            MessageBox.Show("Molimo unesite ispravan fond časova.", "Upozorenje", MessageBoxButton.OK, MessageBoxImage.Warning);
+            LoadData();
+        }
+    }
+
+    private async System.Threading.Tasks.Task OsigurajParametreZaAktivniMesecAsync(decimal targetVrBoda, int targetFondCasova)
+    {
+        if (!AppConfig.ActiveGodina.HasValue || !AppConfig.ActiveMesec.HasValue) return;
+        int targetGodina = AppConfig.ActiveGodina.Value;
+        int targetMesec = AppConfig.ActiveMesec.Value;
+
+        var targetPorezi = await _db.Porezi.FirstOrDefaultAsync(p => p.Godina == targetGodina && p.Mesec == targetMesec);
+        if (targetPorezi != null)
+        {
+            targetPorezi.VrBoda = targetVrBoda;
+            targetPorezi.FondCasova = targetFondCasova;
+            _db.Entry(targetPorezi).State = EntityState.Modified;
+            await _db.SaveChangesAsync();
+            return;
+        }
+
+        var sourcePorezi = await _db.Porezi
+            .Where(p => p.Godina < targetGodina || (p.Godina == targetGodina && p.Mesec < targetMesec))
+            .OrderByDescending(p => p.Godina)
+            .ThenByDescending(p => p.Mesec)
+            .FirstOrDefaultAsync();
+
+        if (sourcePorezi != null)
+        {
+            var newPorezi = new PlataData.Models.Porezi
+            {
+                Godina = targetGodina,
+                Mesec = targetMesec,
+                VrBoda = targetVrBoda,
+                FondCasova = targetFondCasova,
+                Zarada = sourcePorezi.Zarada,
+                AkPorez = sourcePorezi.AkPorez,
+                AkPorez2 = sourcePorezi.AkPorez2,
+                AkPorez3 = sourcePorezi.AkPorez3,
+                AkPorez4 = sourcePorezi.AkPorez4,
+                Prvast = sourcePorezi.Prvast,
+                Drugast = sourcePorezi.Drugast,
+                Trecast = sourcePorezi.Trecast,
+                LinPorez3 = sourcePorezi.LinPorez3,
+                SifPlac1 = sourcePorezi.SifPlac1,
+                ZiroR1 = sourcePorezi.ZiroR1,
+                PozivNa1 = sourcePorezi.PozivNa1,
+                PozivNa3 = sourcePorezi.PozivNa3,
+                Svrha1 = sourcePorezi.Svrha1,
+                Svrha2 = sourcePorezi.Svrha2,
+                Primalac1 = sourcePorezi.Primalac1,
+                Primalac2 = sourcePorezi.Primalac2,
+                SifPlac2 = sourcePorezi.SifPlac2,
+                ZiroR2 = sourcePorezi.ZiroR2,
+                PozivNa2 = sourcePorezi.PozivNa2,
+                PozivNa4 = sourcePorezi.PozivNa4,
+                PosPorez = sourcePorezi.PosPorez,
+                Svrha3 = sourcePorezi.Svrha3,
+                Svrha4 = sourcePorezi.Svrha4,
+                Primalac3 = sourcePorezi.Primalac3,
+                Primalac4 = sourcePorezi.Primalac4,
+                ProcDrzav = sourcePorezi.ProcDrzav,
+                ProcNocni = sourcePorezi.ProcNocni,
+                ProcPreko = sourcePorezi.ProcPreko,
+                ProcMinul = sourcePorezi.ProcMinul,
+                ProcNedel = sourcePorezi.ProcNedel,
+                ProcBolov = sourcePorezi.ProcBolov,
+                ProcPlac = sourcePorezi.ProcPlac,
+                ProcPlZa = sourcePorezi.ProcPlZa,
+                ProcInval = sourcePorezi.ProcInval,
+                CasZaOb = sourcePorezi.CasZaOb,
+                ProcIzdrz = sourcePorezi.ProcIzdrz,
+                Akont = sourcePorezi.Akont,
+                ProsBrut = sourcePorezi.ProsBrut,
+                TopliObrokCena = sourcePorezi.TopliObrokCena
+            };
+            _db.Porezi.Add(newPorezi);
+        }
+        else
+        {
+            var newPorezi = new PlataData.Models.Porezi
+            {
+                Godina = targetGodina,
+                Mesec = targetMesec,
+                VrBoda = targetVrBoda,
+                FondCasova = targetFondCasova,
+                Zarada = 20000m,
+                AkPorez = 10m,
+                ProcDrzav = 110m,
+                ProcNocni = 26m,
+                ProcPreko = 26m,
+                ProcMinul = 0.4m,
+                ProcNedel = 26m,
+                ProcBolov = 65m,
+                ProcPlac = 100m,
+                ProcPlZa = 100m,
+                TopliObrokCena = 150m
+            };
+            _db.Porezi.Add(newPorezi);
+        }
+        await _db.SaveChangesAsync();
+    }
+
+    private async System.Threading.Tasks.Task PreracunajSveRadnike()
+    {
+        if (!AppConfig.ActiveGodina.HasValue || !AppConfig.ActiveMesec.HasValue) return;
+
+        int godina = AppConfig.ActiveGodina.Value;
+        int mesec = AppConfig.ActiveMesec.Value;
+
+        StatusMessage.Text = "Preračunavanje svih plata nakon izmene parametara perioda...";
+
+        try
+        {
+            var porezi = await _db.Porezi.FirstOrDefaultAsync(p => p.Godina == godina && p.Mesec == mesec);
+            decimal vrednostBoda = porezi?.VrBoda ?? 1860.34m;
+            int fondSati = porezi?.FondCasova ?? 176;
+
+            var obracunService = new ObracunService(_db);
+
+            foreach (var rs in _allSati)
+            {
+                _db.Entry(rs).State = EntityState.Modified;
+
+                var radnik = await _db.Radnici.FindAsync(rs.RadnikId);
+                if (radnik == null) continue;
+
+                var postojeciObracun = await _db.ObracuniPlata
+                    .FirstOrDefaultAsync(o => o.RadnikId == rs.RadnikId && o.Godina == godina && o.Mesec == mesec);
+
+                var noviObracun = obracunService.Calculate(radnik, rs, godina, mesec, vrednostBoda, fondSati);
+
+                if (postojeciObracun != null)
+                {
+                    postojeciObracun.BrutoZarada = noviObracun.BrutoZarada;
+                    postojeciObracun.BrutoBolovanje = noviObracun.BrutoBolovanje;
+                    postojeciObracun.BrutoNaknade = noviObracun.BrutoNaknade;
+                    postojeciObracun.BrutoStimulacija = noviObracun.BrutoStimulacija;
+                    postojeciObracun.BrutoMinuliRad = noviObracun.BrutoMinuliRad;
+
+                    postojeciObracun.NetoZar = noviObracun.NetoZar;
+                    postojeciObracun.NetoNerd = noviObracun.NetoNerd;
+                    postojeciObracun.NetoGOd = noviObracun.NetoGOd;
+                    postojeciObracun.NetoTo = noviObracun.NetoTo;
+                    postojeciObracun.TopliObrokIznos = noviObracun.TopliObrokIznos;
+                    postojeciObracun.NetoReg = noviObracun.NetoReg;
+                    postojeciObracun.Neto = noviObracun.Neto;
+                    postojeciObracun.NetoBol = noviObracun.NetoBol;
+                    postojeciObracun.NetoB100 = noviObracun.NetoB100;
+                    postojeciObracun.NetoPlac = noviObracun.NetoPlac;
+                    postojeciObracun.NetoPlZ = noviObracun.NetoPlZ;
+                    postojeciObracun.NetoDrza = noviObracun.NetoDrza;
+                    postojeciObracun.NetoNocni = noviObracun.NetoNocni;
+                    postojeciObracun.NetoVezba = noviObracun.NetoVezba;
+                    postojeciObracun.NetoPrek = noviObracun.NetoPrek;
+                    postojeciObracun.NetoTer = noviObracun.NetoTer;
+                    postojeciObracun.KorDod = noviObracun.KorDod;
+                    postojeciObracun.KorDod1 = noviObracun.KorDod1;
+                    postojeciObracun.Kumul = noviObracun.Kumul;
+                    postojeciObracun.NetoNede = noviObracun.NetoNede;
+
+                    postojeciObracun.DoprinosPioRadnik = noviObracun.DoprinosPioRadnik;
+                    postojeciObracun.DoprinosZdravstvoRadnik = noviObracun.DoprinosZdravstvoRadnik;
+                    postojeciObracun.DoprinosNezaposlenostRadnik = noviObracun.DoprinosNezaposlenostRadnik;
+
+                    postojeciObracun.DoprinosPioPoslodavac = noviObracun.DoprinosPioPoslodavac;
+                    postojeciObracun.DoprinosZdravstvoPoslodavac = noviObracun.DoprinosZdravstvoPoslodavac;
+                    postojeciObracun.DoprinosNezaposlenostPoslodavac = noviObracun.DoprinosNezaposlenostPoslodavac;
+
+                    postojeciObracun.PorezNaDohodak = noviObracun.PorezNaDohodak;
+                    postojeciObracun.PoreskaOsnovica = noviObracun.PoreskaOsnovica;
+                    postojeciObracun.LicniOdbitak = noviObracun.LicniOdbitak;
+                    postojeciObracun.KreditObustava = noviObracun.KreditObustava;
+                    postojeciObracun.Samodoprinosi = noviObracun.Samodoprinosi;
+                    postojeciObracun.OstaliOdbici = noviObracun.OstaliOdbici;
+                    postojeciObracun.NetoIsplata = noviObracun.NetoIsplata;
+
+                    postojeciObracun.RedovniSati = rs.RedovniSati;
+                    postojeciObracun.BolovanjeSati = rs.BolovanjeSati;
+                    postojeciObracun.PrekovremeneSati = rs.PrekovremeneSati;
+                    postojeciObracun.GodisnjioOdmorSati = rs.GodisnjiOdmorSati;
+                    postojeciObracun.DrzavniPraznikSati = rs.DrzavniPraznikSati;
+                    postojeciObracun.NocniSati = rs.NocniSati;
+                    postojeciObracun.SmenskiSati = rs.SmenskiSati;
+                    postojeciObracun.RadPraznikomSati = rs.RadPraznikomSati;
+                    postojeciObracun.NocniRadPraznikomSati = rs.NocniRadPraznikomSati;
+                    postojeciObracun.PlacenoOdsustvoSati = rs.PlacenoOdsustvoSati;
+                    postojeciObracun.NedeljaSati = rs.RadNedeljomSati;
+                    postojeciObracun.PlacenoZakonskiSatiLegacy = rs.PlacenoZakonskiSati;
+                    postojeciObracun.BolovanjePreko60SatiLegacy = rs.BolovanjePreko60Sati;
+                    postojeciObracun.PorodiljskoOdsustvoSatiLegacy = rs.PorodiljskoOdsustvoSati;
+                    postojeciObracun.Bolovanje100SatiLegacy = rs.Bolovanje100Sati;
+                    postojeciObracun.Varijabila = rs.Varijabila;
+
+                    postojeciObracun.Prosek = noviObracun.Prosek;
+                    postojeciObracun.DatumObracuna = DateTime.Now;
+                    postojeciObracun.Napomena = $"Automatski preračunato nakon izmene parametara perioda {DateTime.Now:dd.MM.yyyy HH:mm}";
+
+                    _db.Entry(postojeciObracun).State = EntityState.Modified;
+                }
+                else
+                {
+                    _db.ObracuniPlata.Add(noviObracun);
+                }
+            }
+
+            await _db.SaveChangesAsync();
+            GridRadniSati.Items.Refresh();
+            StatusMessage.Text = $"Automatski sačuvano i preračunato za sve zaposlene ({DateTime.Now:HH:mm:ss})";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage.Text = $"Greška pri automatskom preračunavanju: {ex.Message}";
         }
     }
 }

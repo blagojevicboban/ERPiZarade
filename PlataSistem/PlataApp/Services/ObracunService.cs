@@ -90,11 +90,15 @@ public class ObracunService
         decimal procBolov = pParams != null ? pParams.ProcBolov : 65.00m;
         decimal procNedel = pParams != null ? pParams.ProcNedel : 0.00m;
 
-        // 3. workedHours and Minuli Rad calculation (includes regular, overtime, worked holiday, night shift, and Sunday hours)
+        // 3. workedHours — ukupno efektivnih sati (za ostale doplatke)
         decimal workedHours = sati.RedovniSati + sati.PrekovremeneSati + sati.RadPraznikomSati + sati.NocniSati + sati.RadNedeljomSati;
-        decimal neto_zar = workedHours * hourlyBase;
-        decimal brutoMinuliRad = Math.Round(neto_zar * (procMinul / 100m) * yearsOfTenure, 2);
-        decimal min_po_cas = workedHours > 0 ? brutoMinuliRad / workedHours : 0m;
+
+        // Minuli rad se po Zakonu o radu čl. 108 obračunava ISKLJUČIVO na osnovnu zaradu
+        // (redovni sati × cena sata). Prekovremeni, noćni i praznik NE ulaze u osnov.
+        decimal regularHoursForMinuli = sati.RedovniSati;
+        decimal netoZarOsnovica = regularHoursForMinuli * hourlyBase;
+        decimal brutoMinuliRad = Math.Round(netoZarOsnovica * (procMinul / 100m) * yearsOfTenure, 2);
+        decimal min_po_cas = regularHoursForMinuli > 0 ? brutoMinuliRad / regularHoursForMinuli : 0m;
 
         // 12-month average hourly rate from database (or calculated dynamically)
         decimal prosek = sati.Prosek > 0 ? sati.Prosek : IzracunajProsekRadnika(radnik.Id, godina, mesec);

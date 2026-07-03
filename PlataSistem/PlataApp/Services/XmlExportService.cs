@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 using PlataData.Models;
-
+using System.Globalization;
 namespace PlataApp.Services;
 
 public class XmlExportService
@@ -127,8 +127,8 @@ public class XmlExportService
                         svp = "101109000"; // SVP za zaposlene penzionere
                     }
 
-                    int efektivniSati = obracun.RedovniSati + obracun.PrekovremeneSati;
-                    int fondSati = obracun.RedovniSati + obracun.BolovanjeSati + obracun.PrekovremeneSati + obracun.GodisnjioOdmorSati;
+                    int efektivniSati = obracun.UkupnoSati;
+                    int fondSati = obracun.UkupnoSati;
 
                     return new XElement(tns + "PodaciOPrihodima",
                         new XElement(tns + "RedniBroj", (index + 1).ToString()),
@@ -144,13 +144,13 @@ public class XmlExportService
                         new XElement(tns + "BrojKalendarskihDana", "30"),
                         new XElement(tns + "BrojEfektivnihSati", efektivniSati.ToString()),
                         new XElement(tns + "MesecniFondSati", fondSati.ToString()),
-                        new XElement(tns + "Bruto", bruto.ToString("F2")),
-                        new XElement(tns + "OsnovicaPorez", poreskaOsnovica.ToString("F2")),
-                        new XElement(tns + "Porez", porez.ToString("F2")),
-                        new XElement(tns + "OsnovicaDoprinosi", osnovicaDoprinosa.ToString("F2")),
-                        new XElement(tns + "PIO", totalPio.ToString("F2")),
-                        new XElement(tns + "ZDR", totalZdr.ToString("F2")),
-                        new XElement(tns + "NEZ", totalNez.ToString("F2")),
+                        new XElement(tns + "Bruto", bruto.ToString("F2", CultureInfo.InvariantCulture)),
+                        new XElement(tns + "OsnovicaPorez", poreskaOsnovica.ToString("F2", CultureInfo.InvariantCulture)),
+                        new XElement(tns + "Porez", porez.ToString("F2", CultureInfo.InvariantCulture)),
+                        new XElement(tns + "OsnovicaDoprinosi", osnovicaDoprinosa.ToString("F2", CultureInfo.InvariantCulture)),
+                        new XElement(tns + "PIO", totalPio.ToString("F2", CultureInfo.InvariantCulture)),
+                        new XElement(tns + "ZDR", totalZdr.ToString("F2", CultureInfo.InvariantCulture)),
+                        new XElement(tns + "NEZ", totalNez.ToString("F2", CultureInfo.InvariantCulture)),
                         new XElement(tns + "PIOBen", "0.00"),
                         new XElement(tns + "DeklarisaniMFP")
                     );

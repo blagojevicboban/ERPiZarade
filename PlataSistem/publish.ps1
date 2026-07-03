@@ -51,6 +51,17 @@ if (Test-Path $icoFile) {
     Write-Host "NAPOMENA: plata.ico nije pronađena." -ForegroundColor Yellow
 }
 
+# Kopiranje HTML uputstva u izlazni paket
+$helpSrc = Join-Path $baseDir "PlataApp\Resources\Help\uputstvo.html"
+$helpDst = Join-Path $releasePackageDir "Resources\Help"
+if (Test-Path $helpSrc) {
+    Write-Host "Kopiranje korisničkog uputstva (uputstvo.html)..." -ForegroundColor Gray
+    New-Item -ItemType Directory -Path $helpDst -Force | Out-Null
+    Copy-Item -Path $helpSrc -Destination (Join-Path $helpDst "uputstvo.html") -Force
+} else {
+    Write-Host "NAPOMENA: uputstvo.html nije pronađeno na $helpSrc" -ForegroundColor Yellow
+}
+
 # Kopiranje SQLite baze podataka u izlazni paket
 if (Test-Path $dbFile) {
     Write-Host "Kopiranje baze podataka plata.db u instalacioni paket..." -ForegroundColor Gray

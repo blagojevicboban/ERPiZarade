@@ -248,7 +248,7 @@ public class EfektivniSatiConverter : IValueConverter
     {
         if (value is ObracunPlate o)
         {
-            return o.RedovniSati + o.PrekovremeneSati;
+            return o.UkupnoSati;
         }
         return 0;
     }
@@ -265,7 +265,7 @@ public class FondSatiConverter : IValueConverter
     {
         if (value is ObracunPlate o)
         {
-            return o.RedovniSati + o.BolovanjeSati + o.PrekovremeneSati + o.GodisnjioOdmorSati;
+            return o.UkupnoSati;
         }
         return 0;
     }

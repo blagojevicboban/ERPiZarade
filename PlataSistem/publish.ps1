@@ -73,7 +73,7 @@ $vpkArgs = @(
     "--packVersion", $version,
     "--packDir", $publishOutputDir,
     "--mainExe", "PlataApp.exe",
-    "--outDir", $releasePackageDir,
+    "--outputDir", $releasePackageDir,
     "--packTitle", "PlataSistem"
 )
 

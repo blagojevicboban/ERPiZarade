@@ -5,8 +5,7 @@ on:
     branches:
       - main
       - master
-    paths:
-      - 'version.txt' # Akcija se pokreće SAMO kada se promeni ovaj fajl
+  workflow_dispatch: # Omogućava ručno pokretanje iz Actions taba
 
 permissions:
   contents: write # Dozvola da GitHub Action kreira Release

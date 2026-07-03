@@ -12,6 +12,7 @@ public partial class App : Application
 {
     protected override void OnStartup(StartupEventArgs e)
     {
+        Velopack.VelopackApp.Build().Run();
         base.OnStartup(e);
 
         // Global QuestPDF license configuration to prevent exception during PDF generation

@@ -32,6 +32,42 @@ public partial class MainWindow : Window
             }
             catch { }
         });
+
+        // Provera ažuriranja
+        _ = CheckForUpdatesAsync();
+    }
+
+    private async System.Threading.Tasks.Task CheckForUpdatesAsync()
+    {
+        try
+        {
+            // OVO JE LOKACIJA GDE SE NALAZE UPDATE FAJLOVI
+            // Za potrebe testiranja koristićemo neki lokalni folder, a ti ovde možeš staviti URL (npr. GitHub Releases URL ili svoj web server)
+            string updateUrl = @"C:\PlataUpdates"; 
+            
+            var mgr = new Velopack.UpdateManager(updateUrl);
+            var newVersion = await mgr.CheckForUpdatesAsync();
+            if (newVersion != null)
+            {
+                // Prikaži obaveštenje korisniku
+                var result = MessageBox.Show(
+                    "Nova verzija je dostupna. Da li želite da je preuzmete i instalirate sada?",
+                    "Ažuriranje aplikacije", 
+                    MessageBoxButton.YesNo, 
+                    MessageBoxImage.Information);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    await mgr.DownloadUpdatesAsync(newVersion);
+                    mgr.ApplyUpdatesAndRestart(newVersion);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Logovanje greške (možemo izostaviti prikazivanje kako ne bismo plašili korisnika)
+            System.Diagnostics.Debug.WriteLine($"Greška pri ažuriranju: {ex.Message}");
+        }
     }
 
     public void InicijalizujAktivniPeriod()

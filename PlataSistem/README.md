@@ -27,11 +27,28 @@ Za rad na projektu potrebno je instalirati:
 - .NET 8 SDK.
 
 Aplikacija se pokreće tako što postavite **PlataApp** kao startup projekat (StartUp project) u okviru vašeg razvojnog okruženja i pritisnete F5.
+
+### Pokretanje iz terminala (Command Prompt / PowerShell)
+Ako preferirate rad iz terminala, možete prevesti i pokrenuti aplikaciju sledećim komandama (iz osnovnog direktorijuma gde je `.slnx` fajl):
+
+1. **Prevođenje (Build):**
+   ```powershell
+   dotnet build PlataSistem.slnx
+   ```
+2. **Pokretanje (Run):**
+   ```powershell
+   dotnet run --project PlataApp\PlataApp.csproj
+   ```
+
 SQLite baza podataka (`plata.db`) nalazi se u osnovnom direktorijumu ili se kreira/ažurira prilikom prvog pokretanja na osnovu migracija.
 
-## Kreiranje instalacije i objava
+## Kreiranje instalacije, objava i automatska ažuriranja
 
-U osnovnom direktorijumu nalaze se skripte za publikovanje i kreiranje instalacije:
-- `publish.ps1`: PowerShell skripta za prevođenje i publikovanje (publish) aplikacije za izdavanje (release).
-- `PlataSetup.iss`: Inno Setup skripta koja od publikovanih fajlova kreira instalacioni `.exe` paket.
-- `Instalacija.ps1`: Pomoćna PowerShell skripta za instalacione procese.
+Aplikacija koristi **Velopack** za kreiranje instalacionih paketa i sistem automatskih "delta" ažuriranja u pozadini (instalira se u korisnički profil bez potrebe za administratorskim pravima).
+
+U osnovnom direktorijumu nalaze se skripte za publikovanje:
+- `publish.ps1`: PowerShell skripta koja radi prevođenje (`dotnet publish`), instalira Velopack CLI (`vpk`) po potrebi, i pakuje aplikaciju.
+  - Pokretanjem skripte biće ti zatraženo da uneseš broj verzije (npr. `1.0.1`).
+  - Skripta generiše `Setup.exe` fajl i fajlove za ažuriranje u folderu `ReleasePackage`.
+- *Ažuriranje:* Da bi aplikacija detektovala ažuriranja, potrebno je fajlove iz `ReleasePackage` prekopirati na lokaciju koja je konfigurisana u `MainWindow.xaml.cs` (trenutno lokalni testni folder `C:\PlataUpdates`, a kasnije web server).
+- `Instalacija.ps1`: Pomoćna PowerShell skripta za razne instalacione procese.

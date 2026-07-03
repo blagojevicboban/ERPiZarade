@@ -46,9 +46,17 @@ SQLite baza podataka (`plata.db`) nalazi se u osnovnom direktorijumu ili se krei
 
 Aplikacija koristi **Velopack** za kreiranje instalacionih paketa i sistem automatskih "delta" ažuriranja u pozadini (instalira se u korisnički profil bez potrebe za administratorskim pravima).
 
-U osnovnom direktorijumu nalaze se skripte za publikovanje:
-- `publish.ps1`: PowerShell skripta koja radi prevođenje (`dotnet publish`), instalira Velopack CLI (`vpk`) po potrebi, i pakuje aplikaciju.
-  - Pokretanjem skripte biće ti zatraženo da uneseš broj verzije (npr. `1.0.1`).
-  - Skripta generiše `Setup.exe` fajl i fajlove za ažuriranje u folderu `ReleasePackage`.
-- *Ažuriranje:* Da bi aplikacija detektovala ažuriranja, potrebno je fajlove iz `ReleasePackage` prekopirati na lokaciju koja je konfigurisana u `MainWindow.xaml.cs` (trenutno lokalni testni folder `C:\PlataUpdates`, a kasnije web server).
-- `Instalacija.ps1`: Pomoćna PowerShell skripta za razne instalacione procese.
+Proces izbacivanja novih verzija je potpuno automatizovan kroz **GitHub Actions**.
+
+### Kako izbaciti novu verziju?
+Umesto kucanja komandi i pravljenja tagova, kreirali smo fajl **`version.txt`** u osnovnom folderu.
+
+Sve što treba da uradiš jeste da:
+1. Otvoriš `version.txt` i upišeš novu verziju (npr. izbrišeš `1.0.0` i upišeš `1.0.1`).
+2. Komituješ taj fajl i gurneš na GitHub (`git push`).
+
+Čim GitHub prepozna da je fajl `version.txt` izmenjen, on automatski na svojim serverima prevodi kod, pakuje instalaciju i izbacuje novo izdanje klijentima pod tom verzijom!
+
+> **Važna podešavanja repozitorijuma:** Da bi ovo radilo, na tvom GitHub repozitorijumu moraš otići u **Settings -> Actions -> General** i podesiti *Workflow permissions* na **Read and write permissions**. Pored toga, fajlovi sa podacima (`plata.db` i `Baze/`) moraju biti komitovani u Git da bi bili dodati u instalaciju.
+
+*Lokalno generisanje:* Ukoliko želiš ručno da spakuješ aplikaciju (bez GitHuba), možeš pokrenuti lokalnu skriptu `publish.ps1` iz Powershell-a.

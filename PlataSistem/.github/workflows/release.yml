@@ -2,8 +2,11 @@ name: Release PlataSistem
 
 on:
   push:
-    tags:
-      - 'v*' # Trigger samo kada gurnemo tag koji počinje sa 'v' (npr. v1.0.1)
+    branches:
+      - main
+      - master
+    paths:
+      - 'version.txt' # Akcija se pokreće SAMO kada se promeni ovaj fajl
 
 permissions:
   contents: write # Dozvola da GitHub Action kreira Release
@@ -44,11 +47,12 @@ jobs:
       - name: Instalacija Velopack CLI
         run: dotnet tool install -g vpk
 
-      - name: Izvlačenje verzije iz taga
+      - name: Čitanje verzije iz fajla
         id: get_version
         run: |
-          $tag = $env:GITHUB_REF -replace 'refs/tags/v', ''
-          echo "VERSION=$tag" >> $env:GITHUB_ENV
+          $ver = Get-Content version.txt
+          $ver = $ver.Trim()
+          echo "VERSION=$ver" >> $env:GITHUB_ENV
 
       - name: Pakovanje (vpk pack)
         run: |

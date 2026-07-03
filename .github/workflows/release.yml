@@ -78,4 +78,4 @@ jobs:
 
       - name: Objavljivanje na GitHub Releases
         run: |
-          vpk upload github --repoUrl "https://github.com/blagojevicboban/ObracunZarada" --publish --releaseName "${{ env.VERSION }}" --token "${{ secrets.GITHUB_TOKEN }}" --outputDir "ReleasePackage"
+          vpk upload github --repoUrl "https://github.com/blagojevicboban/ObracunZarada" --publish --releaseName "$env:VERSION" --token "${{ secrets.GITHUB_TOKEN }}" --outputDir "ReleasePackage"

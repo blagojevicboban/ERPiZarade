@@ -1,0 +1,75 @@
+name: Release PlataSistem
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger samo kada gurnemo tag koji počinje sa 'v' (npr. v1.0.1)
+
+permissions:
+  contents: write # Dozvola da GitHub Action kreira Release
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout kod
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Prevođenje koda (dotnet publish)
+        run: |
+          dotnet publish PlataApp\PlataApp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish_output
+
+      - name: Kopiranje baza i help fajlova
+        run: |
+          if (Test-Path "plata.db") { Copy-Item -Path "plata.db" -Destination "publish_output\plata.db" -Force }
+          
+          if (Test-Path "PlataApp\Resources\Help") {
+              New-Item -ItemType Directory -Path "publish_output\Resources\Help" -Force | Out-Null
+              Copy-Item -Path "PlataApp\Resources\Help\*" -Destination "publish_output\Resources\Help" -Recurse -Force
+          }
+          
+          if (Test-Path "Baze") {
+              New-Item -ItemType Directory -Path "publish_output\Baze" -Force | Out-Null
+              Get-ChildItem -Path "Baze" -File -Filter "firma_123_*.db" | ForEach-Object {
+                  Copy-Item -Path $_.FullName -Destination "publish_output\Baze" -Force
+              }
+          }
+
+      - name: Instalacija Velopack CLI
+        run: dotnet tool install -g vpk
+
+      - name: Izvlačenje verzije iz taga
+        id: get_version
+        run: |
+          $tag = $env:GITHUB_REF -replace 'refs/tags/v', ''
+          echo "VERSION=$tag" >> $env:GITHUB_ENV
+
+      - name: Pakovanje (vpk pack)
+        run: |
+          $iconPath = "PlataApp\plata.ico"
+          $vpkArgs = @(
+              "pack",
+              "--packId", "PlataSistem",
+              "--packVersion", $env:VERSION,
+              "--packDir", "publish_output",
+              "--mainExe", "PlataApp.exe",
+              "--outputDir", "ReleasePackage",
+              "--packTitle", "PlataSistem"
+          )
+          
+          if (Test-Path $iconPath) {
+              $vpkArgs += "--icon"
+              $vpkArgs += $iconPath
+          }
+          
+          & vpk $vpkArgs
+
+      - name: Objavljivanje na GitHub Releases
+        run: |
+          vpk upload github --repoUrl "https://github.com/blagojevicboban/ObracunZarada" --publish --releaseName "${{ env.VERSION }}" --token "${{ secrets.GITHUB_TOKEN }}" --outputDir "ReleasePackage"

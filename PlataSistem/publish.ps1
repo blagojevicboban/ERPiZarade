@@ -89,5 +89,28 @@ Write-Host "   USPEŠNO KREIRAN VELOPACK INSTALACIONI PAKET!           " -Foregr
 Write-Host "==========================================================" -ForegroundColor Green
 Write-Host "Fajlovi se nalaze u folderu: $releasePackageDir" -ForegroundColor White
 Write-Host "Instalacioni fajl: PlataSistem-Setup-$version.exe" -ForegroundColor White
-Write-Host "Uputstvo: Prekopiraj SVE fajlove iz ReleasePackage foldera na tvoj lokalni test server ili URL (C:\PlataUpdates)!" -ForegroundColor Yellow
 Write-Host "==========================================================" -ForegroundColor Green
+
+Write-Host ""
+$uploadToGithub = Read-Host "Da li želiš automatski upload na GitHub Releases? (y/n)"
+if ($uploadToGithub -eq 'y' -or $uploadToGithub -eq 'Y') {
+    Write-Host "NAPOMENA: Za upload ti je potreban GitHub token koji ima prava PISANJA (repo scope)!" -ForegroundColor Yellow
+    $githubToken = Read-Host "Unesi GitHub token za upload"
+    
+    if ([string]::IsNullOrWhiteSpace($githubToken)) {
+        Write-Host "Preskačem upload jer token nije unet." -ForegroundColor Yellow
+    } else {
+        Write-Host "Pokrećem upload na GitHub..." -ForegroundColor Yellow
+        $uploadArgs = @(
+            "upload", "github",
+            "--repoUrl", "https://github.com/blagojevicboban/ObracunZarada",
+            "--publish",
+            "--releaseName", $version,
+            "--token", $githubToken,
+            "--outputDir", $releasePackageDir
+        )
+        & vpk $uploadArgs
+        
+        Write-Host "Upload uspešno završen!" -ForegroundColor Green
+    }
+}

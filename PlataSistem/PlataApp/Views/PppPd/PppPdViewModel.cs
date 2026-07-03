@@ -28,13 +28,13 @@ public class PppPdViewModel : INotifyPropertyChanged
     private ObservableCollection<ObracunPlate> _obracuni = [];
     
     // Company / Payer info
-    private string _pib = "100224119";
-    private string _maticniBroj = "07198305";
-    private string _naziv = "ZAVOD ZA POLJOPRIVREDU PIROT";
-    private string _telefon = "010 343120";
-    private string _adresa = "Srpskih vladara 98             18300 Pirot";
-    private string _email = "pirot@psss.rs";
-    private string _sediste = "079";
+    private string _pib = "";
+    private string _maticniBroj = "";
+    private string _naziv = "NAZIV FIRME";
+    private string _telefon = "";
+    private string _adresa = "";
+    private string _email = "";
+    private string _sediste = "";
     
     // Declaration settings
     private DateTime _datumPlacanja = DateTime.Now;

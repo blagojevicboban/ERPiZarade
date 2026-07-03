@@ -32,12 +32,25 @@ public class PlatniSpisakDocument
         page.PageColor(Colors.White);
         page.DefaultTextStyle(x => x.FontSize(7.8f).FontFamily("Calibri"));
 
+        string nazivFirme = "NAZIV FIRME";
+        try
+        {
+            using var db = PlataData.PlataDbContext.Create(PlataApp.AppConfig.DbPath);
+            var firma = db.Firme.FirstOrDefault();
+            if (firma != null)
+            {
+                nazivFirme = (firma.Naziv + " " + firma.Grad).Trim().ToUpper();
+                if (string.IsNullOrWhiteSpace(nazivFirme)) nazivFirme = "NAZIV FIRME";
+            }
+        }
+        catch {}
+
         // Header
         page.Header().Row(row =>
         {
             row.RelativeItem().Column(col =>
             {
-                col.Item().Text("ZAVOD ZA POLJOPRIVREDU PIROT").Bold().FontSize(10).FontColor(Colors.Indigo.Darken4);
+                col.Item().Text(nazivFirme).Bold().FontSize(10).FontColor(Colors.Indigo.Darken4);
                 col.Item().Text($"PLATNI SPISAK ZARADA ZA { _mesec:D2}/{_godina}").Bold().FontSize(9).FontColor(Colors.Indigo.Medium);
                 col.Item().Text($"Filter radne jedinice: {_rjFilter} • Grupisanje po RJ: {(_poJedinicama ? "DA" : "NE")}").FontSize(7.0f).FontColor(Colors.Grey.Darken2);
             });
@@ -213,7 +226,7 @@ public class PlatniSpisakDocument
                 decimal gDopP = _obracuni.Sum(o => o.UkupniDoprinosiPoslodavca);
                 decimal gBruto2 = _obracuni.Sum(o => o.Bruto2);
 
-                WriteSumRow(table, "UKUPNA SUMA ZAVODA", gRedovni, gOdmor, gBolovanje, gPraznikNerd, gPraznikRad, gNocni, gNedelja, gPrekovremeni, gUkupni,
+                WriteSumRow(table, "UKUPNA SUMA FIRME", gRedovni, gOdmor, gBolovanje, gPraznikNerd, gPraznikRad, gNocni, gNedelja, gPrekovremeni, gUkupni,
                     gBruto, gOsn, gPor, gDop, gNeto1, gObu, gIsp, gDopP, gBruto2, Colors.Indigo.Lighten5);
             });
         });
@@ -221,7 +234,7 @@ public class PlatniSpisakDocument
         // Footer
         page.Footer().AlignCenter().Text(text =>
         {
-            text.Span("Zavod za poljoprivredu Pirot • Knjigovodstvena evidencija zarada • Stranica ").FontSize(7.0f).FontColor(Colors.Grey.Darken1);
+            text.Span("Knjigovodstvena evidencija zarada • Stranica ").FontSize(7.0f).FontColor(Colors.Grey.Darken1);
             text.CurrentPageNumber().FontSize(7.0f).FontColor(Colors.Grey.Darken1);
             text.Span(" od ").FontSize(7.0f).FontColor(Colors.Grey.Darken1);
             text.TotalPages().FontSize(7.0f).FontColor(Colors.Grey.Darken1);

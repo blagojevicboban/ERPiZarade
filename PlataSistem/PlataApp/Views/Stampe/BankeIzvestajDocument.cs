@@ -24,7 +24,25 @@ public class BankeIzvestajDocument
         _mesec = mesec;
         _rjFilter = rjFilter;
         _bankeInfo = bankeInfo;
-        _nazivFirme = string.IsNullOrWhiteSpace(nazivFirme) ? "ZAVOD ZA POLJOPRIVREDU PIROT" : nazivFirme;
+        if (string.IsNullOrWhiteSpace(nazivFirme))
+        {
+            _nazivFirme = "NAZIV FIRME";
+            try
+            {
+                using var db = PlataData.PlataDbContext.Create(PlataApp.AppConfig.DbPath);
+                var firma = db.Firme.FirstOrDefault();
+                if (firma != null)
+                {
+                    _nazivFirme = (firma.Naziv + " " + firma.Grad).Trim().ToUpper();
+                    if (string.IsNullOrWhiteSpace(_nazivFirme)) _nazivFirme = "NAZIV FIRME";
+                }
+            }
+            catch {}
+        }
+        else
+        {
+            _nazivFirme = nazivFirme;
+        }
     }
 
     public void Build(PageDescriptor page)

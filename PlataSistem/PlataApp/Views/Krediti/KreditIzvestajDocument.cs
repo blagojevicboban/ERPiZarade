@@ -32,12 +32,25 @@ public class KreditIzvestajDocument
         page.PageColor(Colors.White);
         page.DefaultTextStyle(x => x.FontSize(9).FontFamily("Calibri"));
 
+        string nazivFirme = "NAZIV FIRME";
+        try
+        {
+            using var db = PlataData.PlataDbContext.Create(PlataApp.AppConfig.DbPath);
+            var firma = db.Firme.FirstOrDefault();
+            if (firma != null)
+            {
+                nazivFirme = (firma.Naziv + " " + firma.Grad).Trim().ToUpper();
+                if (string.IsNullOrWhiteSpace(nazivFirme)) nazivFirme = "NAZIV FIRME";
+            }
+        }
+        catch {}
+
         // Header
         page.Header().Row(row =>
         {
             row.RelativeItem().Column(col =>
             {
-                col.Item().Text("ZAVOD ZA POLJOPRIVREDU PIROT").Bold().FontSize(12).FontColor(Colors.Indigo.Darken4);
+                col.Item().Text(nazivFirme).Bold().FontSize(12).FontColor(Colors.Indigo.Darken4);
                 col.Item().Text($"ZBIRNI MESEČNI IZVEŠTAJ KREDITA I OBUSTAVA").Bold().FontSize(11).FontColor(Colors.Indigo.Medium);
                 col.Item().Text($"Obračunski period: {_mesec:D2}/{_godina}").FontSize(9).FontColor(Colors.Grey.Darken2);
             });
@@ -127,7 +140,7 @@ public class KreditIzvestajDocument
         // Footer
         page.Footer().AlignCenter().Text(text =>
         {
-            text.Span("Zavod za poljoprivredu Pirot • Knjigovodstvena evidencija obustava • Stranica ").FontSize(8).FontColor(Colors.Grey.Darken1);
+            text.Span("Knjigovodstvena evidencija obustava • Stranica ").FontSize(8).FontColor(Colors.Grey.Darken1);
             text.CurrentPageNumber().FontSize(8).FontColor(Colors.Grey.Darken1);
             text.Span(" od ").FontSize(8).FontColor(Colors.Grey.Darken1);
             text.TotalPages().FontSize(8).FontColor(Colors.Grey.Darken1);

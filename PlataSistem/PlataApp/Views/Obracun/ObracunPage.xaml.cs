@@ -159,20 +159,35 @@ public partial class ObracunPage : Page
                 }
                 catch {}
 
+                string nazivFirme = "NAZIV FIRME";
+                string podaciFirme = "PIB: -, MB: -";
+                try
+                {
+                    using var db = PlataData.PlataDbContext.Create(PlataApp.AppConfig.DbPath);
+                    var firma = db.Firme.FirstOrDefault();
+                    if (firma != null)
+                    {
+                        nazivFirme = (firma.Naziv + " " + firma.Grad).Trim().ToUpper();
+                        if (string.IsNullOrWhiteSpace(nazivFirme)) nazivFirme = "NAZIV FIRME";
+                        podaciFirme = $"(PIB: {firma.Pib ?? "-"}, MB: {firma.Mb ?? "-"})";
+                    }
+                }
+                catch {}
+
                 // Header
                 page.Header().Row(row =>
                 {
                     row.RelativeItem().Column(col =>
                     {
-                        col.Item().Text("ZAVOD ZA POLJOPRIVREDU").Bold().FontSize(12).FontColor(Colors.Indigo.Darken4);
-                        col.Item().Text("PIROT (PIB: 100224119, MB: 07198305)").FontSize(8).FontColor(Colors.Grey.Darken1);
+                        col.Item().Text(nazivFirme).Bold().FontSize(12).FontColor(Colors.Indigo.Darken4);
+                        col.Item().Text(podaciFirme).FontSize(8).FontColor(Colors.Grey.Darken1);
                         col.Item().Text($"OBRAČUN ZARADE za {o.Mesec:D2}/{o.Godina}").Bold().FontSize(11).FontColor(Colors.Indigo.Medium);
                     });
                     
                     row.ConstantItem(180).AlignRight().Column(col =>
                     {
                         col.Item().Text($"Datum štampe: {DateTime.Now:dd.MM.yyyy}").FontSize(8).FontColor(Colors.Grey.Darken1);
-                        col.Item().Text("ZAVOD ZA POLJOPRIVREDU PIROT").Bold().FontSize(8).FontColor(Colors.Indigo.Darken4);
+                        col.Item().Text(nazivFirme).Bold().FontSize(8).FontColor(Colors.Indigo.Darken4);
                     });
                 });
 
@@ -537,10 +552,21 @@ public partial class ObracunPage : Page
             {
                 var xmlService = new Services.XmlExportService();
                 
-                // standardni podaci za Zavod za poljoprivredu Pirot
-                string pib = "100224119";
-                string maticniBroj = "07198305";
-                string naziv = "ZAVOD ZA POLJOPRIVREDU PIROT";
+                string pib = "";
+                string maticniBroj = "";
+                string naziv = "NAZIV FIRME";
+                try
+                {
+                    using var db = PlataData.PlataDbContext.Create(PlataApp.AppConfig.DbPath);
+                    var firma = db.Firme.FirstOrDefault();
+                    if (firma != null)
+                    {
+                        pib = firma.Pib ?? "";
+                        maticniBroj = firma.Mb ?? "";
+                        naziv = firma.Naziv?.ToUpper() ?? "";
+                    }
+                }
+                catch {}
 
                 var xmlSadrzaj = xmlService.GeneratePppPdXml(
                     vm.Obracuni.ToList(),

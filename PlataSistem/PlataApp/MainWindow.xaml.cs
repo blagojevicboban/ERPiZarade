@@ -41,11 +41,13 @@ public partial class MainWindow : Window
     {
         try
         {
-            // OVO JE LOKACIJA GDE SE NALAZE UPDATE FAJLOVI
-            // Za potrebe testiranja koristićemo neki lokalni folder, a ti ovde možeš staviti URL (npr. GitHub Releases URL ili svoj web server)
-            string updateUrl = @"C:\PlataUpdates"; 
+            // Konfiguracija za tvoj privatni GitHub repozitorijum
+            string repoUrl = "https://github.com/blagojevicboban/ObracunZarada"; 
+            // OBAVEZNO KORISTI TOKEN SA READ-ONLY PRAVIMA (nikako write token)!
+            string token = "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";
             
-            var mgr = new Velopack.UpdateManager(updateUrl);
+            var source = new Velopack.Sources.GithubSource(repoUrl, token, false);
+            var mgr = new Velopack.UpdateManager(source);
             var newVersion = await mgr.CheckForUpdatesAsync();
             if (newVersion != null)
             {

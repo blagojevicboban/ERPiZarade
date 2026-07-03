@@ -38,13 +38,7 @@ jobs:
               New-Item -ItemType Directory -Path "publish_output\Resources\Help" -Force | Out-Null
               Copy-Item -Path "PlataApp\Resources\Help\*" -Destination "publish_output\Resources\Help" -Recurse -Force
           }
-          
-          if (Test-Path "Baze") {
-              New-Item -ItemType Directory -Path "publish_output\Baze" -Force | Out-Null
-              Get-ChildItem -Path "Baze" -File -Filter "firma_123_*.db" | ForEach-Object {
-                  Copy-Item -Path $_.FullName -Destination "publish_output\Baze" -Force
-              }
-          }
+
 
       - name: Instalacija Velopack CLI
         run: dotnet tool install -g vpk

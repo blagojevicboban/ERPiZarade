@@ -120,6 +120,32 @@ public partial class ObracuniPage : Page
             OtvorPeriod(selected);
         }
     }
+    private void BtnZakljucajSve_Click(object sender, RoutedEventArgs e)
+    {
+        var res = MessageBox.Show("Da li ste sigurni da želite da zaključate SVE otključane obračunske periode?\n\nNakon ovoga, izmena podataka u starim obračunima neće biti moguća.",
+                                  "Potvrda", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+        if (res == MessageBoxResult.Yes)
+        {
+            try
+            {
+                StatusMessage.Text = "Zaključavanje...";
+                
+                // Set Zakljucan = 1 for all rows that are currently 0 or NULL
+                _db.Database.ExecuteSqlRaw("UPDATE ObracuniPlata SET Zakljucan = 1 WHERE Zakljucan = 0 OR Zakljucan IS NULL");
+                
+                StatusMessage.Text = "Svi obračunski periodi su uspešno zaključani.";
+                MessageBox.Show("Svi obračunski periodi su uspešno zaključani.", "Uspeh", MessageBoxButton.OK, MessageBoxImage.Information);
+                
+                UcitajPeriodiSummary(); // Osveži tabelu
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Greška prilikom zaključavanja: {ex.Message}", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+                StatusMessage.Text = "Greška prilikom zaključavanja.";
+            }
+        }
+    }
 
     private void BtnZakljucaj_Click(object sender, RoutedEventArgs e)
     {

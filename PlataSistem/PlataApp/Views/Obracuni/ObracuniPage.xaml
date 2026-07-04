@@ -117,6 +117,21 @@
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
                         <DataGridTextColumn Header="Broj zaposlenih" Binding="{Binding BrojRadnika}" Width="130" ElementStyle="{StaticResource CenterAlignedCell}"/>
+                        <DataGridTemplateColumn Header="Status" Width="100">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border x:Name="StatusBorder" CornerRadius="4" Padding="8,3" VerticalAlignment="Center" HorizontalAlignment="Center" Background="#10B981">
+                                        <TextBlock x:Name="StatusText" Text="🔓 Otvoreno" FontSize="11" FontWeight="Bold" Foreground="White"/>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Zakljucan}" Value="True">
+                                            <Setter TargetName="StatusBorder" Property="Background" Value="#EF4444"/>
+                                            <Setter TargetName="StatusText" Property="Text" Value="🔒 Zaključano"/>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                         <DataGridTextColumn Header="Vrednost boda" Binding="{Binding VrednostBoda, StringFormat=N4}" Width="130" ElementStyle="{StaticResource RightAlignedCell}"/>
                         <DataGridTextColumn Header="Ukupno Bruto" Binding="{Binding UkupnoBruto, StringFormat=N2}" Width="*" ElementStyle="{StaticResource RightAlignedCell}"/>
                         <DataGridTextColumn Header="Ukupno Bruto 2" Binding="{Binding UkupnoBruto2, StringFormat=N2}" Width="*" ElementStyle="{StaticResource RightAlignedCell}"/>
@@ -124,7 +139,7 @@
                         <DataGridTextColumn Header="Datum obračuna" Binding="{Binding PoslednjiDatum, StringFormat={}{0:dd.MM.yyyy}}" Width="180" ElementStyle="{StaticResource CenterAlignedCell}"/>
                         
                         <!-- Akciona kolona -->
-                        <DataGridTemplateColumn Width="185">
+                        <DataGridTemplateColumn Width="280">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -134,12 +149,28 @@
                                                 Margin="0,0,6,0"
                                                 VerticalAlignment="Center"
                                                 Click="BtnOtvori_Click"/>
-                                        <Button Content="🗑️ Obriši" 
+                                        <Button x:Name="BtnLock"
+                                                Content="🔒 Zaključaj" 
+                                                Style="{StaticResource SecondaryButton}" 
+                                                Padding="10,2" 
+                                                Margin="0,0,6,0"
+                                                VerticalAlignment="Center"
+                                                Click="BtnZakljucaj_Click"/>
+                                        <Button x:Name="BtnDelete"
+                                                Content="🗑️ Obriši" 
                                                 Style="{StaticResource DestructiveButton}" 
                                                 Padding="10,2" 
                                                 VerticalAlignment="Center"
                                                 Click="BtnObrisi_Click"/>
                                     </StackPanel>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Zakljucan}" Value="True">
+                                            <Setter TargetName="BtnLock" Property="Content" Value="🔓 Otključaj"/>
+                                            <!-- Onemoguci brisanje ako je zakljucano -->
+                                            <Setter TargetName="BtnDelete" Property="IsEnabled" Value="False"/>
+                                            <Setter TargetName="BtnDelete" Property="Opacity" Value="0.5"/>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>

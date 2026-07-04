@@ -326,7 +326,7 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Content="🔄 Resetuj sate" x:Name="BtnResetuj" Style="{StaticResource SecondaryButton}" Width="130" Margin="0,0,12,0" Click="BtnResetuj_Click"/>
                     <Button Content="Otkaži" Style="{StaticResource SecondaryButton}" Width="100" Margin="0,0,12,0" Click="BtnOtkazi_Click"/>
-                    <Button Content="🧮  Izračunaj i sačuvaj" Style="{StaticResource PrimaryButton}" Padding="16,8" Click="BtnIzracunaj_Click"/>
+                    <Button x:Name="BtnSacuvaj" Content="🧮  Izračunaj i sačuvaj" Style="{StaticResource PrimaryButton}" Padding="16,8" Click="BtnIzracunaj_Click"/>
                 </StackPanel>
             </Grid>
         </Border>

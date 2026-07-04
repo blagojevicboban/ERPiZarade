@@ -17,6 +17,8 @@ public class ObracunPlate
 
     public int Godina { get; set; }
     public int Mesec { get; set; }
+    
+    public bool Zakljucan { get; set; }
 
     // ── BRUTO ──────────────────────────────────────────────
     [Column(TypeName = "decimal(14,2)")]

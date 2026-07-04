@@ -128,6 +128,9 @@ public class PlataDbContext : DbContext
         try { ctx.Database.ExecuteSqlRaw("ALTER TABLE Radnici ADD COLUMN MinuliRadGodine INTEGER NOT NULL DEFAULT 0;"); } catch { }
         try { ctx.Database.ExecuteSqlRaw("ALTER TABLE Radnici ADD COLUMN Operativni TEXT NOT NULL DEFAULT '';"); } catch { }
 
+        // ObracuniPlata: Zakljucavanje obracuna
+        try { ctx.Database.ExecuteSqlRaw("ALTER TABLE ObracuniPlata ADD COLUMN Zakljucan INTEGER NOT NULL DEFAULT 0;"); } catch { }
+
         // Migracija starih baza: BrojRadnika = Id (stara arhitektura)
         try { ctx.Database.ExecuteSqlRaw("UPDATE Radnici SET BrojRadnika = Id WHERE BrojRadnika = 0 OR BrojRadnika IS NULL;"); } catch { }
 

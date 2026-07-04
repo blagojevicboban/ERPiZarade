@@ -55,7 +55,8 @@ public partial class ObracuniPage : Page
                             SUM(o.BrutoZarada + o.BrutoBolovanje) as UkupnoBruto, 
                             SUM(o.NetoIsplata + o.PorezNaDohodak + o.DoprinosPioRadnik + o.DoprinosZdravstvoRadnik + o.DoprinosNezaposlenostRadnik + o.KreditObustava + o.Samodoprinosi + o.DoprinosPioPoslodavac + o.DoprinosZdravstvoPoslodavac + o.DoprinosNezaposlenostPoslodavac) as UkupnoBruto2,
                             MAX(o.DatumObracuna) as PoslednjiDatum,
-                            COALESCE(MAX(p.VrBoda), 1860.34) as VrBoda
+                            COALESCE(MAX(p.VrBoda), 1860.34) as VrBoda,
+                            MAX(CAST(o.Zakljucan AS INTEGER)) as Zakljucan
                         FROM ObracuniPlata o
                         LEFT JOIN Porezi p ON o.Godina = p.Godina AND o.Mesec = p.Mesec
                         GROUP BY o.Godina, o.Mesec";
@@ -73,7 +74,8 @@ public partial class ObracuniPage : Page
                                 UkupnoBruto = reader.IsDBNull(4) ? 0 : reader.GetDecimal(4),
                                 UkupnoBruto2 = reader.IsDBNull(5) ? 0 : reader.GetDecimal(5),
                                 PoslednjiDatum = reader.IsDBNull(6) ? DateTime.MinValue : reader.GetDateTime(6),
-                                VrednostBoda = reader.IsDBNull(7) ? 1860.34m : reader.GetDecimal(7)
+                                VrednostBoda = reader.IsDBNull(7) ? 1860.34m : reader.GetDecimal(7),
+                                Zakljucan = reader.IsDBNull(8) ? false : (reader.GetInt32(8) == 1)
                             });
                         }
                     }
@@ -119,10 +121,44 @@ public partial class ObracuniPage : Page
         }
     }
 
+    private void BtnZakljucaj_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is ObracunPeriodSummary row)
+        {
+            bool noviStatus = !row.Zakljucan;
+            string akcija = noviStatus ? "zaključate" : "otključate";
+
+            var res = MessageBox.Show($"Da li ste sigurni da želite da {akcija} obračunski period {row.PeriodStr}?",
+                                      "Potvrda", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (res == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    _db.Database.ExecuteSqlRaw("UPDATE ObracuniPlata SET Zakljucan = {0} WHERE Godina = {1} AND Mesec = {2}",
+                        noviStatus ? 1 : 0, row.Godina, row.Mesec);
+                    
+                    StatusMessage.Text = $"Period {row.PeriodStr} je uspešno {(noviStatus ? "zaključan" : "otključan")}.";
+                    UcitajPeriodiSummary(); // Osveži tabelu
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Greška prilikom ažuriranja statusa: {ex.Message}", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+    }
+
     private async void BtnObrisi_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.DataContext is ObracunPeriodSummary selected)
         {
+            if (selected.Zakljucan)
+            {
+                MessageBox.Show("Ovaj period je zaključan i ne može se obrisati.", "Upozorenje", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             var rez = MessageBox.Show(
                 $"Da li ste sigurni da želite da obrišete kompletan obračun za period {selected.PeriodStr}?\n\n" +
                 "Ova akcija će obrisati sve obračune plata i sačuvane radne sate za ovaj mesec, i vratiti rate kredita za zaposlene. Akcija je nepovratna!",
@@ -484,6 +520,7 @@ public class ObracunPeriodSummary
     public decimal UkupnoBruto { get; set; }
     public decimal UkupnoBruto2 { get; set; }
     public DateTime PoslednjiDatum { get; set; }
+    public bool Zakljucan { get; set; }
 
     public bool IsActive => AppConfig.ActiveGodina == Godina && AppConfig.ActiveMesec == Mesec;
 }

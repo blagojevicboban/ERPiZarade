@@ -263,6 +263,24 @@ public partial class NoviObracunWindow : Window
             {
                 TxtObavestenje.Text = $"🆕 Nema sačuvanih sati za period {mesec}.{godina}. Učitane su podrazumevane vrednosti.";
             }
+
+            // Proveri da li je period zaključan
+            bool isLocked = _db.ObracuniPlata.Any(o => o.Godina == godina && o.Mesec == mesec && o.Zakljucan);
+            if (isLocked)
+            {
+                TxtObavestenje.Text = "🔒 Ovaj obračunski period je zaključan. Nisu dozvoljene izmene.";
+                TxtObavestenje.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(220, 38, 38)); // Crvena
+                BtnSacuvaj.IsEnabled = false;
+                BtnResetuj.IsEnabled = false;
+                GridRadniciSati.IsReadOnly = true;
+            }
+            else
+            {
+                TxtObavestenje.Foreground = (System.Windows.Media.Brush)FindResource("TextSecondaryBrush");
+                BtnSacuvaj.IsEnabled = true;
+                BtnResetuj.IsEnabled = true;
+                GridRadniciSati.IsReadOnly = false;
+            }
         }
         catch (Exception ex)
         {

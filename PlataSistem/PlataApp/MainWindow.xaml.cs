@@ -14,6 +14,9 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
+        var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+        VersionText.Text = $"v{version?.ToString(3)}  •  {DateTime.Now.Year}";
+
         // Primeni podešavanje maksimizovanog pokretanja
         if (UserSettings.Instance.PokretanjeMaximizovano)
             WindowState = WindowState.Maximized;
@@ -51,18 +54,9 @@ public partial class MainWindow : Window
             var newVersion = await mgr.CheckForUpdatesAsync();
             if (newVersion != null)
             {
-                // Prikaži obaveštenje korisniku
-                var result = MessageBox.Show(
-                    "Nova verzija je dostupna. Da li želite da je preuzmete i instalirate sada?",
-                    "Ažuriranje aplikacije", 
-                    MessageBoxButton.YesNo, 
-                    MessageBoxImage.Information);
-
-                if (result == MessageBoxResult.Yes)
-                {
-                    await mgr.DownloadUpdatesAsync(newVersion);
-                    mgr.ApplyUpdatesAndRestart(newVersion);
-                }
+                var dialog = new UpdateDialog(newVersion, mgr);
+                dialog.Owner = this;
+                dialog.ShowDialog();
             }
         }
         catch (Exception ex)

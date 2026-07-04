@@ -144,7 +144,7 @@
                         Click="BtnHelp_Click"/>
 
                 <!-- Verzija na dnu -->
-                <TextBlock DockPanel.Dock="Bottom" Text="v1.0.0  •  2026"
+                <TextBlock x:Name="VersionText" DockPanel.Dock="Bottom" Text="v1.0.0  •  2026"
                            FontSize="11" Foreground="#546E7A"
                            HorizontalAlignment="Center" Margin="0,12,0,16"/>
 

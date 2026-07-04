@@ -102,6 +102,13 @@
                         </Button>
                     </Grid>
                 </Border>
+                
+                <Button Grid.Column="6" Content="🔒 Zaključaj sve" 
+                        Command="{Binding ZakljucajSveCommand}" 
+                        Style="{StaticResource SecondaryButton}" 
+                        HorizontalAlignment="Right" VerticalAlignment="Center" 
+                        Padding="12,5"
+                        ToolTip="Zaključava sve prikazane obračune za ovaj mesec, čime se sprečavaju bilo kakve dalje izmene."/>
             </Grid>
         </Border>
 

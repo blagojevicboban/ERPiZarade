@@ -38,6 +38,9 @@ public class ObracunViewModel : INotifyPropertyChanged
             await LoadObracuneAsync();
         });
         
+        ZakljucajSveCommand = new RelayCommand(async _ => await ZakljucajSveAsync());
+
+        
         // Inicijalizuj mesece
         Meseci = new ObservableCollection<int>(Enumerable.Range(1, 12));
         SelectedMesec = AppConfig.ActiveMesec ?? DateTime.Now.Month;
@@ -187,6 +190,41 @@ public class ObracunViewModel : INotifyPropertyChanged
 
     public ICommand LoadCommand { get; }
     public ICommand ClearFilterCommand { get; }
+    public ICommand ZakljucajSveCommand { get; }
+
+    public async Task ZakljucajSveAsync()
+    {
+        try
+        {
+            if (Obracuni == null || !Obracuni.Any())
+            {
+                System.Windows.MessageBox.Show("Nema obračuna za zaključavanje u ovom periodu.", "Informacija", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                return;
+            }
+
+            var res = System.Windows.MessageBox.Show($"Da li ste sigurni da želite da zaključate sve obračune ({Obracuni.Count}) za {SelectedMesec}.{SelectedGodina}?\n\nNakon ovoga, izmena podataka u ovim obračunima neće biti moguća.",
+                                      "Potvrda", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question);
+            if (res == System.Windows.MessageBoxResult.Yes)
+            {
+                StatusText = "Zaključavanje obračuna...";
+                
+                // Koristimo raw sql da izbegnemo problem sa EF core cachingom
+                await _db.Database.ExecuteSqlRawAsync(
+                    "UPDATE ObracuniPlata SET Zakljucan = 1 WHERE Godina = {0} AND Mesec = {1}", 
+                    SelectedGodina, SelectedMesec);
+
+                await LoadObracuneAsync();
+                StatusText = $"Uspešno zaključano svih {Obracuni.Count} obračuna za {SelectedMesec}.{SelectedGodina}.";
+                
+                System.Windows.MessageBox.Show(StatusText, "Uspeh", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Greška pri zaključavanju: {ex.Message}";
+            System.Windows.MessageBox.Show(StatusText, "Greška", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        }
+    }
 
     public async Task LoadObracuneAsync()
     {

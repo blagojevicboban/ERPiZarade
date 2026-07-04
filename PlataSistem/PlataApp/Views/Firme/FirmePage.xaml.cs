@@ -168,6 +168,7 @@ public partial class FirmePage : Page
         FormFieldsPanel.IsEnabled = false;
 
         TxtNaziv.Clear();
+        TxtDbPath.Clear();
         TxtPib.Clear();
         TxtMb.Clear();
         TxtAdresa.Clear();
@@ -181,7 +182,7 @@ public partial class FirmePage : Page
         AzurirajDugmadBara();
     }
 
-    private void PopuniFormu(Firma f)
+    private void PopuniFormu(FirmaGridItem fItem)
     {
         FormScrollViewer.Visibility = Visibility.Visible;
         NoSelectionPlaceholder.Visibility = Visibility.Collapsed;
@@ -190,7 +191,9 @@ public partial class FirmePage : Page
 
         FormHeaderTitle.Text = "Detalji firme";
 
+        var f = fItem.OriginalFirma;
         TxtNaziv.Text = f.Naziv;
+        TxtDbPath.Text = fItem.DbPath;
         TxtPib.Text = f.Pib;
         TxtMb.Text = f.Mb;
         TxtAdresa.Text = f.Adresa;
@@ -228,7 +231,7 @@ public partial class FirmePage : Page
 
         if (_selectedItem != null)
         {
-            PopuniFormu(_selectedItem.OriginalFirma);
+            PopuniFormu(_selectedItem);
         }
         else
         {
@@ -257,6 +260,7 @@ public partial class FirmePage : Page
         FormHeaderTitle.Text = "Unos nove firme";
 
         TxtNaziv.Clear();
+        TxtDbPath.Clear();
         TxtPib.Clear();
         TxtMb.Clear();
         TxtAdresa.Clear();
@@ -294,7 +298,7 @@ public partial class FirmePage : Page
         }
         else if (_selectedItem != null)
         {
-            PopuniFormu(_selectedItem.OriginalFirma);
+            PopuniFormu(_selectedItem);
         }
     }
 

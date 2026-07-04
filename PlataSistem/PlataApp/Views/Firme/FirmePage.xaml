@@ -95,6 +95,7 @@
                         <DataGridTextColumn Header="Matični broj" Binding="{Binding Mb}" Width="110"/>
                         <DataGridTextColumn Header="Grad" Binding="{Binding Grad}" Width="120"/>
                         <DataGridTextColumn Header="Telefon" Binding="{Binding Telefon}" Width="120"/>
+                        <DataGridTextColumn Header="Fajl baze" Binding="{Binding DbPath}" Width="250"/>
                         <DataGridTemplateColumn Header="Aktivna" Width="80">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -153,6 +154,12 @@
                                 <StackPanel Margin="0,0,0,12">
                                     <TextBlock Text="Naziv firme *" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                                     <TextBox x:Name="TxtNaziv" Height="32"/>
+                                </StackPanel>
+
+                                <!-- Fajl baze -->
+                                <StackPanel Margin="0,0,0,12">
+                                    <TextBlock Text="Fajl baze (samo za pregled)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                    <TextBox x:Name="TxtDbPath" Height="32" IsReadOnly="True" Background="#F3F4F6"/>
                                 </StackPanel>
 
                                 <!-- PIB i MB -->

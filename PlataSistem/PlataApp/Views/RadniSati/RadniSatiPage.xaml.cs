@@ -88,9 +88,31 @@ public partial class RadniSatiPage : Page
             GridBorder.Visibility = Visibility.Visible;
             ActionBarButtons.Visibility = Visibility.Visible;
 
+            // Proveri da li je obračun za ovaj period zaključan
+            bool isLocked = _db.ObracuniPlata.Any(o => o.Godina == godina && o.Mesec == mesec && o.Zakljucan);
+            if (isLocked)
+            {
+                StatusMessage.Text = $"🔒 Period {periodNaziv} je ZAKLJUČAN. Izmene radnih sati nisu dozvoljene.";
+                StatusMessage.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(220, 38, 38)); // Crvena
+                
+                ActionBarButtons.IsEnabled = false;
+                ToolbarBorder.IsEnabled = false;
+                GridRadniSati.IsReadOnly = true;
+            }
+            else
+            {
+                StatusMessage.Foreground = (System.Windows.Media.Brush)FindResource("TextSecondaryBrush");
+                ActionBarButtons.IsEnabled = true;
+                ToolbarBorder.IsEnabled = true;
+                GridRadniSati.IsReadOnly = false;
+            }
+
             FilterList();
 
-            StatusMessage.Text = $"Pronađeno {_allSati.Count} zapisa o radnim satima zaposlenih za period {periodNaziv}.";
+            if (!isLocked)
+            {
+                StatusMessage.Text = $"Pronađeno {_allSati.Count} zapisa o radnim satima zaposlenih za period {periodNaziv}.";
+            }
         }
         catch (Exception ex)
         {

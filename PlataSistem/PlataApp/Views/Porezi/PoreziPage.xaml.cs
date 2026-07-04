@@ -244,6 +244,13 @@ public partial class PoreziPage : Page
     {
         if (_currentParams == null) return;
 
+        bool isLocked = _db.ObracuniPlata.Any(o => o.Godina == _currentParams.Godina && o.Mesec == _currentParams.Mesec && o.Zakljucan);
+        if (isLocked)
+        {
+            MessageBox.Show("Obračunski period je ZAKLJUČAN. Izmene parametara nisu dozvoljene.", "Upozorenje", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
         try
         {
             _currentParams.Zarada = ParseDecimal(TxtZarada.Text);

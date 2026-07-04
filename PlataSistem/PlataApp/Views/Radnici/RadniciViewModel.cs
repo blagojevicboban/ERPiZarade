@@ -432,6 +432,16 @@ public class RadniciViewModel : INotifyPropertyChanged
     private async Task SaveAsync()
     {
         if (EditingRadnik == null) return;
+        
+        int godina = AppConfig.ActiveGodina ?? DateTime.Now.Year;
+        int mesec = AppConfig.ActiveMesec ?? DateTime.Now.Month;
+        bool isLocked = await _db.ObracuniPlata.AnyAsync(o => o.Godina == godina && o.Mesec == mesec && o.Zakljucan);
+        if (isLocked)
+        {
+            System.Windows.MessageBox.Show("Obračunski period je ZAKLJUČAN. Izmene podataka o radnicima u ovom periodu nisu dozvoljene.", "Upozorenje", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+            return;
+        }
+
         try
         {
             // Validacija JMBG-a (ako je uključena u podešavanjima)
@@ -445,9 +455,6 @@ public class RadniciViewModel : INotifyPropertyChanged
                 StatusPoruka = $"Greška pri čuvanju: {jmbgError}";
                 return;
             }
-
-            int godina = AppConfig.ActiveGodina ?? DateTime.Now.Year;
-            int mesec = AppConfig.ActiveMesec ?? DateTime.Now.Month;
 
             if (EditingRadnik.Id == 0)
             {
@@ -499,6 +506,16 @@ public class RadniciViewModel : INotifyPropertyChanged
     private async Task DeleteAsync()
     {
         if (SelectedRadnik == null) return;
+        
+        int godina = AppConfig.ActiveGodina ?? DateTime.Now.Year;
+        int mesec = AppConfig.ActiveMesec ?? DateTime.Now.Month;
+        bool isLocked = await _db.ObracuniPlata.AnyAsync(o => o.Godina == godina && o.Mesec == mesec && o.Zakljucan);
+        if (isLocked)
+        {
+            System.Windows.MessageBox.Show("Obračunski period je ZAKLJUČAN. Brisanje (deaktivacija) radnika u ovom periodu nije dozvoljeno.", "Upozorenje", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+            return;
+        }
+
         var result = System.Windows.MessageBox.Show(
             $"Deaktivirate radnika {SelectedRadnik.ImeIPrezime}?",
             "Potvrda", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning);

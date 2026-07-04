@@ -309,12 +309,13 @@ public partial class ObracuniPage : Page
 
         try
         {
-            // Učitaj sve obračune gde su doprinosi poslodavca = 0
+            // Učitaj sve obračune gde su doprinosi poslodavca = 0 i koji nisu zaključani
             var obracuniZaAzuriranje = await _db.ObracuniPlata
                 .Include(o => o.Radnik)
                 .Where(o => o.DoprinosPioPoslodavac == 0
                          && o.DoprinosZdravstvoPoslodavac == 0
-                         && o.DoprinosNezaposlenostPoslodavac == 0)
+                         && o.DoprinosNezaposlenostPoslodavac == 0
+                         && !o.Zakljucan)
                 .ToListAsync();
 
             if (obracuniZaAzuriranje.Count == 0)

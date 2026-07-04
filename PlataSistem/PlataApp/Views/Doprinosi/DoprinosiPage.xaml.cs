@@ -291,6 +291,13 @@ public partial class DoprinosiPage : Page
     {
         if (_selectedDoprinos == null) return;
 
+        bool isLocked = _db.ObracuniPlata.Any(o => o.Godina == _selectedDoprinos.Godina && o.Mesec == _selectedDoprinos.Mesec && o.Zakljucan);
+        if (isLocked)
+        {
+            MessageBox.Show("Obračunski period je ZAKLJUČAN. Izmene parametara nisu dozvoljene.", "Upozorenje", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
         try
         {
             _selectedDoprinos.Naziv = TxtDopNaziv.Text.Trim();

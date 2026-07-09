@@ -39,3 +39,7 @@ PLATA/
 *.zip
 *.rar
 *.arj
+
+# --- Baze folder -----------------------------------
+Baze/
+/Baze/

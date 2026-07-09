@@ -1,62 +1,119 @@
-# PlataSistem (Obračun Zarada)
+# 💼 ObracunZarada — Sistem za Obračun Zarada
 
-Ovo je WPF desktop aplikacija namenjena za obračun zarada. Aplikacija omogućava upravljanje podacima o zaposlenima, obračun plata, generisanje izveštaja (PDF i XML) i upravljanje podacima u bazi.
+> Desktop aplikacija za obračun zarada, upravljanje zaposlenima i generisanje zakonski propisanih izveštaja — razvijena u C# / .NET 8 / WPF.
 
-## Tehnologije
-- **Jezik:** C# 12 / .NET 8.0
-- **Korisnički interfejs:** WPF (Windows Presentation Foundation)
-- **Arhitektura:** MVVM (CommunityToolkit.Mvvm)
-- **Baza podataka:** SQLite (`plata.db`)
-- **ORM:** Entity Framework Core 8
-- **Izveštaji i štampa:** QuestPDF
+---
 
-## Struktura projekta
+## ✨ Funkcionalnosti
 
-Projekat je podeljen na nekoliko celina unutar `PlataSistem.slnx` rešenja:
+- 👥 **Upravljanje zaposlenima** — evidencija radnika, kategorija, koeficijenata i platnih razreda
+- 🧮 **Obračun plata** — automatski izračun bruto/neto plate, poreza i doprinosa po važećim stopama
+- ⏱️ **Radni sati** — evidencija redovnih, prekovremenih, noćnih, bolovanje i godišnji odmor
+- 💳 **Krediti** — praćenje i otplata kredita zaposlenih
+- 🏦 **Banke** — evidencija bankovnih računa za isplatu
+- 🏢 **Firme** — podrška za više pravnih lica u istoj bazi
+- 📄 **Štampa i izveštaji** — platni listić (PDF), platni spisak, rekapitulacija, XML za PPP-PD
+- 🔄 **Automatska ažuriranja** — delta update sistem putem Velopack-a
 
-* **PlataApp:** Glavni projekat aplikacije. Sadrži korisnički interfejs (Views), logiku prikaza (ViewModels) i servise za eksport (XML, PDF).
-* **PlataData:** Sloj za pristup podacima (Data Access Layer). Sadrži EF Core entitete i DbContext za komunikaciju sa SQLite bazom podataka.
-* **PlataMigration:** Projekat zadužen za upravljanje EF Core migracijama i ažuriranje šeme baze podataka.
-* **PlataInspect:** Alati za inspekciju baze (verovatno eksterni ili pomoćni alat).
-* **PlataInstall:** Skripte i fajlovi potrebni za kreiranje instalacionog paketa.
+---
 
-## Pokretanje projekta
+## 🛠️ Tehnologije
 
-Za rad na projektu potrebno je instalirati:
-- Visual Studio 2022 (sa .NET desktop development radnim okruženjem) ili Rider.
-- .NET 8 SDK.
+| Oblast | Tehnologija |
+|---|---|
+| Jezik | C# 12 / .NET 8.0 |
+| UI | WPF (Windows Presentation Foundation) |
+| Arhitektura | MVVM (CommunityToolkit.Mvvm) |
+| Baza podataka | SQLite |
+| ORM | Entity Framework Core 8 |
+| Izveštaji / PDF | QuestPDF |
+| Pakovanje / Update | Velopack |
+| CI/CD | GitHub Actions |
 
-Aplikacija se pokreće tako što postavite **PlataApp** kao startup projekat (StartUp project) u okviru vašeg razvojnog okruženja i pritisnete F5.
+---
 
-### Pokretanje iz terminala (Command Prompt / PowerShell)
-Ako preferirate rad iz terminala, možete prevesti i pokrenuti aplikaciju sledećim komandama (iz osnovnog direktorijuma gde je `.slnx` fajl):
+## 📁 Struktura projekta
 
-1. **Prevođenje (Build):**
-   ```powershell
-   dotnet build PlataSistem.slnx
+```
+ObracunZarada/
+├── PlataSistem/
+│   ├── PlataApp/           # Glavni WPF projekat (Views, ViewModels, Services)
+│   │   ├── Views/          # Stranice: Radnici, Obračun, RadniSati, Krediti...
+│   │   ├── Services/       # ObracunService, BackupService, XmlExportService...
+│   │   └── Resources/      # Stilovi, Help dokumentacija
+│   ├── PlataData/          # Data Access Layer (EF Core entiteti, DbContext)
+│   │   └── Models/         # Radnik, ObracunPlate, Doprinos, Firma...
+│   ├── PlataMigration/     # Alat za migraciju legacy podataka iz DBF fajlova
+│   ├── PlataInspect/       # Pomoćni alat za inspekciju baze
+│   ├── CheckDb/            # Provera integriteta baze podataka
+│   └── FixHistory/         # Korekcija istorijskih podataka
+├── .github/workflows/      # GitHub Actions (automatski release)
+├── PokreniAplikaciju.bat   # Brzo pokretanje iz terminala
+└── PokreniMigraciju.bat    # Pokretanje migracije legacy baze
+```
+
+---
+
+## 🚀 Pokretanje projekta (za razvoj)
+
+### Preduslovi
+
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8)
+- Visual Studio 2022+ (sa *".NET desktop development"* workload-om) **ili** JetBrains Rider
+
+### Koraci
+
+```bash
+# 1. Klonirati repozitorijum
+git clone https://github.com/blagojevicboban/ObracunZarada.git
+cd ObracunZarada
+
+# 2. Prevesti projekat
+dotnet build PlataSistem/PlataSistem.slnx
+
+# 3. Pokrenuti aplikaciju
+dotnet run --project PlataSistem/PlataApp/PlataApp.csproj
+```
+
+> **Napomena:** Baza podataka se automatski kreira pri prvom pokretanju u folderu `C:\PlataApp\`. Ne treba nikakvo manuelno podešavanje.
+
+---
+
+## 📦 Instalacija (za krajnje korisnike)
+
+Preuzmi najnoviji instalacioni paket sa stranice **[Releases](../../releases)** i pokreni `PlataSistemSetup.exe`. Aplikacija se instalira u korisnički profil **bez administratorskih prava** i automatski se ažurira u pozadini.
+
+---
+
+## 🔄 Proces objavljivanja nove verzije
+
+Verzionisanje je potpuno automatizovano putem GitHub Actions:
+
+1. Otvori `PlataSistem/version.txt` i upiši novu verziju (npr. `1.2.0`)
+2. Komituj i pushuj na `main` granu:
+   ```bash
+   git add PlataSistem/version.txt
+   git commit -m "bump: version 1.2.0"
+   git push
    ```
-2. **Pokretanje (Run):**
-   ```powershell
-   dotnet run --project PlataApp\PlataApp.csproj
-   ```
+3. GitHub Actions automatski: prevodi kod → pakuje sa Velopack → kreira GitHub Release
 
-SQLite baza podataka (`plata.db`) nalazi se u osnovnom direktorijumu ili se kreira/ažurira prilikom prvog pokretanja na osnovu migracija.
+> **Podešavanje repozitorijuma:** Na GitHub-u idi u **Settings → Actions → General** i postavi *Workflow permissions* na **Read and write permissions**.
 
-## Kreiranje instalacije, objava i automatska ažuriranja
+---
 
-Aplikacija koristi **Velopack** za kreiranje instalacionih paketa i sistem automatskih "delta" ažuriranja u pozadini (instalira se u korisnički profil bez potrebe za administratorskim pravima).
+## 🔒 Napomene o sigurnosti
 
-Proces izbacivanja novih verzija je potpuno automatizovan kroz **GitHub Actions**.
+- Baza podataka sa podacima o zaposlenima **nije deo repozitorijuma** (zaštićena `.gitignore`-om)
+- Ne postoje hardkodovani connection stringovi, lozinke niti API ključevi u kodu
+- GitHub Token se koristi isključivo putem `secrets.GITHUB_TOKEN` (automatski od strane GitHub-a)
 
-### Kako izbaciti novu verziju?
-Umesto kucanja komandi i pravljenja tagova, kreirali smo fajl **`version.txt`** u osnovnom folderu.
+---
 
-Sve što treba da uradiš jeste da:
-1. Otvoriš `version.txt` i upišeš novu verziju (npr. izbrišeš `1.0.0` i upišeš `1.0.1`).
-2. Komituješ taj fajl i gurneš na GitHub (`git push`).
+## 📜 Licenca
 
-Čim GitHub prepozna da je fajl `version.txt` izmenjen, on automatski na svojim serverima prevodi kod, pakuje instalaciju i izbacuje novo izdanje klijentima pod tom verzijom!
+Ovaj projekat je trenutno bez eksplicitne licence. Za pitanja kontaktirajte autora.
 
-> **Važna podešavanja repozitorijuma:** Da bi ovo radilo, na tvom GitHub repozitorijumu moraš otići u **Settings -> Actions -> General** i podesiti *Workflow permissions* na **Read and write permissions**. Pored toga, fajlovi sa podacima (`plata.db` i `Baze/`) moraju biti komitovani u Git da bi bili dodati u instalaciju.
+---
 
-*Lokalno generisanje:* Ukoliko želiš ručno da spakuješ aplikaciju (bez GitHuba), možeš pokrenuti lokalnu skriptu `publish.ps1` iz Powershell-a.
+*Razvijeno kao interni alat za obračun zarada. Prilagođeno srpskom zakonodavstvu (Zakon o radu, Zakon o porezu na dohodak građana).*

@@ -1,13 +1,4 @@
-using System;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Collections.Generic;
-using Microsoft.Data.Sqlite;
-using DbfDataReader;
-
-Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-var cp852 = Encoding.GetEncoding(852);
+FixHistory.CheckColumns.Run(); return;
 
 string dbPath = @"C:\PlataApp\Baze\firma_100188310_PSSS_PIROT_DOO_PIROT.db";
 string dbfPath = @"C:\PLATA\PLATA\KOR28\RADNICII.DBF";
@@ -199,3 +190,4 @@ transaction.Commit();
 
 Console.WriteLine($"Ubačeno novih istorijskih radnika: {insertedCount}");
 Console.WriteLine($"Ažurirano obračuna da pokazuju na ispravne radnike: {updatedObracuniCount}");
+

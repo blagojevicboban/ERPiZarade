@@ -109,6 +109,21 @@
                           HeadersVisibility="Column"
                           Margin="0">
                     <DataGrid.Columns>
+                        <DataGridTemplateColumn Width="40">
+                            <DataGridTemplateColumn.HeaderTemplate>
+                                <DataTemplate>
+                                    <CheckBox HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              Checked="SelectAll_Checked" Unchecked="SelectAll_Unchecked" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.HeaderTemplate>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" 
+                                              Checked="CheckBox_SelectionChanged" Unchecked="CheckBox_SelectionChanged"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                         <DataGridTemplateColumn Header="Period obračuna" Width="180">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>

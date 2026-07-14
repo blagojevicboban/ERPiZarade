@@ -173,7 +173,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="{Binding StatusText}" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#37474F"/>
-                <TextBlock Grid.Column="1" Text="Sistem za izveštavanje v1.0" Foreground="#78909C" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="Sistem za izveštavanje v1.1.0" Foreground="#78909C" VerticalAlignment="Center"/>
             </Grid>
         </Border>
     </Grid>

@@ -496,7 +496,8 @@ public class ObracunService
             .Where(s => s.Radnik.BrojRadnika == targetBrojRadnika && 
                         (s.Godina * 12 + s.Mesec >= minVal && s.Godina * 12 + s.Mesec < targetVal))
             .ToList()
-            .ToDictionary(s => (s.Godina, s.Mesec));
+            .GroupBy(s => new { s.Godina, s.Mesec })
+            .ToDictionary(g => (g.Key.Godina, g.Key.Mesec), g => g.First());
 
         foreach (var ob in obracuni)
         {

@@ -120,6 +120,40 @@ public partial class ObracuniPage : Page
             OtvorPeriod(selected);
         }
     }
+    private void CheckBox_SelectionChanged(object sender, RoutedEventArgs e)
+    {
+        Application.Current.Dispatcher.InvokeAsync(() =>
+        {
+            var summaries = PeriodiGrid.ItemsSource as IEnumerable<ObracunPeriodSummary>;
+            if (summaries != null)
+            {
+                BtnRetroaktivniDoprinosi.IsEnabled = summaries.Any(s => s.IsSelected);
+            }
+        });
+    }
+
+    private void SelectAll_Checked(object sender, RoutedEventArgs e)
+    {
+        var summaries = PeriodiGrid.ItemsSource as IEnumerable<ObracunPeriodSummary>;
+        if (summaries != null)
+        {
+            foreach (var s in summaries) s.IsSelected = true;
+            BtnRetroaktivniDoprinosi.IsEnabled = summaries.Any();
+            PeriodiGrid.Items.Refresh();
+        }
+    }
+
+    private void SelectAll_Unchecked(object sender, RoutedEventArgs e)
+    {
+        var summaries = PeriodiGrid.ItemsSource as IEnumerable<ObracunPeriodSummary>;
+        if (summaries != null)
+        {
+            foreach (var s in summaries) s.IsSelected = false;
+            BtnRetroaktivniDoprinosi.IsEnabled = false;
+            PeriodiGrid.Items.Refresh();
+        }
+    }
+
     private void BtnZakljucajSve_Click(object sender, RoutedEventArgs e)
     {
         var res = MessageBox.Show("Da li ste sigurni da želite da zaključate SVE otključane obračunske periode?\n\nNakon ovoga, izmena podataka u starim obračunima neće biti moguća.",
@@ -335,14 +369,30 @@ public partial class ObracuniPage : Page
 
         try
         {
+            var summaries = PeriodiGrid.ItemsSource as IEnumerable<ObracunPeriodSummary>;
+            var selectedSummaries = summaries?.Where(s => s.IsSelected).ToList() ?? new List<ObracunPeriodSummary>();
+
             // Učitaj sve obračune gde su doprinosi poslodavca = 0 i koji nisu zaključani
-            var obracuniZaAzuriranje = await _db.ObracuniPlata
+            var query = _db.ObracuniPlata
                 .Include(o => o.Radnik)
                 .Where(o => o.DoprinosPioPoslodavac == 0
                          && o.DoprinosZdravstvoPoslodavac == 0
                          && o.DoprinosNezaposlenostPoslodavac == 0
-                         && !o.Zakljucan)
-                .ToListAsync();
+                         && !o.Zakljucan);
+
+            List<ObracunPlate> obracuniZaAzuriranje;
+            
+            if (selectedSummaries.Any())
+            {
+                var allUncalculated = await query.ToListAsync();
+                obracuniZaAzuriranje = allUncalculated
+                    .Where(o => selectedSummaries.Any(s => s.Godina == o.Godina && s.Mesec == o.Mesec))
+                    .ToList();
+            }
+            else
+            {
+                obracuniZaAzuriranje = await query.ToListAsync();
+            }
 
             if (obracuniZaAzuriranje.Count == 0)
             {
@@ -522,6 +572,7 @@ public partial class ObracuniPage : Page
 
 public class ObracunPeriodSummary
 {
+    public bool IsSelected { get; set; }
     public int Godina { get; set; }
     public int Mesec { get; set; }
     

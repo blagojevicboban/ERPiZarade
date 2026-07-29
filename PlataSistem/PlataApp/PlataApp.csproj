@@ -8,6 +8,9 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>PlataApp</AssemblyName>
     <ApplicationIcon>plata.ico</ApplicationIcon>
+    <Version>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)/../version.txt').Trim())</Version>
+    <FileVersion>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)/../version.txt').Trim())</FileVersion>
+    <AssemblyVersion>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)/../version.txt').Trim())</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

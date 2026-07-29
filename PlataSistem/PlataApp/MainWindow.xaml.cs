@@ -23,6 +23,8 @@ public partial class MainWindow : Window
 
         UcitajImeFirme();
         InicijalizujAktivniPeriod();
+        UpdateUserInfo();
+        ApplyRolePermissions();
         // Otvori Obračuni kao početnu stranicu
         NavigateTo(null!, new Views.Obracuni.ObracuniPage());
 
@@ -44,11 +46,13 @@ public partial class MainWindow : Window
     {
         try
         {
-            // Konfiguracija za tvoj privatni GitHub repozitorijum
-            string repoUrl = "https://github.com/blagojevicboban/ObracunZarada"; 
-            // OBAVEZNO KORISTI TOKEN SA READ-ONLY PRAVIMA (nikako write token)!
-            string token = "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";
-            
+            // Javni repozitorijum — nije potreban token.
+            string repoUrl = "https://github.com/blagojevicboban/PayrollSystem";
+            // Ranije je ovde bio hardkodovan plaintext PAT za privatni repo ObracunZarada (kompromitovan,
+            // mora se opozvati na GitHub-u). Ako je repo ikad ponovo privatan, token se čita iz env.
+            // promenljive ili lokalnog fajla van repozitorijuma — nikad iz izvornog koda.
+            string? token = GetUpdateToken();
+
             var source = new Velopack.Sources.GithubSource(repoUrl, token, false);
             var mgr = new Velopack.UpdateManager(source);
             var newVersion = await mgr.CheckForUpdatesAsync();
@@ -64,6 +68,27 @@ public partial class MainWindow : Window
             // Logovanje greške (možemo izostaviti prikazivanje kako ne bismo plašili korisnika)
             System.Diagnostics.Debug.WriteLine($"Greška pri ažuriranju: {ex.Message}");
         }
+    }
+
+    private static string? GetUpdateToken()
+    {
+        var envToken = Environment.GetEnvironmentVariable("ERPHUB_PLATA_TOKEN");
+        if (!string.IsNullOrWhiteSpace(envToken)) return envToken;
+
+        try
+        {
+            var tokenPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "ErpHub", "plata_update_token.txt");
+            if (File.Exists(tokenPath))
+            {
+                var fileToken = File.ReadAllText(tokenPath).Trim();
+                if (!string.IsNullOrWhiteSpace(fileToken)) return fileToken;
+            }
+        }
+        catch { }
+
+        return null;
     }
 
     public void InicijalizujAktivniPeriod()
@@ -143,6 +168,36 @@ public partial class MainWindow : Window
         {
             ImeFirmeText.Text = "Zavod za poljoprivredu";
         }
+    }
+
+    private void UpdateUserInfo()
+    {
+        if (AppSession.TrenutniKorisnik != null)
+        {
+            TxtImeKorisnika.Text = AppSession.TrenutniKorisnik.ImePrezime;
+            TxtUlogaKorisnika.Text = AppSession.TrenutniKorisnik.Uloga.ToString();
+        }
+    }
+
+    private void ApplyRolePermissions()
+    {
+        // Samo Administrator sme da vidi Korisnike
+        if (!AppSession.IsAdmin)
+        {
+            BtnKorisnici.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void BtnKorisnici_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnKorisnici, new Views.Korisnici.KorisniciPage());
+
+    private void BtnOdjava_Click(object sender, RoutedEventArgs e)
+    {
+        AppSession.TrenutniKorisnik = null;
+        var loginWindow = new Views.Korisnici.LoginWindow();
+        Application.Current.MainWindow = loginWindow;
+        loginWindow.Show();
+        Close();
     }
 
     private void NavigateTo(Button btn, Page page)

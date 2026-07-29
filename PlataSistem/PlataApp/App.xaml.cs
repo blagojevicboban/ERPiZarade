@@ -17,6 +17,9 @@ public partial class App : Application
 
         // Global QuestPDF license configuration to prevent exception during PDF generation
         QuestPDF.Settings.License = LicenseType.Community;
+
+        var loginWindow = new Views.Korisnici.LoginWindow();
+        loginWindow.Show();
     }
 }
 

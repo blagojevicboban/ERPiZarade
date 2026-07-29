@@ -138,6 +138,22 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Korisnik info i Odjava -->
+                <Border DockPanel.Dock="Bottom" Margin="12,0,12,8" Background="#15000000" CornerRadius="8" Padding="12,10">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="4"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock x:Name="TxtImeKorisnika" Text="Prijavljeni korisnik" FontSize="11" FontWeight="SemiBold" Foreground="White"/>
+                        <TextBlock x:Name="TxtUlogaKorisnika" Grid.Row="1" Text="Uloga" FontSize="10" Foreground="#90CAF9" Margin="0,2,0,0"/>
+
+                        <Button x:Name="BtnOdjava" Grid.Row="3" Content="Odjavi se" Style="{StaticResource SecondaryButton}" FontSize="11" Padding="4,4" Foreground="#90CAF9" BorderBrush="#90CAF9" Click="BtnOdjava_Click" Background="Transparent"/>
+                    </Grid>
+                </Border>
+
                 <!-- Help dugme na dnu -->
                 <Button DockPanel.Dock="Bottom" Content="❓  Korisničko uputstvo"
                         Style="{StaticResource NavButton}" Margin="0,0,0,2"
@@ -200,6 +216,9 @@
                         <Button x:Name="BtnFirme" Content="🏢  Firme"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnFirme_Click"/>
+                        <Button x:Name="BtnKorisnici" Content="👥  Korisnici"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnKorisnici_Click"/>
                         <Button x:Name="BtnPodesavanja" Content="⚙️  Podešavanja"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnPodesavanja_Click"/>

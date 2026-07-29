@@ -25,6 +25,7 @@ public class PlataDbContext : DbContext
     public DbSet<PlatniRazred> PlatniRazredi => Set<PlatniRazred>();
     public DbSet<DoprinosiPoslodavca> DoprinosiPoslodavca => Set<DoprinosiPoslodavca>();
     public DbSet<Banka> Banke => Set<Banka>();
+    public DbSet<Korisnik> Korisnici => Set<Korisnik>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -319,6 +320,74 @@ public class PlataDbContext : DbContext
             ");
         }
         catch { }
+
+        // Korisnici (prijava u sistem)
+        try
+        {
+            ctx.Database.ExecuteSqlRaw(@"
+                CREATE TABLE IF NOT EXISTS Korisnici (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ImePrezime TEXT NOT NULL DEFAULT '',
+                    KorisnickoIme TEXT NOT NULL,
+                    LozinkaHash TEXT NOT NULL,
+                    Uloga INTEGER NOT NULL DEFAULT 1,
+                    JeAktivan INTEGER NOT NULL DEFAULT 1,
+                    PoslednjaPrijava TEXT NULL
+                );
+                CREATE UNIQUE INDEX IF NOT EXISTS IX_Korisnici_KorisnickoIme ON Korisnici(KorisnickoIme);
+            ");
+        }
+        catch { }
+
+        try
+        {
+            if (!ctx.Korisnici.Any())
+            {
+                ctx.Korisnici.Add(new Korisnik
+                {
+                    ImePrezime = "Administrator",
+                    KorisnickoIme = "admin",
+                    LozinkaHash = HashPassword("admin"),
+                    Uloga = UlogaKorisnika.Administrator,
+                    JeAktivan = true
+                });
+                ctx.SaveChanges();
+            }
+        }
+        catch { }
     }
 
+    private const int PasswordSaltSize = 16;
+    private const int PasswordHashSize = 32;
+    private const int PasswordIterations = 100_000;
+
+    public static string HashPassword(string password)
+    {
+        var salt = System.Security.Cryptography.RandomNumberGenerator.GetBytes(PasswordSaltSize);
+        var hash = System.Security.Cryptography.Rfc2898DeriveBytes.Pbkdf2(
+            password, salt, PasswordIterations, System.Security.Cryptography.HashAlgorithmName.SHA256, PasswordHashSize);
+        return $"PBKDF2${PasswordIterations}${Convert.ToBase64String(salt)}${Convert.ToBase64String(hash)}";
+    }
+
+    public static bool VerifyPassword(string password, string storedHash)
+    {
+        if (string.IsNullOrEmpty(storedHash) || !storedHash.StartsWith("PBKDF2$", StringComparison.Ordinal))
+            return false;
+
+        var parts = storedHash.Split('$');
+        if (parts.Length != 4 || !int.TryParse(parts[1], out var iterations)) return false;
+
+        try
+        {
+            var salt = Convert.FromBase64String(parts[2]);
+            var expected = Convert.FromBase64String(parts[3]);
+            var actual = System.Security.Cryptography.Rfc2898DeriveBytes.Pbkdf2(
+                password, salt, iterations, System.Security.Cryptography.HashAlgorithmName.SHA256, expected.Length);
+            return System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(actual, expected);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
 }

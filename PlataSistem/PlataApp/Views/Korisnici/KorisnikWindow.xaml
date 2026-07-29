@@ -1,0 +1,53 @@
+<Window x:Class="PlataApp.Views.Korisnici.KorisnikWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Podaci o korisniku" Height="447" Width="450"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource SurfaceBrush}"
+        ResizeMode="NoResize">
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="32"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Korisnik" Style="{StaticResource PageTitle}"/>
+
+        <StackPanel Grid.Row="2">
+            <TextBlock Text="Ime i prezime" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+            <TextBox x:Name="TxtImePrezime" Height="36" VerticalContentAlignment="Center" Padding="8,0"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="4">
+            <TextBlock Text="Korisničko ime (za prijavu)" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+            <TextBox x:Name="TxtKorisnickoIme" Height="36" VerticalContentAlignment="Center" Padding="8,0"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="6">
+            <TextBlock Text="Uloga (prava pristupa)" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+            <ComboBox x:Name="CmbUloga" Height="36" VerticalContentAlignment="Center" Padding="8,0">
+                <!-- Popunjava se u code-behind-u -->
+            </ComboBox>
+        </StackPanel>
+
+        <StackPanel Grid.Row="8" x:Name="PanelNovaLozinka" Visibility="Collapsed">
+            <TextBlock Text="Lozinka (ostavite prazno ako ne menjate)" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+            <PasswordBox x:Name="TxtNovaLozinka" Height="36" VerticalContentAlignment="Center" Padding="8,0"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="10" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Otkaži" Style="{StaticResource SecondaryButton}" Width="100" Height="36" Margin="0,0,12,0" Click="BtnOtkazi_Click"/>
+            <Button Content="Sačuvaj" Style="{StaticResource PrimaryButton}" Width="100" Height="36" Click="BtnSacuvaj_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

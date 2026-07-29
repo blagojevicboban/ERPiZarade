@@ -69,8 +69,7 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0">
-                <TextBlock Text="🏢 Pregled svih obračuna" Style="{StaticResource PageTitle}"/>
+            <StackPanel Grid.Column="0" VerticalAlignment="Center">
                 <TextBlock x:Name="FirmaSubtitle" Text="Pregled svih obračunatih perioda i finansijskih rekapitulacija za firmu"
                            Style="{StaticResource PageSubtitle}"/>
             </StackPanel>

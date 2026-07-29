@@ -6,11 +6,12 @@
         Height="720" Width="1200"
         MinHeight="600" MinWidth="900"
         WindowStartupLocation="CenterScreen"
-        Background="{StaticResource SurfaceBrush}">
+        Background="{StaticResource SurfaceBrush}"
+        PreviewKeyDown="Window_PreviewKeyDown">
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="220"/>
+            <ColumnDefinition x:Name="SidebarColumn" Width="220"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
@@ -102,9 +103,9 @@
             <DockPanel>
                 <!-- Logo -->
                 <StackPanel DockPanel.Dock="Top" Margin="20,16,20,10">
-                    <TextBlock Text="💼 PLATA" FontSize="22" FontWeight="Bold"
+                    <TextBlock x:Name="TxtBrandTitle" Text="💼 PLATA" FontSize="22" FontWeight="Bold"
                                Foreground="White"/>
-                    <TextBlock Text="Sistem za obračun zarada" FontSize="11"
+                    <TextBlock x:Name="TxtBrandSubtitle" Text="Sistem za obračun zarada" FontSize="11"
                                Foreground="#90CAF9" Margin="0,2,0,0"/>
                 </StackPanel>
 
@@ -166,13 +167,19 @@
                 <!-- Navigacija -->
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" BorderThickness="0">
                     <StackPanel Margin="0,8,0,0">
-                        <TextBlock Text="OBRAČUNI" FontSize="10" FontWeight="SemiBold"
+                        <TextBlock x:Name="HeaderRadnaTabla" Text="RADNA TABLA" FontSize="10" FontWeight="SemiBold"
                                    Foreground="#7986CB" Margin="24,6,0,3"/>
+                        <Button x:Name="BtnDashboard" Content="📊  Radna tabla"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnDashboard_Click"/>
+
+                        <TextBlock x:Name="HeaderObracuni" Text="OBRAČUNI" FontSize="10" FontWeight="SemiBold"
+                                   Foreground="#7986CB" Margin="24,10,0,3"/>
                         <Button x:Name="BtnObracuni" Content="📁  Obračunski periodi"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnObracuni_Click"/>
 
-                        <TextBlock Text="EVIDENCIJA" FontSize="10" FontWeight="SemiBold"
+                        <TextBlock x:Name="HeaderEvidencija" Text="EVIDENCIJA" FontSize="10" FontWeight="SemiBold"
                                    Foreground="#7986CB" Margin="24,10,0,3"/>
                         <Button x:Name="BtnRadnici" Content="👤  Radnici"
                                 Style="{StaticResource NavButton}"
@@ -193,7 +200,7 @@
                                 Style="{StaticResource NavButton}"
                                 Click="BtnPlatniRazredi_Click"/>
 
-                        <TextBlock Text="ŠTAMPA" FontSize="10" FontWeight="SemiBold"
+                        <TextBlock x:Name="HeaderStampa" Text="ŠTAMPA" FontSize="10" FontWeight="SemiBold"
                                    Foreground="#7986CB" Margin="24,10,0,3"/>
                         <Button x:Name="BtnListici" Content="🧾  Platni listići"
                                 Style="{StaticResource NavButton}"
@@ -205,7 +212,7 @@
                                 Style="{StaticResource NavButton}"
                                 Click="BtnPppPd_Click"/>
 
-                        <TextBlock Text="ŠIFARNICI" FontSize="10" FontWeight="SemiBold"
+                        <TextBlock x:Name="HeaderSifarnici" Text="ŠIFARNICI" FontSize="10" FontWeight="SemiBold"
                                    Foreground="#7986CB" Margin="24,10,0,3"/>
                         <Button x:Name="BtnKrediti" Content="💳  Krediti"
                                 Style="{StaticResource NavButton}"
@@ -213,7 +220,10 @@
                         <Button x:Name="BtnBanke" Content="🏦  Banke"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnBanke_Click"/>
-                        <Button x:Name="BtnFirme" Content="🏢  Firme"
+
+                        <TextBlock x:Name="HeaderPodesavanja" Text="PODEŠAVANJA" FontSize="10" FontWeight="SemiBold"
+                                   Foreground="#7986CB" Margin="24,10,0,3"/>
+                        <Button x:Name="BtnFirme" Content="🏢  Upravljanje firmama"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnFirme_Click"/>
                         <Button x:Name="BtnKorisnici" Content="👥  Korisnici"
@@ -229,8 +239,31 @@
         </Border>
 
         <!-- ══ SADRŽAJ ═══════════════════════════════════════════════ -->
-        <Frame x:Name="MainFrame" Grid.Column="1"
-               NavigationUIVisibility="Hidden"
-               Background="{StaticResource SurfaceBrush}"/>
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="56"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="16,0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="BtnToggleSidebar" Content="☰" FontSize="16" FontWeight="Bold" Width="36" Height="36"
+                            Background="{StaticResource SurfaceBrush}" Foreground="{StaticResource TextPrimaryBrush}" BorderThickness="0" Margin="0,0,16,0" Cursor="Hand"
+                            ToolTip="Sklopi / Proširi bočni meni (Ctrl+M)" Click="BtnToggleSidebar_Click">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="8"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    <TextBlock x:Name="TxtHeaderTitle" Text="Radna tabla" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="TxtHeaderSubtitle" Text="" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="10,2,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <Frame x:Name="MainFrame" Grid.Row="1"
+                   NavigationUIVisibility="Hidden"
+                   Background="{StaticResource SurfaceBrush}"/>
+        </Grid>
     </Grid>
 </Window>

@@ -25,11 +25,6 @@
         </Grid.RowDefinitions>
 
         <!-- ── HEADER ──────────────────────────────────────────────── -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,16">
-            <TextBlock Text="👤 Radnici" Style="{StaticResource PageTitle}"/>
-            <TextBlock Text="Evidencija zaposlenih i njihovih podataka"
-                       Style="{StaticResource PageSubtitle}"/>
-        </StackPanel>
 
         <!-- ── TOOLBAR ─────────────────────────────────────────────── -->
         <Border Grid.Row="1" Style="{StaticResource Card}" Padding="16,12" Margin="0,0,0,16">

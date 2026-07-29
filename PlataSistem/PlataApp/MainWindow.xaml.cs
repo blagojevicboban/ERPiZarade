@@ -25,8 +25,8 @@ public partial class MainWindow : Window
         InicijalizujAktivniPeriod();
         UpdateUserInfo();
         ApplyRolePermissions();
-        // Otvori Obračuni kao početnu stranicu
-        NavigateTo(null!, new Views.Obracuni.ObracuniPage());
+        // Otvori Radnu tablu kao početnu stranicu
+        NavigateTo(BtnDashboard, "📊 Radna tabla", new Views.Dashboard.DashboardPage());
 
         // Automatski backup pri pokretanju (u pozadinskom threadu da ne usporava start)
         System.Threading.Tasks.Task.Run(() =>
@@ -189,7 +189,7 @@ public partial class MainWindow : Window
     }
 
     private void BtnKorisnici_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnKorisnici, new Views.Korisnici.KorisniciPage());
+        => NavigateTo(BtnKorisnici, "👥 Korisnički nalozi", new Views.Korisnici.KorisniciPage(), "Upravljanje pristupom i ulogama zaposlenih");
 
     private void BtnOdjava_Click(object sender, RoutedEventArgs e)
     {
@@ -200,57 +200,100 @@ public partial class MainWindow : Window
         Close();
     }
 
-    private void NavigateTo(Button btn, Page page)
+    private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key == System.Windows.Input.Key.M &&
+            (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Control) == System.Windows.Input.ModifierKeys.Control)
+        {
+            BtnToggleSidebar_Click(sender, e);
+            e.Handled = true;
+        }
+    }
+
+    private void BtnToggleSidebar_Click(object sender, RoutedEventArgs e)
+    {
+        if (SidebarColumn.Width.Value > 100)
+        {
+            SidebarColumn.Width = new GridLength(64);
+            TxtBrandTitle.Visibility = Visibility.Collapsed;
+            TxtBrandSubtitle.Visibility = Visibility.Collapsed;
+            HeaderRadnaTabla.Visibility = Visibility.Collapsed;
+            HeaderObracuni.Visibility = Visibility.Collapsed;
+            HeaderEvidencija.Visibility = Visibility.Collapsed;
+            HeaderStampa.Visibility = Visibility.Collapsed;
+            HeaderSifarnici.Visibility = Visibility.Collapsed;
+            HeaderPodesavanja.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            SidebarColumn.Width = new GridLength(220);
+            TxtBrandTitle.Visibility = Visibility.Visible;
+            TxtBrandSubtitle.Visibility = Visibility.Visible;
+            HeaderRadnaTabla.Visibility = Visibility.Visible;
+            HeaderObracuni.Visibility = Visibility.Visible;
+            HeaderEvidencija.Visibility = Visibility.Visible;
+            HeaderStampa.Visibility = Visibility.Visible;
+            HeaderSifarnici.Visibility = Visibility.Visible;
+            HeaderPodesavanja.Visibility = Visibility.Visible;
+        }
+    }
+
+    private void NavigateTo(Button btn, string title, Page page, string subtitle = "")
     {
         if (_activeNavBtn != null)
             _activeNavBtn.Style = (Style)FindResource("NavButton");
         if (btn != null)
             btn.Style = (Style)FindResource("NavButtonActive");
         _activeNavBtn = btn;
+        TxtHeaderTitle.Text = title;
+        TxtHeaderSubtitle.Text = subtitle;
         MainFrame.Navigate(page);
     }
 
+    private void BtnDashboard_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnDashboard, "📊 Radna tabla", new Views.Dashboard.DashboardPage());
+
     private void BtnRadnici_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnRadnici, new RadniciPage());
+        => NavigateTo(BtnRadnici, "👤 Radnici", new RadniciPage(), "Evidencija zaposlenih i njihovih podataka");
 
     private void BtnRadniSati_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnRadniSati, new Views.RadniSati.RadniSatiPage());
+        => NavigateTo(BtnRadniSati, "⏱️ Radni sati", new Views.RadniSati.RadniSatiPage());
 
     private void BtnObracun_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnObracun, new Views.Obracun.ObracunPage());
+        => NavigateTo(BtnObracun, "📊 Obračun plate", new Views.Obracun.ObracunPage());
 
     private void BtnListici_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnListici, new Views.Listici.ListiciPage());
+        => NavigateTo(BtnListici, "🧾 Masovna štampa platnih listića", new Views.Listici.ListiciPage(), "Masovni izvoz u odvojene PDF datoteke ili generisanje jedinstvenog zbirnog dokumenta");
 
     private void BtnStampe_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnStampe, new Views.Stampe.StampePage());
+        => NavigateTo(BtnStampe, "📑 Knjigovodstveni izveštaji i rekapitulacije", new Views.Stampe.StampePage(), "Generisanje i štampa mesečnih platnih spiskova po radnim jedinicama i zbirnih rekapitulacija");
 
     private void BtnPppPd_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnPppPd, new Views.PppPd.PppPdPage());
+        => NavigateTo(BtnPppPd, "📋 Poreska uprava — PPP-PD prijava", new Views.PppPd.PppPdPage(), "Pregled, pre-validacija poreskih osnovica i generisanje XML datoteke poreske deklaracije za Poresku Upravu Republike Srbije");
 
     private void BtnKrediti_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnKrediti, new Views.Krediti.KreditiPage());
+        => NavigateTo(BtnKrediti, "💳 Krediti i obustave", new Views.Krediti.KreditiPage(), "Evidencija bankovnih kredita i administrativnih obustava zaposlenih");
 
     private void BtnBanke_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnBanke, new Views.Banke.BankePage());
+        => NavigateTo(BtnBanke, "🏦 Šifrarnici banaka", new Views.Banke.BankePage(), "Pregled i izmena hronoloških šifarnika banaka i tekućih računa za obračun plata");
 
     private void BtnFirme_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnFirme, new Views.Firme.FirmePage());
+        => NavigateTo(BtnFirme, "🏢 Upravljanje firmama", new Views.Firme.FirmePage(), "Pregled, izmena, unos novih i odabir aktivne firme za obračune i izveštaje");
 
     private void BtnPodesavanja_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnPodesavanja, new Views.Podesavanja.PodesavanjaPage());
+        => NavigateTo(BtnPodesavanja, "⚙️ Podešavanja", new Views.Podesavanja.PodesavanjaPage(), "Upravljanje osnovnim podacima o firmi i kreiranje/vraćanje rezervne kopije baze podataka");
 
     private void BtnPorezi_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnPorezi, new Views.Porezi.PoreziPage());
+        => NavigateTo(BtnPorezi, "⚖️ Porezi i opšti parametri", new Views.Porezi.PoreziPage(), "Upravljanje poreskim stopama, mesečnim limitima, opštim parametrima i procentima uvećanja");
 
     private void BtnDoprinosi_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnDoprinosi, new Views.Doprinosi.DoprinosiPage());
+        => NavigateTo(BtnDoprinosi, "📈 Doprinosi", new Views.Doprinosi.DoprinosiPage(), "Pregled, izmena i upravljanje stopama i žiro računima doprinosa na teret radnika i poslodavca");
 
     private void BtnPlatniRazredi_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnPlatniRazredi, new Views.PlatniRazredi.PlatniRazrediPage());
+        => NavigateTo(BtnPlatniRazredi, "📊 Platni razredi", new Views.PlatniRazredi.PlatniRazrediPage(), "Pregled i izmena najnižih bruto osnovica za stepene stručne spreme");
 
     private void BtnObracuni_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnObracuni, new Views.Obracuni.ObracuniPage());
+        => NavigateTo(BtnObracuni, "🏢 Pregled svih obračuna", new Views.Obracuni.ObracuniPage());
 
     private void BtnHelp_Click(object sender, RoutedEventArgs e)
     {
@@ -284,33 +327,33 @@ public partial class MainWindow : Window
 
     private void FirmaBorder_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        NavigateTo(BtnFirme, new Views.Firme.FirmePage());
+        NavigateTo(BtnFirme, "🏢 Upravljanje firmama", new Views.Firme.FirmePage(), "Pregled, izmena, unos novih i odabir aktivne firme za obračune i izveštaje");
     }
 
     private void ActivePeriodBorder_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        NavigateTo(null!, new Views.Obracuni.ObracuniPage());
+        NavigateTo(null!, "🏢 Pregled svih obračuna", new Views.Obracuni.ObracuniPage());
     }
 
     public void NavigateToObracun(int godina, int mesec)
     {
-        NavigateTo(BtnObracun, new Views.Obracun.ObracunPage(godina, mesec));
+        NavigateTo(BtnObracun, "📊 Obračun plate", new Views.Obracun.ObracunPage(godina, mesec));
     }
 
     public void RestartujNakonPromeneBaze()
     {
         UcitajImeFirme();
         InicijalizujAktivniPeriod();
-        NavigateTo(null!, new Views.Obracuni.ObracuniPage());
+        NavigateTo(BtnDashboard, "📊 Radna tabla", new Views.Dashboard.DashboardPage());
     }
 
     public void OtvoriRadnike()
     {
-        NavigateTo(BtnRadnici, new Views.Radnici.RadniciPage());
+        NavigateTo(BtnRadnici, "👤 Radnici", new Views.Radnici.RadniciPage());
     }
 
     public void OtvoriPorezi()
     {
-        NavigateTo(BtnPorezi, new Views.Porezi.PoreziPage());
+        NavigateTo(BtnPorezi, "⚖️ Porezi i opšti parametri", new Views.Porezi.PoreziPage());
     }
 }

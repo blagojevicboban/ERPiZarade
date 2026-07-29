@@ -11,12 +11,6 @@
             <RowDefinition Height="Auto"/>  <!-- Status bar -->
         </Grid.RowDefinitions>
 
-        <!-- ── HEADER ──────────────────────────────────────────────── -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,16">
-            <TextBlock Text="🏦 Šifrarnici banaka" Style="{StaticResource PageTitle}"/>
-            <TextBlock Text="Pregled i izmena hronoloških šifarnika banaka i tekućih računa za obračun plata"
-                       Style="{StaticResource PageSubtitle}"/>
-        </StackPanel>
 
         <!-- ── MAIN CONTENT ─────────────────────────────────────────── -->
         <Grid Grid.Row="1" Margin="0,0,0,12">

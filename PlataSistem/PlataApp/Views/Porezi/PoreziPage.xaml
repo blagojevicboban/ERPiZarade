@@ -27,11 +27,6 @@
         </Grid.RowDefinitions>
 
         <!-- ── HEADER ──────────────────────────────────────────────── -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,16">
-            <TextBlock Text="⚖️ Porezi i opšti parametri" Style="{StaticResource PageTitle}"/>
-            <TextBlock Text="Upravljanje poreskim stopama, mesečnim limitima, opštim parametrima i procentima uvećanja"
-                       Style="{StaticResource PageSubtitle}"/>
-        </StackPanel>
 
         <!-- ── TOOLBAR (Izbor perioda) ──────────────────────────────── -->
         <Border Grid.Row="1" Style="{StaticResource Card}" Padding="16,12" Margin="0,0,0,16">

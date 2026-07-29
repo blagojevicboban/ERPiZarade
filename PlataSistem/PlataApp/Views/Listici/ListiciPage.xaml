@@ -17,14 +17,6 @@
             <RowDefinition Height="Auto"/>  <!-- Status bar -->
         </Grid.RowDefinitions>
 
-        <!-- ── HEADER ──────────────────────────────────────────────── -->
-        <Grid Grid.Row="0" Margin="0,0,0,16">
-            <StackPanel>
-                <TextBlock Text="🧾 Masovna štampa platnih listića" Style="{StaticResource PageTitle}"/>
-                <TextBlock Text="Masovni izvoz u odvojene PDF datoteke ili generisanje jedinstvenog zbirnog dokumenta"
-                           Style="{StaticResource PageSubtitle}"/>
-            </StackPanel>
-        </Grid>
 
         <!-- ── FILTERS ─────────────────────────────────────────────── -->
         <Border Grid.Row="1" Style="{StaticResource Card}" Padding="16,12" Margin="0,0,0,16">

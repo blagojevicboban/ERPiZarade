@@ -17,14 +17,6 @@
             <RowDefinition Height="Auto"/>  <!-- Status bar -->
         </Grid.RowDefinitions>
 
-        <!-- ── HEADER ──────────────────────────────────────────────── -->
-        <Grid Grid.Row="0" Margin="0,0,0,16">
-            <StackPanel>
-                <TextBlock Text="📑 Knjigovodstveni izveštaji i rekapitulacije" Style="{StaticResource PageTitle}"/>
-                <TextBlock Text="Generisanje i štampa mesečnih platnih spiskova po radnim jedinicama i zbirnih rekapitulacija"
-                           Style="{StaticResource PageSubtitle}"/>
-            </StackPanel>
-        </Grid>
 
         <!-- ── FILTERS CARD ────────────────────────────────────────── -->
         <Border Grid.Row="1" Style="{StaticResource Card}" Padding="20,16" Margin="0,0,0,20">

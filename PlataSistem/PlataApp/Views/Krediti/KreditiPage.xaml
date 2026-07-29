@@ -17,12 +17,6 @@
             <RowDefinition Height="Auto"/>  <!-- Status bar -->
         </Grid.RowDefinitions>
 
-        <!-- ── HEADER ──────────────────────────────────────────────── -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,16">
-            <TextBlock Text="💳 Krediti i obustave" Style="{StaticResource PageTitle}"/>
-            <TextBlock Text="Evidencija bankovnih kredita i administrativnih obustava zaposlenih"
-                       Style="{StaticResource PageSubtitle}"/>
-        </StackPanel>
 
         <!-- ── MAIN CONTENT ─────────────────────────────────────────── -->
         <Grid Grid.Row="1" Margin="0,0,0,12">

@@ -16,14 +16,6 @@
             <RowDefinition Height="Auto"/>  <!-- Status bar -->
         </Grid.RowDefinitions>
 
-        <!-- ── HEADER ──────────────────────────────────────────────── -->
-        <Grid Grid.Row="0" Margin="0,0,0,16">
-            <StackPanel>
-                <TextBlock Text="📋 Poreska uprava — PPP-PD prijava" Style="{StaticResource PageTitle}"/>
-                <TextBlock Text="Pregled, pre-validacija poreskih osnovica i generisanje XML datoteke poreske deklaracije za Poresku Upravu Republike Srbije"
-                           Style="{StaticResource PageSubtitle}"/>
-            </StackPanel>
-        </Grid>
 
         <!-- ── MAIN CONTENT ─────────────────────────────────────────── -->
         <Grid Grid.Row="1">

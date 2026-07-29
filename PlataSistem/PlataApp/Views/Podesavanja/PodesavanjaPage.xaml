@@ -59,12 +59,6 @@
             <RowDefinition Height="Auto"/>  <!-- Status bar -->
         </Grid.RowDefinitions>
 
-        <!-- ── HEADER ──────────────────────────────────────────────── -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,16">
-            <TextBlock Text="⚙️ Podešavanja" Style="{StaticResource PageTitle}"/>
-            <TextBlock Text="Upravljanje osnovnim podacima o firmi i kreiranje/vraćanje rezervne kopije baze podataka"
-                       Style="{StaticResource PageSubtitle}"/>
-        </StackPanel>
 
         <!-- ── TAB CONTROL CONTENT ─────────────────────────────────── -->
         <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0">

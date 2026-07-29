@@ -41,8 +41,7 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0">
-                <TextBlock Text="⏱️ Radni sati" Style="{StaticResource PageTitle}"/>
+            <StackPanel Grid.Column="0" VerticalAlignment="Center">
                 <TextBlock x:Name="ActivePeriodSubtitle" Text="Uređivanje radnih sati zaposlenih u aktivnom periodu"
                            Style="{StaticResource PageSubtitle}"/>
             </StackPanel>

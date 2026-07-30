@@ -24,7 +24,7 @@ public partial class LoginWindow : Window
         TxtUsername.Focus();
 
         var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-        TxtVersion.Text = $"PlataSistem © 2026 Blagojević Boban - v{version?.ToString(3)}";
+        TxtVersion.Text = $"ERPi © 2026 Blagojević Boban - v{version?.ToString(3)}";
     }
 
     private void LoadCompanyInfo()

@@ -543,7 +543,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <Button Grid.Column="0" Content="📄  Preuzmi PDF" Style="{StaticResource SecondaryButton}" Margin="0,0,4,0" Click="BtnStampajListic_Click"/>
+                                <Button Grid.Column="0" Content="🖨️" Style="{StaticResource SecondaryButton}" Width="36" Padding="0" HorizontalAlignment="Left" ToolTip="Preuzmi PDF" Margin="0,0,4,0" Click="BtnStampajListic_Click"/>
                                 <Button Grid.Column="1" Content="🌐  Izvezi PPP-PD" Style="{StaticResource PrimaryButton}" Margin="4,0,0,0" Click="BtnIzveziXml_Click"/>
                             </Grid>
                         </StackPanel>

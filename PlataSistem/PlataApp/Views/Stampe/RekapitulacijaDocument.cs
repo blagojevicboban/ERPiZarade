@@ -349,6 +349,24 @@ public class RekapitulacijaDocument
             Row("Dop.-nezaposlenost  UKUPNO ..........................",
                 sumNezP, bold: true, bgColor: Colors.Grey.Lighten5);
 
+            // ── UKUPNI DOPRINOSI PO VRSTI (RADNIK + POSLODAVAC) ─────────────────────────
+            decimal sumPioUkupno = sumPioR + sumPioP;
+            decimal sumZdrUkupno = sumZdrR + sumZdrP;
+            decimal sumNezUkupno = sumNezR + sumNezP;
+
+            col.Item().PaddingTop(4);
+            void UkupnoRow(string opis, decimal iznos)
+            {
+                col.Item().Background(Colors.Grey.Lighten3).Row(row =>
+                {
+                    row.RelativeItem().Text("  " + opis).Bold().FontSize(8.5f).FontFamily("Courier New");
+                    row.ConstantItem(110).AlignRight().Text($"{iznos:N2}").Bold().FontSize(8.5f).FontFamily("Courier New");
+                });
+            }
+            UkupnoRow("PIO UKUPNO (radnik + poslodavac)", sumPioUkupno);
+            UkupnoRow("ZDRAVSTVO UKUPNO (radnik + poslodavac)", sumZdrUkupno);
+            UkupnoRow("NEZAPOSLENOST UKUPNO (radnik + poslodavac)", sumNezUkupno);
+
             // ── BRUTO 2 ──────────────────────────────────────────────────────────────────
             col.Item().PaddingTop(6)
                 .Text(new string('_', 109)).FontSize(7.5f).FontFamily("Courier New");

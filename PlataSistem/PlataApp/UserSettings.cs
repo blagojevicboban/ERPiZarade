@@ -23,6 +23,16 @@ public class UserSettings
     public int? ActiveFirmaId { get; set; }
     public string? ActiveDbPath { get; set; }
 
+    // ── PPP-PD podaci o isplatiocu (pamte se za sledeće otvaranje) ──
+    public string? PppPdSediste { get; set; }
+    public string? PppPdTelefon { get; set; }
+    public string? PppPdAdresa { get; set; }
+    public string? PppPdEmail { get; set; }
+    public string? PppPdVrstaPrijave { get; set; }
+    public string? PppPdOznakaZaKonacnu { get; set; }
+    public string? PppPdNajnizaOsnovica { get; set; }
+    public string? PppPdTipIsplatioca { get; set; }
+
     // ── Load / Save ────────────────────────────────────────
     public static UserSettings Load()
     {

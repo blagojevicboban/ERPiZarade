@@ -103,7 +103,7 @@
             <DockPanel>
                 <!-- Logo -->
                 <StackPanel DockPanel.Dock="Top" Margin="20,16,20,10">
-                    <TextBlock x:Name="TxtBrandTitle" Text="⚡ ERPi Zarade" FontSize="20" FontWeight="Bold"
+                    <TextBlock x:Name="TxtBrandTitle" Text="💼 ERPi Zarade" FontSize="20" FontWeight="Bold"
                                Foreground="White"/>
                     <TextBlock x:Name="TxtBrandSubtitle" Text="Obračun zarada i kadrovska evidencija" FontSize="11"
                                Foreground="#90CAF9" Margin="0,2,0,0"/>

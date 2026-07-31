@@ -43,7 +43,8 @@ public class PppPdViewModel : INotifyPropertyChanged
     private string _selectedNajnizaOsnovica = "0";
     private string _selectedTipIsplatioca = "1";
     private string _klijentskaOznaka = "";
-    
+    private int _brojKalendarskihDana = DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month);
+
     // Summaries (KPIs)
     private int _totalRadnika;
     private decimal _ukupnoBruto;
@@ -68,8 +69,11 @@ public class PppPdViewModel : INotifyPropertyChanged
         
         // Default klijentska oznaka
         KlijentskaOznaka = $"DECL-{DateTime.Now:ddMMyyyy}";
-        
+
         UcitajFirmaPodatke();
+        UcitajSacuvanePostavke();
+
+        SaveCommand = new RelayCommand(_ => SacuvajPostavke());
 
         _ = InitAsync();
     }
@@ -90,6 +94,37 @@ public class PppPdViewModel : INotifyPropertyChanged
             }
         }
         catch { }
+    }
+
+    // Podaci koji ne postoje u tabeli Firma (ili ih korisnik ovde ručno prilagođava
+    // za potrebe PPP-PD prijave) čuvaju se u korisničkim postavkama da se ne bi
+    // gubili pri svakom ponovnom otvaranju stranice.
+    private void UcitajSacuvanePostavke()
+    {
+        var s = UserSettings.Instance;
+        if (!string.IsNullOrWhiteSpace(s.PppPdSediste)) Sediste = s.PppPdSediste;
+        if (!string.IsNullOrWhiteSpace(s.PppPdTelefon)) Telefon = s.PppPdTelefon;
+        if (!string.IsNullOrWhiteSpace(s.PppPdAdresa)) Adresa = s.PppPdAdresa;
+        if (!string.IsNullOrWhiteSpace(s.PppPdEmail)) Email = s.PppPdEmail;
+        if (!string.IsNullOrWhiteSpace(s.PppPdVrstaPrijave)) SelectedVrstaPrijave = s.PppPdVrstaPrijave;
+        if (!string.IsNullOrWhiteSpace(s.PppPdOznakaZaKonacnu)) SelectedOznakaZaKonacnu = s.PppPdOznakaZaKonacnu;
+        if (!string.IsNullOrWhiteSpace(s.PppPdNajnizaOsnovica)) SelectedNajnizaOsnovica = s.PppPdNajnizaOsnovica;
+        if (!string.IsNullOrWhiteSpace(s.PppPdTipIsplatioca)) SelectedTipIsplatioca = s.PppPdTipIsplatioca;
+    }
+
+    private void SacuvajPostavke()
+    {
+        var s = UserSettings.Instance;
+        s.PppPdSediste = Sediste;
+        s.PppPdTelefon = Telefon;
+        s.PppPdAdresa = Adresa;
+        s.PppPdEmail = Email;
+        s.PppPdVrstaPrijave = SelectedVrstaPrijave;
+        s.PppPdOznakaZaKonacnu = SelectedOznakaZaKonacnu;
+        s.PppPdNajnizaOsnovica = SelectedNajnizaOsnovica;
+        s.PppPdTipIsplatioca = SelectedTipIsplatioca;
+        s.Save();
+        StatusText = "Podaci o isplatiocu su sačuvani i biće automatski učitani sledeći put.";
     }
 
     private async Task InitAsync()
@@ -247,24 +282,36 @@ public class PppPdViewModel : INotifyPropertyChanged
     public int SelectedGodina
     {
         get => _selectedGodina;
-        set 
-        { 
-            _selectedGodina = value; 
-            OnPropertyChanged(); 
+        set
+        {
+            _selectedGodina = value;
+            OnPropertyChanged();
             AppConfig.ActiveGodina = value;
-            _ = LoadObracuneAsync(); 
+            AzurirajBrojKalendarskihDana();
+            _ = LoadObracuneAsync();
         }
     }
 
     public int SelectedMesec
     {
         get => _selectedMesec;
-        set 
-        { 
-            _selectedMesec = value; 
-            OnPropertyChanged(); 
+        set
+        {
+            _selectedMesec = value;
+            OnPropertyChanged();
             AppConfig.ActiveMesec = value;
-            _ = LoadObracuneAsync(); 
+            AzurirajBrojKalendarskihDana();
+            _ = LoadObracuneAsync();
+        }
+    }
+
+    private void AzurirajBrojKalendarskihDana()
+    {
+        if (_selectedGodina > 0 && _selectedMesec is >= 1 and <= 12)
+        {
+            int danaUMesecu = DateTime.DaysInMonth(_selectedGodina, _selectedMesec);
+            BrojKalendarskihDana = danaUMesecu;
+            DatumPlacanja = new DateTime(_selectedGodina, _selectedMesec, danaUMesecu);
         }
     }
 
@@ -358,6 +405,12 @@ public class PppPdViewModel : INotifyPropertyChanged
         set { _klijentskaOznaka = value; OnPropertyChanged(); }
     }
 
+    public int BrojKalendarskihDana
+    {
+        get => _brojKalendarskihDana;
+        set { _brojKalendarskihDana = value; OnPropertyChanged(); }
+    }
+
     public int TotalRadnika
     {
         get => _totalRadnika;
@@ -408,6 +461,7 @@ public class PppPdViewModel : INotifyPropertyChanged
 
     public ICommand LoadCommand { get; }
     public ICommand ValidateCommand { get; }
+    public ICommand SaveCommand { get; private set; } = null!;
 
     public event PropertyChangedEventHandler? PropertyChanged;
     private void OnPropertyChanged([CallerMemberName] string? name = null)

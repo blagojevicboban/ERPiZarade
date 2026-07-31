@@ -278,7 +278,7 @@ public class ObracunPlate
     public decimal NetoPreDoprinosa => BrutoZarada + BrutoBolovanje - PorezNaDohodak - (DoprinosPioRadnik + DoprinosZdravstvoRadnik + DoprinosNezaposlenostRadnik);
 
     [NotMapped]
-    public decimal Bruto1 => NetoIsplata + PorezNaDohodak + DoprinosPioRadnik + DoprinosZdravstvoRadnik + DoprinosNezaposlenostRadnik + KreditObustava + Samodoprinosi;
+    public decimal Bruto1 => UkupnoBruto;
 
     [NotMapped]
     public decimal UkupniDoprinosiPoslodavca => DoprinosPioPoslodavac + DoprinosZdravstvoPoslodavac + DoprinosNezaposlenostPoslodavac;

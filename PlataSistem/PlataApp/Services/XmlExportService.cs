@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Xml.Linq;
 using PlataData.Models;
 using System.Globalization;
@@ -11,6 +12,11 @@ public class XmlExportService
 {
     private static readonly XNamespace tns = "http://pid.purs.gov.rs";
     private static readonly XNamespace xsi = "http://www.w3.org/2001/XMLSchema-instance";
+
+    private sealed class Utf8StringWriter : StringWriter
+    {
+        public override Encoding Encoding => Encoding.UTF8;
+    }
 
     public string GeneratePppPdXml(
         List<ObracunPlate> obracuni, 
@@ -26,7 +32,8 @@ public class XmlExportService
         string vrstaPrijave = "1",
         string oznakaZaKonacnu = "K",
         string najnizaOsnovica = "0",
-        string tipIsplatioca = "1")
+        string tipIsplatioca = "1",
+        int? brojKalendarskihDana = null)
     {
         if (obracuni == null || obracuni.Count == 0)
             throw new ArgumentException("Lista obračuna ne može biti prazna.");
@@ -34,6 +41,7 @@ public class XmlExportService
         var prvi = obracuni.First();
         int godina = prvi.Godina;
         int mesec = prvi.Mesec;
+        int danaUMesecu = brojKalendarskihDana ?? DateTime.DaysInMonth(godina, mesec);
         string obracunskiPeriod = $"{godina}-{mesec:D2}";
         string finalKlijentskaOznaka = string.IsNullOrWhiteSpace(klijentskaOznaka) 
             ? $"DECL-{datumPlacanja:dd.MM.yyyy}" 
@@ -141,7 +149,7 @@ public class XmlExportService
                                 ? obracun.Radnik.SifraOpstine 
                                 : sedisteFirme),
                         new XElement(tns + "SVP", svp),
-                        new XElement(tns + "BrojKalendarskihDana", "30"),
+                        new XElement(tns + "BrojKalendarskihDana", danaUMesecu.ToString()),
                         new XElement(tns + "BrojEfektivnihSati", efektivniSati.ToString()),
                         new XElement(tns + "MesecniFondSati", fondSati.ToString()),
                         new XElement(tns + "Bruto", bruto.ToString("F2", CultureInfo.InvariantCulture)),
@@ -159,7 +167,7 @@ public class XmlExportService
         );
 
         var doc = new XDocument(new XDeclaration("1.0", "UTF-8", null), root);
-        using var sw = new StringWriter();
+        using var sw = new Utf8StringWriter();
         doc.Save(sw);
         return sw.ToString();
     }

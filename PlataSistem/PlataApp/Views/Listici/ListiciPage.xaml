@@ -156,10 +156,12 @@
                         <DataGridTemplateColumn Header="Akcije" Width="80">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Button Content="📄 PDF" 
-                                            Style="{StaticResource SecondaryButton}" 
-                                            Padding="6,3" 
+                                    <Button Content="🖨️"
+                                            Style="{StaticResource SecondaryButton}"
+                                            Width="30"
+                                            Padding="0"
                                             FontSize="11"
+                                            ToolTip="Preuzmi PDF"
                                             Click="BtnPojedinacniPdf_Click"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
@@ -197,9 +199,13 @@
                                 <TextBlock Text="📑 ZBIRNI PDF" FontSize="11" FontWeight="Bold" Foreground="#15803D" Margin="0,0,0,6"/>
                                 <TextBlock Text="Generiši jedan PDF dokument koji sadrži sve selektovane platne listiće. Svaki zaposleni se automatski pozicionira na novu stranicu." 
                                            FontSize="12" Foreground="#166534" TextWrapping="Wrap" Margin="0,0,0,12"/>
-                                <Button Content="Preuzmi zbirni PDF" 
-                                        Style="{StaticResource PrimaryButton}" 
-                                        Background="#16A34A" 
+                                <Button Content="🖨️"
+                                        Style="{StaticResource PrimaryButton}"
+                                        Background="#16A34A"
+                                        Width="36"
+                                        Padding="0"
+                                        HorizontalAlignment="Left"
+                                        ToolTip="Preuzmi zbirni PDF"
                                         Click="BtnZbirniPdf_Click"/>
                             </StackPanel>
                         </Border>
@@ -210,9 +216,13 @@
                                 <TextBlock Text="📂 BATCH IZVOZ U FOLDER" FontSize="11" FontWeight="Bold" Foreground="#1D4ED8" Margin="0,0,0,6"/>
                                 <TextBlock Text="Izvezi svaki selektovani platni listić kao poseban PDF fajl u izabrani folder. Datoteke se automatski imenuju po zaposlenima." 
                                            FontSize="12" Foreground="#1E40AF" TextWrapping="Wrap" Margin="0,0,0,12"/>
-                                <Button Content="Izvezi pojedinačne PDF-ove" 
-                                        Style="{StaticResource PrimaryButton}" 
-                                        Background="#2563EB" 
+                                <Button Content="🖨️"
+                                        Style="{StaticResource PrimaryButton}"
+                                        Background="#2563EB"
+                                        Width="36"
+                                        Padding="0"
+                                        HorizontalAlignment="Left"
+                                        ToolTip="Izvezi pojedinačne PDF-ove"
                                         Click="BtnBatchPdf_Click"/>
                             </StackPanel>
                         </Border>

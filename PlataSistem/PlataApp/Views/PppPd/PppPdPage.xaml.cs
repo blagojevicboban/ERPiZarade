@@ -44,7 +44,8 @@ public partial class PppPdPage : Page
                 vm.SelectedVrstaPrijave,
                 vm.SelectedOznakaZaKonacnu,
                 vm.SelectedNajnizaOsnovica,
-                vm.SelectedTipIsplatioca
+                vm.SelectedTipIsplatioca,
+                vm.BrojKalendarskihDana
             );
 
             Clipboard.SetText(xml);

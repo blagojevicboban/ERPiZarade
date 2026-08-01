@@ -6,6 +6,14 @@ Format je zasnovan na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) s
 
 ---
 
+## [1.1.9] - 2026-08-01
+
+### 🚀 Nove funkcionalnosti i Usklađivanje sa Sistemom
+- **Nova verzija modula ERPi Zarade (`1.1.9`)** — verzija usklađena sa sistemom automatskog ažuriranja (Velopack & GitHub Releases).
+- **Integracija sa Glavnom Knjigom (`AccountingSystem v1.0.52`)** — usklađeno proknjižavanje rashoda zarada, poreza i doprinosa po mestima troška i projektima.
+
+---
+
 ## [1.1.8] - 2026-08-01
 
 ### 🎨 UI / UX i Vizuelna Identitetska Usklađenost

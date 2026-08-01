@@ -20,6 +20,8 @@ public partial class DodajRadnikaRadniSatiWindow : Window
     public DodajRadnikaRadniSatiWindow(int godina, int mesec)
     {
         InitializeComponent();
+        Views.Pomoc.ContextHelpFix.UkloniDugmeZaPomoc(this);
+        KeyDown += (s, e) => { if (e.Key == System.Windows.Input.Key.F1) { new Views.Pomoc.EditHelpWindow("Dodavanje radnika", "Dodavanje radnika u radne sate", new[] { ("Enter / Dvaklik", "Dodaj selektovanog radnika"), ("Esc", "Zatvori prozor") }, "Izaberite slobodnog radnika sa liste.").ShowDialog(); e.Handled = true; } };
         _db = PlataDbContext.Create(AppConfig.DbPath);
         _godina = godina;
         _mesec = mesec;

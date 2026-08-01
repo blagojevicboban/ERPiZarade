@@ -13,6 +13,8 @@ public partial class KorisnikWindow : Window
     public KorisnikWindow(PlataDbContext db, Korisnik? korisnik)
     {
         InitializeComponent();
+        Views.Pomoc.ContextHelpFix.UkloniDugmeZaPomoc(this);
+        KeyDown += (s, e) => { if (e.Key == System.Windows.Input.Key.F1) { new Views.Pomoc.EditHelpWindow("Korisnički nalozi", "Upravljanje korisnicima i ulogama", new[] { ("Enter", "Sačuvaj korisnika"), ("Esc", "Zatvori prozor") }, "Izaberite ulogu (Administrator / Operater). Početna lozinka je 123456.").ShowDialog(); e.Handled = true; } };
         _db = db;
         _korisnik = korisnik;
 

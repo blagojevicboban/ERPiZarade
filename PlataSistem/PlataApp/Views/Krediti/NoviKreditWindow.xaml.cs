@@ -15,6 +15,8 @@ public partial class NoviKreditWindow : Window
     public NoviKreditWindow(Radnik radnik, Kredit? kredit = null)
     {
         InitializeComponent();
+        Views.Pomoc.ContextHelpFix.UkloniDugmeZaPomoc(this);
+        KeyDown += (s, e) => { if (e.Key == System.Windows.Input.Key.F1) { new Views.Pomoc.EditHelpWindow("Unos / izmena kredita", "Evidencija rata i obustava kredita", new[] { ("Enter", "Sačuvaj kredit"), ("Esc", "Zatvori prozor") }, "Unesite iznos i broj rata — mesečna rata se preračunava.").ShowDialog(); e.Handled = true; } };
         
         _radnik = radnik;
         _kredit = kredit;

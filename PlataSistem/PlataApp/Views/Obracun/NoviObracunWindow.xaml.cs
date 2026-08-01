@@ -21,6 +21,8 @@ public partial class NoviObracunWindow : Window
     public NoviObracunWindow(ObracunPeriodSummary? preselectedPeriod = null)
     {
         InitializeComponent();
+        Views.Pomoc.ContextHelpFix.UkloniDugmeZaPomoc(this);
+        KeyDown += (s, e) => { if (e.Key == System.Windows.Input.Key.F1) { new Views.Pomoc.EditHelpWindow("Novi obračun zarada", "Mesečni obračun plata i naknada", new[] { ("F1", "Pomoć"), ("Esc", "Zatvori prozor") }, "Unesite godinu, mesec, vrednost boda i fond časova.").ShowDialog(); e.Handled = true; } };
         
         _preselectedPeriod = preselectedPeriod;
         _db = PlataDbContext.Create(AppConfig.DbPath);

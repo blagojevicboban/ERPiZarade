@@ -61,7 +61,7 @@ jobs:
               "--packDir", "publish_output",
               "--mainExe", "PlataApp.exe",
               "--outputDir", "ReleasePackage",
-              "--packTitle", "PlataSistem"
+              "--packTitle", "ERPi Zarade"
           )
           
           if (Test-Path $iconPath) {

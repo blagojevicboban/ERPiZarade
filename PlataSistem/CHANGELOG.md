@@ -6,6 +6,13 @@ Format je zasnovan na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) s
 
 ---
 
+## [1.1.10] - 2026-08-01
+
+### 🎨 Tamnija ljubičasta paleta
+- Zatamnjena osnovna ljubičasta paleta za jedan ton (`PrimaryColor` `#5B21B6`→`#4C1D95`, `PrimaryLightColor` `#7C3AED`→`#5B21B6`) u `Resources/Styles.xaml`, primenjeno na sidebar, login ekran, dashboard grafikon i dijaloge (`NoviObracunWindow`, `DodajRadnikaRadniSatiWindow`).
+
+---
+
 ## [1.1.4] - 2026-07-30
 
 ### 💰 Rebrendiranje u ERPi ZARADE

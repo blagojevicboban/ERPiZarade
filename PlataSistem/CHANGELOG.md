@@ -6,6 +6,14 @@ Format je zasnovan na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) s
 
 ---
 
+## [1.1.11] - 2026-08-01
+
+### 🎨 Dodatno zatamnjena ljubičasta paleta
+- `PrimaryColor`/`PrimaryLightColor` dodatno zatamnjeni i zagasitiji (`#2D1B42` / `#43305F`) — manje zasićen, "priguešeniji" ton u odnosu na prethodnu izmenu.
+- Ikonica 💼 na login ekranu sada bela (`Foreground="White"`) — ranije se renderovala crno i gubila se na tamnoj pozadini.
+
+---
+
 ## [1.1.10] - 2026-08-01
 
 ### 🎨 Tamnija ljubičasta paleta

@@ -210,6 +210,11 @@ public partial class MainWindow : Window
             BtnToggleSidebar_Click(sender, e);
             e.Handled = true;
         }
+        else if (e.Key == System.Windows.Input.Key.F1)
+        {
+            OtvoriPomocKontekstualno();
+            e.Handled = true;
+        }
     }
 
     private void BtnToggleSidebar_Click(object sender, RoutedEventArgs e)

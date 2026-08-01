@@ -218,7 +218,7 @@ public class DashboardViewModel : INotifyPropertyChanged
             {
                 Values = brutoPoMesecu,
                 Name = "Bruto masa",
-                Fill = new SolidColorPaint(SKColor.Parse("#1A237E")),
+                Fill = new SolidColorPaint(SKColor.Parse("#5B21B6")),
                 DataLabelsPaint = new SolidColorPaint(SKColor.Parse("#333333")),
                 DataLabelsPosition = DataLabelsPosition.Top,
                 DataLabelsFormatter = point => FormatKratakBroj(point.Model),

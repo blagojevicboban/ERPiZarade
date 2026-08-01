@@ -60,7 +60,7 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0">
-                        <TextBlock Text="📋 MESEČNI PLATNI SPISAK" FontSize="16" FontWeight="Bold" Foreground="#1A237E" Margin="0,0,0,8"/>
+                        <TextBlock Text="📋 MESEČNI PLATNI SPISAK" FontSize="16" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,8"/>
                         <Rectangle Height="2" Fill="#E0E0E0" HorizontalAlignment="Stretch" Margin="0,0,0,16"/>
                     </StackPanel>
 
@@ -98,7 +98,7 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0">
-                        <TextBlock Text="📊 MESEČNA REKAPITULACIJA" FontSize="16" FontWeight="Bold" Foreground="#1A237E" Margin="0,0,0,8"/>
+                        <TextBlock Text="📊 MESEČNA REKAPITULACIJA" FontSize="16" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,8"/>
                         <Rectangle Height="2" Fill="#E0E0E0" HorizontalAlignment="Stretch" Margin="0,0,0,16"/>
                     </StackPanel>
 
@@ -133,7 +133,7 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0">
-                        <TextBlock Text="🏦 IZVEŠTAJI ZA BANKE" FontSize="16" FontWeight="Bold" Foreground="#1A237E" Margin="0,0,0,8"/>
+                        <TextBlock Text="🏦 IZVEŠTAJI ZA BANKE" FontSize="16" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,8"/>
                         <Rectangle Height="2" Fill="#E0E0E0" HorizontalAlignment="Stretch" Margin="0,0,0,16"/>
                     </StackPanel>
 

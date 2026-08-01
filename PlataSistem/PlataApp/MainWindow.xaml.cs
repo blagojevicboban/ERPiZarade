@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using PlataApp.Views.Pomoc;
 using PlataApp.Views.Radnici;
 
 namespace PlataApp;
@@ -9,6 +10,7 @@ namespace PlataApp;
 public partial class MainWindow : Window
 {
     private Button? _activeNavBtn;
+    private string _trenutnaSekcijaKljuc = "";
 
     public MainWindow()
     {
@@ -238,7 +240,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void NavigateTo(Button btn, string title, Page page, string subtitle = "")
+    private void NavigateTo(Button btn, string title, Page page, string subtitle = "", string helpAnchor = "")
     {
         if (_activeNavBtn != null)
             _activeNavBtn.Style = (Style)FindResource("NavButton");
@@ -247,82 +249,67 @@ public partial class MainWindow : Window
         _activeNavBtn = btn;
         TxtHeaderTitle.Text = title;
         TxtHeaderSubtitle.Text = subtitle;
+        _trenutnaSekcijaKljuc = helpAnchor;
         MainFrame.Navigate(page);
     }
 
     private void BtnDashboard_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnDashboard, "📊 Radna tabla", new Views.Dashboard.DashboardPage());
+        => NavigateTo(BtnDashboard, "📊 Radna tabla", new Views.Dashboard.DashboardPage(), helpAnchor: "Dashboard");
 
     private void BtnRadnici_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnRadnici, "👤 Radnici", new RadniciPage(), "Evidencija zaposlenih i njihovih podataka");
+        => NavigateTo(BtnRadnici, "👤 Radnici", new RadniciPage(), "Evidencija zaposlenih i njihovih podataka", helpAnchor: "Radnici");
 
     private void BtnRadniSati_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnRadniSati, "⏱️ Radni sati", new Views.RadniSati.RadniSatiPage());
+        => NavigateTo(BtnRadniSati, "⏱️ Radni sati", new Views.RadniSati.RadniSatiPage(), helpAnchor: "RadniSati");
 
     private void BtnObracun_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnObracun, "📊 Obračun plate", new Views.Obracun.ObracunPage());
+        => NavigateTo(BtnObracun, "📊 Obračun plate", new Views.Obracun.ObracunPage(), helpAnchor: "Obracun");
 
     private void BtnListici_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnListici, "🧾 Masovna štampa platnih listića", new Views.Listici.ListiciPage(), "Masovni izvoz u odvojene PDF datoteke ili generisanje jedinstvenog zbirnog dokumenta");
+        => NavigateTo(BtnListici, "🧾 Masovna štampa platnih listića", new Views.Listici.ListiciPage(), "Masovni izvoz u odvojene PDF datoteke ili generisanje jedinstvenog zbirnog dokumenta", helpAnchor: "Listici");
 
     private void BtnStampe_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnStampe, "📑 Knjigovodstveni izveštaji i rekapitulacije", new Views.Stampe.StampePage(), "Generisanje i štampa mesečnih platnih spiskova po radnim jedinicama i zbirnih rekapitulacija");
+        => NavigateTo(BtnStampe, "📑 Knjigovodstveni izveštaji i rekapitulacije", new Views.Stampe.StampePage(), "Generisanje i štampa mesečnih platnih spiskova po radnim jedinicama i zbirnih rekapitulacija", helpAnchor: "Stampe");
 
     private void BtnPppPd_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnPppPd, "📋 Poreska uprava — PPP-PD prijava", new Views.PppPd.PppPdPage(), "Pregled, pre-validacija poreskih osnovica i generisanje XML datoteke poreske deklaracije za Poresku Upravu Republike Srbije");
+        => NavigateTo(BtnPppPd, "📋 Poreska uprava — PPP-PD prijava", new Views.PppPd.PppPdPage(), "Pregled, pre-validacija poreskih osnovica i generisanje XML datoteke poreske deklaracije za Poresku Upravu Republike Srbije", helpAnchor: "PppPd");
 
     private void BtnKrediti_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnKrediti, "💳 Krediti i obustave", new Views.Krediti.KreditiPage(), "Evidencija bankovnih kredita i administrativnih obustava zaposlenih");
+        => NavigateTo(BtnKrediti, "💳 Krediti i obustave", new Views.Krediti.KreditiPage(), "Evidencija bankovnih kredita i administrativnih obustava zaposlenih", helpAnchor: "Krediti");
 
     private void BtnBanke_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnBanke, "🏦 Šifrarnici banaka", new Views.Banke.BankePage(), "Pregled i izmena hronoloških šifarnika banaka i tekućih računa za obračun plata");
+        => NavigateTo(BtnBanke, "🏦 Šifrarnici banaka", new Views.Banke.BankePage(), "Pregled i izmena hronoloških šifarnika banaka i tekućih računa za obračun plata", helpAnchor: "Banke");
 
     private void BtnFirme_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnFirme, "🏢 Upravljanje firmama", new Views.Firme.FirmePage(), "Pregled, izmena, unos novih i odabir aktivne firme za obračune i izveštaje");
+        => NavigateTo(BtnFirme, "🏢 Upravljanje firmama", new Views.Firme.FirmePage(), "Pregled, izmena, unos novih i odabir aktivne firme za obračune i izveštaje", helpAnchor: "Firme");
 
     private void BtnPodesavanja_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnPodesavanja, "⚙️ Podešavanja", new Views.Podesavanja.PodesavanjaPage(), "Upravljanje osnovnim podacima o firmi i kreiranje/vraćanje rezervne kopije baze podataka");
+        => NavigateTo(BtnPodesavanja, "⚙️ Podešavanja", new Views.Podesavanja.PodesavanjaPage(), "Upravljanje osnovnim podacima o firmi i kreiranje/vraćanje rezervne kopije baze podataka", helpAnchor: "Podesavanja");
 
     private void BtnPorezi_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnPorezi, "⚖️ Porezi i opšti parametri", new Views.Porezi.PoreziPage(), "Upravljanje poreskim stopama, mesečnim limitima, opštim parametrima i procentima uvećanja");
+        => NavigateTo(BtnPorezi, "⚖️ Porezi i opšti parametri", new Views.Porezi.PoreziPage(), "Upravljanje poreskim stopama, mesečnim limitima, opštim parametrima i procentima uvećanja", helpAnchor: "Porezi");
 
     private void BtnDoprinosi_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnDoprinosi, "📈 Doprinosi", new Views.Doprinosi.DoprinosiPage(), "Pregled, izmena i upravljanje stopama i žiro računima doprinosa na teret radnika i poslodavca");
+        => NavigateTo(BtnDoprinosi, "📈 Doprinosi", new Views.Doprinosi.DoprinosiPage(), "Pregled, izmena i upravljanje stopama i žiro računima doprinosa na teret radnika i poslodavca", helpAnchor: "Doprinosi");
 
     private void BtnPlatniRazredi_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnPlatniRazredi, "📊 Platni razredi", new Views.PlatniRazredi.PlatniRazrediPage(), "Pregled i izmena najnižih bruto osnovica za stepene stručne spreme");
+        => NavigateTo(BtnPlatniRazredi, "📊 Platni razredi", new Views.PlatniRazredi.PlatniRazrediPage(), "Pregled i izmena najnižih bruto osnovica za stepene stručne spreme", helpAnchor: "PlatniRazredi");
 
     private void BtnObracuni_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnObracuni, "🏢 Pregled svih obračuna", new Views.Obracuni.ObracuniPage());
+        => NavigateTo(BtnObracuni, "🏢 Pregled svih obračuna", new Views.Obracuni.ObracuniPage(), helpAnchor: "Obracuni");
 
     private void BtnHelp_Click(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            // Putanja do HTML uputstva pored exe-a
-            string helpPath = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                "Resources", "Help", "uputstvo.html");
+        TxtHeaderTitle.Text = "❓ Pomoć";
+        TxtHeaderSubtitle.Text = "";
+        MainFrame.Navigate(new PomocPage());
+    }
 
-            if (!File.Exists(helpPath))
-            {
-                MessageBox.Show(
-                    $"Datoteka uputstva nije pronađena:\n{helpPath}",
-                    "Uputstvo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = helpPath,
-                UseShellExecute = true  // otvara u default browser-u
-            });
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Greška pri otvaranju uputstva: {ex.Message}",
-                "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
+    private void OtvoriPomocKontekstualno()
+    {
+        TxtHeaderTitle.Text = "❓ Pomoć";
+        TxtHeaderSubtitle.Text = "";
+        MainFrame.Navigate(new PomocPage(_trenutnaSekcijaKljuc));
     }
 
     private void FirmaBorder_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)

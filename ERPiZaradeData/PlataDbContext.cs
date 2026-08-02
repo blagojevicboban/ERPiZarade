@@ -32,6 +32,8 @@ public class PlataDbContext : DbContext
     public DbSet<ObracunAudit> ObracunAuditi => Set<ObracunAudit>();
     public DbSet<SlanjeListica> SlanjaListica => Set<SlanjeListica>();
     public DbSet<Praznik> Praznici => Set<Praznik>();
+    public DbSet<VrstaPrimanja> VrstePrimanja => Set<VrstaPrimanja>();
+    public DbSet<ObracunStavka> ObracunStavke => Set<ObracunStavka>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -109,6 +111,30 @@ public class PlataDbContext : DbContext
         // Jedan zapis po danu — dva praznika istog dana bi se dvaput oduzela od fonda sati
         modelBuilder.Entity<Praznik>()
             .HasIndex(p => p.Datum)
+            .IsUnique();
+
+        // Šifra vrste primanja je ono po čemu je kod traži, pa mora biti jedinstvena
+        modelBuilder.Entity<VrstaPrimanja>()
+            .HasIndex(v => v.Sifra)
+            .IsUnique();
+
+        // Brisanjem obračuna nestaju i njegove stavke — one same za sebe nemaju smisla
+        modelBuilder.Entity<ObracunStavka>()
+            .HasOne(s => s.Obracun)
+            .WithMany(o => o.Stavke)
+            .HasForeignKey(s => s.ObracunPlateId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Vrsta primanja koja je upotrebljena u obračunu ne sme da se obriše
+        modelBuilder.Entity<ObracunStavka>()
+            .HasOne(s => s.VrstaPrimanja)
+            .WithMany(v => v.Stavke)
+            .HasForeignKey(s => s.VrstaPrimanjaId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Jedna stavka po vrsti primanja u okviru obračuna
+        modelBuilder.Entity<ObracunStavka>()
+            .HasIndex(s => new { s.ObracunPlateId, s.VrstaPrimanjaId })
             .IsUnique();
     }
 
@@ -425,6 +451,23 @@ public class PlataDbContext : DbContext
                     P1 = 51297.00m, P2 = 51297.00m, P3 = 51297.00m, P4 = 51297.00m, P5 = 51297.00m,
                     P6 = 51297.00m, P7 = 51297.00m, P8 = 51297.00m, P9 = 0m
                 });
+                ctx.SaveChanges();
+            }
+        }
+        catch { }
+
+        try
+        {
+            // Šifarnik se dopunjuje po šifri: nove vrste ulaze, a izmene koje je korisnik
+            // napravio nad postojećim ostaju netaknute.
+            var postojece = ctx.VrstePrimanja.Select(v => v.Sifra).ToHashSet();
+            var nove = VrstePrimanjaSeed.Podrazumevane()
+                .Where(v => !postojece.Contains(v.Sifra))
+                .ToList();
+
+            if (nove.Count > 0)
+            {
+                ctx.VrstePrimanja.AddRange(nove);
                 ctx.SaveChanges();
             }
         }

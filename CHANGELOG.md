@@ -6,6 +6,28 @@ Format je zasnovan na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) s
 
 ---
 
+## [1.5.0] - 2026-08-03
+
+> **Faza 2.1** — šifarnik vrsta primanja i stavke obračuna. Analiza ovo naziva najvećim
+> pojedinačnim zahvatom u planu i preduslovom za sve obračune van radnog odnosa.
+
+### 💰 Šifarnik vrsta primanja (novi ekran)
+- Do sada je svako novo primanje značilo **novu kolonu** u `ObracunPlate` i novu migraciju — tabela je zato narasla na preko šezdeset kolona. Sada se novo primanje dodaje kao **red u šifarniku**, bez ijedne izmene baze.
+- Uz svaku vrstu stoji sve što je potrebno da se obračuna i proknjiži: **SVP šifra**, da li je oporeziva, ulazi li u osnovicu doprinosa, **neoporezivi limit** i **konto** za automatsko knjiženje (priprema za Fazu 3.1).
+- Popunjeno je **18 sistemskih vrsta** koje odgovaraju jedna-na-jedan komponentama iz kojih se danas sastavlja bruto iznos, plus četiri neoporeziva primanja (prevoz, jubilarna nagrada, solidarna pomoć, poklon deci) kao primer da se nova vrsta dodaje bez izmene šeme.
+- Sistemske vrste se ne mogu obrisati (engine ih traži po šifri), kao ni vrsta upotrebljena u postojećim obračunima — umesto toga se isključuju poljem „Aktivna".
+
+### 🧾 Stavke obračuna (`ObracunStavka`)
+- Obračun sada uz zbirne iznose nosi i **razloženi sastav bruta po vrstama primanja**, sa satima i iznosom po stavci.
+- **Nijedan postojeći iznos nije promenjen.** Stavke su verno razlaganje istog zbira, a stare kolone ostaju netaknute — zato svi postojeći ekrani, štampe i izveštaji rade nepromenjeno.
+- Ako šifarnik nije popunjen, obračun radi kao i pre; baza dobija stavke tek pri sledećem obračunu.
+
+### 🧪 Testovi
+- 134 ukupno (11 novih). Ključni test drži kriterijum iz razvojne mape doslovno: **zbir stavki mora biti jednak ukupnom bruto iznosu** obračuna. Dodatno se poredi obračun sa popunjenim i praznim šifarnikom — bruto, neto, porez i minuli rad moraju biti identični.
+
+### ❗ Šta ostaje od Faze 2.1
+- Engine i dalje **računa** po starim kolonama, a stavke izvodi iz rezultata. Sledeći korak je da stavke postanu izvor istine, čime se otvara pitanje iz analize (tačka 6.3): prevesti legacy kolone sve, ili zamrznuti stare periode i novi model primeniti od određenog datuma. Ovakvim redosledom ta odluka ostaje otvorena, a ništa se ne gubi.
+
 ## [1.4.0] - 2026-08-02
 
 > **Faza 1 je zaokružena** — kalendar praznika sa automatskim fondom sati (1.4) i godišnji

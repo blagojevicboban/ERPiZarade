@@ -229,6 +229,9 @@
                         <Button x:Name="BtnPraznici" Content="📅  Kalendar praznika"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnPraznici_Click"/>
+                        <Button x:Name="BtnVrstePrimanja" Content="💰  Vrste primanja"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnVrstePrimanja_Click"/>
 
                         <TextBlock x:Name="HeaderPodesavanja" Text="PODEŠAVANJA" FontSize="10" FontWeight="SemiBold"
                                    Foreground="#7986CB" Margin="24,10,0,3"/>

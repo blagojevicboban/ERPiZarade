@@ -294,6 +294,9 @@ public partial class MainWindow : Window
     private void BtnPraznici_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnPraznici, "📅 Kalendar praznika i fond sati", new Views.Praznici.PrazniciPage(), "Zakonski i sopstveni neradni dani, iz kojih se računa mesečni fond radnih sati", helpAnchor: "Praznici");
 
+    private void BtnVrstePrimanja_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnVrstePrimanja, "💰 Šifarnik vrsta primanja", new Views.VrstePrimanja.VrstePrimanjaPage(), "Vrste primanja sa SVP šifrom, poreskim tretmanom i kontom — novo primanje se dodaje bez izmene baze", helpAnchor: "VrstePrimanja");
+
     private void BtnFirme_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnFirme, "🏢 Upravljanje firmama", new Views.Firme.FirmePage(), "Pregled, izmena, unos novih i odabir aktivne firme za obračune i izveštaje", helpAnchor: "Firme");
 

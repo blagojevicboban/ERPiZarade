@@ -384,7 +384,7 @@ public class ObracunService
         decimal netoIsplata = totalBruto - totalEmployeeDeductions - kreditiObustava - samodoprinosiIznos;
         if (netoIsplata < 0m) netoIsplata = 0m;
 
-        return new ObracunPlate
+        var obracun = new ObracunPlate
         {
             RadnikId = radnik.Id,
             Radnik = radnik,
@@ -469,6 +469,116 @@ public class ObracunService
             Operativni = radnik.Operativni,
             MinimalnaPlataOsnovica = Math.Round(granica, 2)
         };
+
+        // Razlaganje bruto iznosa po vrstama primanja (Faza 2.1). Iznosi iznad se ne
+        // menjaju — stavke su verno razlaganje istog zbira, pa obračun daje identičan
+        // rezultat kao pre uvođenja šifarnika.
+        PopuniStavke(obracun, new BrutoKomponente
+        {
+            OsnovnaZarada = brutoRedovni,
+            MinuliRad = brutoMinuliRad,
+            Prekovremeni = brutoPrekovremeni,
+            NocniRad = brutoNocni,
+            RadPraznikom = brutoPraznik,
+            NeradniPraznik = brutoNeradniPraznik,
+            RadNedeljom = brutoNedelja,
+            GodisnjiOdmor = brutoGodisnji,
+            Bolovanje = brutoBolovanje,
+            Bolovanje100 = brutoBolovanje100,
+            BolovanjePreko30 = brutoBolovanjePreko60,
+            Porodiljsko = brutoPorodiljsko,
+            PlacenoOdsustvo = brutoPlacenoOdsustvo,
+            PlacenoZakonski = brutoPlacenoZakonski,
+            Stimulacija = brutoStimulacija,
+            TopliObrok = topliObrokIznos,
+            Regres = regresIznos,
+            BrutoDodatak = sati.Varijabila
+        }, sati);
+
+        return obracun;
+    }
+
+    /// <summary>
+    /// Bruto komponente iz kojih se sastoji obračun, imenovane onako kako ih zove šifarnik.
+    /// Postoji da razlaganje na stavke ne zavisi od redosleda argumenata.
+    /// </summary>
+    private sealed class BrutoKomponente
+    {
+        public decimal OsnovnaZarada { get; init; }
+        public decimal MinuliRad { get; init; }
+        public decimal Prekovremeni { get; init; }
+        public decimal NocniRad { get; init; }
+        public decimal RadPraznikom { get; init; }
+        public decimal NeradniPraznik { get; init; }
+        public decimal RadNedeljom { get; init; }
+        public decimal GodisnjiOdmor { get; init; }
+        public decimal Bolovanje { get; init; }
+        public decimal Bolovanje100 { get; init; }
+        public decimal BolovanjePreko30 { get; init; }
+        public decimal Porodiljsko { get; init; }
+        public decimal PlacenoOdsustvo { get; init; }
+        public decimal PlacenoZakonski { get; init; }
+        public decimal Stimulacija { get; init; }
+        public decimal TopliObrok { get; init; }
+        public decimal Regres { get; init; }
+        public decimal BrutoDodatak { get; init; }
+    }
+
+    /// <summary>
+    /// Razlaže bruto iznos na stavke po vrstama primanja. Ne menja nijedan obračunati iznos —
+    /// zbir stavki jednak je ukupnom bruto iznosu obračuna.
+    ///
+    /// Vrste se traže po šifri iz šifarnika; ako šifarnik nije popunjen, stavke se preskaču
+    /// i obračun ostaje ispravan kao i pre uvođenja Faze 2.1.
+    /// </summary>
+    private void PopuniStavke(ObracunPlate obracun, BrutoKomponente komponente, RadniSat sati)
+    {
+        Dictionary<string, int> sifarnik;
+        try
+        {
+            sifarnik = _db.VrstePrimanja
+                .AsNoTracking()
+                .ToDictionary(v => v.Sifra, v => v.VrstaPrimanjaId, StringComparer.Ordinal);
+        }
+        catch
+        {
+            return;
+        }
+
+        if (sifarnik.Count == 0) return;
+
+        void Dodaj(string sifra, decimal iznos, int satiStavke = 0)
+        {
+            // Primanje bez iznosa i bez sati ne stoji na listiću — nula redova nema šta da kaže.
+            if (iznos == 0m && satiStavke == 0) return;
+            if (!sifarnik.TryGetValue(sifra, out int vrstaId)) return;
+
+            obracun.Stavke.Add(new ObracunStavka
+            {
+                VrstaPrimanjaId = vrstaId,
+                Sati = satiStavke,
+                Iznos = Math.Round(iznos, 2)
+            });
+        }
+
+        Dodaj(VrstePrimanjaSeed.OsnovnaZarada,    komponente.OsnovnaZarada,    sati.RedovniSati);
+        Dodaj(VrstePrimanjaSeed.MinuliRad,        komponente.MinuliRad);
+        Dodaj(VrstePrimanjaSeed.Prekovremeni,     komponente.Prekovremeni,     sati.PrekovremeneSati);
+        Dodaj(VrstePrimanjaSeed.NocniRad,         komponente.NocniRad,         sati.NocniSati);
+        Dodaj(VrstePrimanjaSeed.RadPraznikom,     komponente.RadPraznikom,     sati.RadPraznikomSati);
+        Dodaj(VrstePrimanjaSeed.NeradniPraznik,   komponente.NeradniPraznik,   sati.DrzavniPraznikSati);
+        Dodaj(VrstePrimanjaSeed.RadNedeljom,      komponente.RadNedeljom,      sati.RadNedeljomSati);
+        Dodaj(VrstePrimanjaSeed.GodisnjiOdmor,    komponente.GodisnjiOdmor,    sati.GodisnjiOdmorSati);
+        Dodaj(VrstePrimanjaSeed.Bolovanje,        komponente.Bolovanje,        sati.BolovanjeSati);
+        Dodaj(VrstePrimanjaSeed.Bolovanje100,     komponente.Bolovanje100,     sati.Bolovanje100Sati);
+        Dodaj(VrstePrimanjaSeed.BolovanjePreko30, komponente.BolovanjePreko30, sati.BolovanjePreko60Sati);
+        Dodaj(VrstePrimanjaSeed.Porodiljsko,      komponente.Porodiljsko,      sati.PorodiljskoOdsustvoSati);
+        Dodaj(VrstePrimanjaSeed.PlacenoOdsustvo,  komponente.PlacenoOdsustvo,  sati.PlacenoOdsustvoSati);
+        Dodaj(VrstePrimanjaSeed.PlacenoZakonski,  komponente.PlacenoZakonski,  sati.PlacenoZakonskiSati);
+        Dodaj(VrstePrimanjaSeed.Stimulacija,      komponente.Stimulacija);
+        Dodaj(VrstePrimanjaSeed.TopliObrok,       komponente.TopliObrok);
+        Dodaj(VrstePrimanjaSeed.Regres,           komponente.Regres);
+        Dodaj(VrstePrimanjaSeed.BrutoDodatak,     komponente.BrutoDodatak);
     }
 
     public decimal IzracunajProsekRadnika(int radnikId, int godina, int mesec)

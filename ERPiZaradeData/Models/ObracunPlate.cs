@@ -17,8 +17,15 @@ public class ObracunPlate
 
     public int Godina { get; set; }
     public int Mesec { get; set; }
-    
+
     public bool Zakljucan { get; set; }
+
+    /// <summary>
+    /// Razloženi sastav bruto iznosa po vrstama primanja (Faza 2.1). Zbir stavki jednak je
+    /// ukupnom bruto iznosu obračuna — kolone iznad ostaju netaknute, pa stariji ekrani i
+    /// štampe rade nepromenjeno.
+    /// </summary>
+    public ICollection<ObracunStavka> Stavke { get; set; } = [];
 
     // ── BRUTO ──────────────────────────────────────────────
     [Column(TypeName = "decimal(14,2)")]

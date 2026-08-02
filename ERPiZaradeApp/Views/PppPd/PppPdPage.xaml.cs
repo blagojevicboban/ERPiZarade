@@ -185,29 +185,12 @@ public class SvpConverter : IValueConverter
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
+        // Prikaz mora da koristi istu logiku kao izvoz — inače ekran pokazuje jednu šifru,
+        // a u prijavu ode druga.
         if (value is ObracunPlate o && o.Radnik != null)
-        {
-            string svp = "101101000";
-            bool jePenzioner = !string.IsNullOrWhiteSpace(o.Radnik.Radno_Mesto) && 
-                               o.Radnik.Radno_Mesto.TrimStart().StartsWith("109");
+            return SvpService.Odredi(o);
 
-            if (o.BrutoBolovanje > o.BrutoZarada)
-            {
-                svp = "109101000";
-            }
-            else if (!string.IsNullOrWhiteSpace(o.Radnik.Radno_Mesto) && 
-                     o.Radnik.Radno_Mesto.Length == 9 && 
-                     o.Radnik.Radno_Mesto.All(char.IsDigit))
-            {
-                svp = o.Radnik.Radno_Mesto;
-            }
-            else if (jePenzioner)
-            {
-                svp = "101109000";
-            }
-            return svp;
-        }
-        return "101101000";
+        return SvpService.RedovnaZarada;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

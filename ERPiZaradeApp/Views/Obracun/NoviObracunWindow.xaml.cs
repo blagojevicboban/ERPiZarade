@@ -127,23 +127,34 @@ public partial class NoviObracunWindow : Window
             int mesec = (int)ComboMesec.SelectedItem;
 
             // Pronađi stope i parametre za izabrani period iz baze (sa fallback-om na najbliži prethodni)
-            var porezi = _db.Porezi
+            var poreziPerioda = _db.Porezi
                 .FirstOrDefault(p => p.Godina == godina && p.Mesec == mesec);
-            if (porezi == null)
-            {
-                porezi = _db.Porezi
-                    .Where(p => p.Godina < godina || (p.Godina == godina && p.Mesec < mesec))
-                    .OrderByDescending(p => p.Godina)
-                    .ThenByDescending(p => p.Mesec)
-                    .FirstOrDefault();
-            }
+
+            var porezi = poreziPerioda ?? _db.Porezi
+                .Where(p => p.Godina < godina || (p.Godina == godina && p.Mesec < mesec))
+                .OrderByDescending(p => p.Godina)
+                .ThenByDescending(p => p.Mesec)
+                .FirstOrDefault();
 
             decimal vrBoda = porezi?.VrBoda ?? 1860.34m;
-            int fondIzBaze = porezi?.FondCasova ?? 176;
+
+            // Fond sati se preuzima samo ako je unet BAŠ za ovaj period. Ranije se u
+            // suprotnom nasleđivao fond prethodnog meseca, a meseci imaju različit broj
+            // radnih dana — februar sa 160 sati bi tako ušao u mart koji ima 176.
+            int fondSati;
+            if (poreziPerioda is { FondCasova: > 0 })
+            {
+                fondSati = poreziPerioda.FondCasova;
+            }
+            else
+            {
+                var praznikServis = new Services.PraznikService(_db);
+                praznikServis.ObezbediGodinu(godina);
+                fondSati = praznikServis.FondSati(godina, mesec);
+            }
 
             TxtVrednostBoda.Text = vrBoda.ToString("F4");
-            TxtFondCasova.Text = fondIzBaze.ToString();
-            int fondSati = fondIzBaze;
+            TxtFondCasova.Text = fondSati.ToString();
 
             // 1. Ako nema radnika u ciljnom periodu, automatski ih kopiramo iz najbližeg prethodnog
             var imaTargetRadnika = _db.Radnici.Any(r => r.Godina == godina && r.Mesec == mesec);

@@ -279,6 +279,9 @@ public partial class MainWindow : Window
     private void BtnPppPd_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnPppPd, "📋 Poreska uprava — PPP-PD prijava", new Views.PppPd.PppPdPage(), "Pregled, pre-validacija poreskih osnovica i generisanje XML datoteke poreske deklaracije za Poresku Upravu Republike Srbije", helpAnchor: "PppPd");
 
+    private void BtnPppPo_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnPppPo, "🧾 PPP-PO — godišnja potvrda o plaćenim porezima i doprinosima", new Views.PppPo.PppPoPage(), "Potvrda koju je poslodavac dužan da uruči radniku do 31. januara za prethodnu godinu", helpAnchor: "PppPo");
+
     private void BtnNalozi_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnNalozi, "🏦 Nalozi za prenos", new Views.Nalozi.NaloziPage(), "Priprema naloga za isplatu neto zarada i jedinstvene uplate poreza i doprinosa po BOP-u iz prihvaćene PPP-PD prijave", helpAnchor: "Nalozi");
 
@@ -287,6 +290,9 @@ public partial class MainWindow : Window
 
     private void BtnBanke_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnBanke, "🏦 Šifrarnici banaka", new Views.Banke.BankePage(), "Pregled i izmena hronoloških šifarnika banaka i tekućih računa za obračun plata", helpAnchor: "Banke");
+
+    private void BtnPraznici_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnPraznici, "📅 Kalendar praznika i fond sati", new Views.Praznici.PrazniciPage(), "Zakonski i sopstveni neradni dani, iz kojih se računa mesečni fond radnih sati", helpAnchor: "Praznici");
 
     private void BtnFirme_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnFirme, "🏢 Upravljanje firmama", new Views.Firme.FirmePage(), "Pregled, izmena, unos novih i odabir aktivne firme za obračune i izveštaje", helpAnchor: "Firme");

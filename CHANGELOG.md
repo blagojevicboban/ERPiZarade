@@ -6,6 +6,35 @@ Format je zasnovan na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) s
 
 ---
 
+## [1.4.0] - 2026-08-02
+
+> **Faza 1 je zaokružena** — kalendar praznika sa automatskim fondom sati (1.4) i godišnji
+> obrazac PPP-PO (1.3).
+
+### 🧾 Godišnji obrazac PPP-PO (Faza 1.3)
+- Novi ekran pravi **potvrdu o plaćenim porezima i doprinosima po odbitku**, koju je poslodavac dužan da uruči radniku do 31. januara za prethodnu godinu.
+- Obrazac se sastavlja iz obračuna cele godine i grupiše **po vrsti prihoda (SVP)**, sa brojem meseci, bruto prihodom, poreskom osnovicom, porezom i doprinosima po redu, i zbirom.
+- Štampa: potvrda za izabranog radnika, jedan zbirni PDF sa svima, ili poseban PDF po radniku u folder. Izdavanje se beleži u revizioni trag.
+- **Kontrola slaganja sa PPP-PD prijavama**: ako se zbir poreza i doprinosa iz obračuna razlikuje od zbira iz podnetih prijava, to znači da je obračun izmenjen posle podnošenja — potvrda bi radniku govorila jedno, a Poreska uprava imala drugo. Neslaganje ne blokira štampu, ali traži izričitu potvrdu.
+
+### 🧹 Jedna logika za SVP šifru umesto tri kopije
+- Određivanje šifre vrste prihoda stajalo je u tri kopije — u izvozu PPP-PD, u prikazu na ekranu prijave i sada u godišnjem obrascu. Kopije su se već razišle, pa je isti obračun mogao dobiti jednu šifru u prijavi a drugu na ekranu. Sve tri sada koriste `SvpService`.
+- SVP se i dalje izvodi iz teksta u `Radnik.Radno_Mesto` — to ostaje poznato ograničenje modela (tačka 4.1.2 analize), koje rešava šifarnik `VrstaPrimanja` iz Faze 2.1. Dok se ne uvede, bar postoji **jedno** mesto koje treba izmeniti.
+
+### 📅 Kalendar praznika (novi ekran)
+- Zakonski praznici se popunjavaju za izabranu godinu po Zakonu o državnim i drugim praznicima: Nova godina, Sretenje, Praznik rada, Dan primirja, Božić i uskršnji dani.
+- **Datum pravoslavnog Uskrsa se računa** (julijanski račun po Meeus-u, uz razliku od 13 dana koja važi za 1900–2099). Van tog opsega metoda odbija da računa umesto da vrati pogrešan datum.
+- Primenjeno je pravilo da se, ako **državni** praznik padne u nedelju, ne radi prvog narednog radnog dana — a da se **verski** praznik ne pomera. Pomeranje se računa tek nad potpunom listom praznika: usput bi „prvi naredni radni dan" ispao dan koji je i sam praznik (16. februar dok se obrađuje 15.).
+- Kalendar je izmenjiv: firma dodaje sopstvene neradne dane (slava, kolektivni godišnji odmor), a ponovno popunjavanje zakonskih praznika ih ne dira.
+- Desna tabela prikazuje **radne dane i fond sati po mesecima**, pa se dejstvo svake izmene odmah vidi.
+
+### 🐛 Fond sati se nasleđivao od pogrešnog meseca
+- Kada period nije imao sopstveni `FondCasova`, uzimao se fond **prethodnog meseca** — pa je februar sa 160 sati ulazio u mart koji ima 176. Cena radnog sata se računa iz fonda, tako da je to menjalo platu svakom radniku.
+- Sada se u tom slučaju fond **računa iz kalendara** (radni dani × 8). Ručno unet fond za taj period i dalje ima prednost.
+
+### 🧪 Testovi
+- 123 ukupno (33 nova). Datum pravoslavnog Uskrsa se poredi sa poznatim datumima za šest godina (2022–2027), jer je to jedini deo kalendara koji se ne može proveriti pogledom. Provereno je i da praznik u vikendu ne umanjuje fond dvaput, da dan označen kao radni ne ulazi u umanjenje, i da PPP-PO prijavi neslaganje sa podnetim prijavama.
+
 ## [1.3.0] - 2026-08-02
 
 > **Faza 1 razvojne mape** iz `ANALIZA_I_PREDLOZI_FUNKCIONALNOSTI.md`: nalozi za prenos

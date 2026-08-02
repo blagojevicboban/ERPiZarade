@@ -31,6 +31,7 @@ public class PlataDbContext : DbContext
     public DbSet<PppPdPrijava> PppPdPrijave => Set<PppPdPrijava>();
     public DbSet<ObracunAudit> ObracunAuditi => Set<ObracunAudit>();
     public DbSet<SlanjeListica> SlanjaListica => Set<SlanjeListica>();
+    public DbSet<Praznik> Praznici => Set<Praznik>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -104,6 +105,11 @@ public class PlataDbContext : DbContext
         // Evidencija slanja se čita po periodu i po radniku („da li je dobio listić")
         modelBuilder.Entity<SlanjeListica>()
             .HasIndex(s => new { s.Godina, s.Mesec, s.BrojRadnika });
+
+        // Jedan zapis po danu — dva praznika istog dana bi se dvaput oduzela od fonda sati
+        modelBuilder.Entity<Praznik>()
+            .HasIndex(p => p.Datum)
+            .IsUnique();
     }
 
     /// <summary>

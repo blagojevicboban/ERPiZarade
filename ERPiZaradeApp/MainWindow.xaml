@@ -211,6 +211,9 @@
                         <Button x:Name="BtnPppPd" Content="📋  PPP-PD"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnPppPd_Click"/>
+                        <Button x:Name="BtnPppPo" Content="🧾  PPP-PO (godišnja)"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnPppPo_Click"/>
                         <Button x:Name="BtnNalozi" Content="🏦  Nalozi za prenos"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnNalozi_Click"/>
@@ -223,6 +226,9 @@
                         <Button x:Name="BtnBanke" Content="🏦  Banke"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnBanke_Click"/>
+                        <Button x:Name="BtnPraznici" Content="📅  Kalendar praznika"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnPraznici_Click"/>
 
                         <TextBlock x:Name="HeaderPodesavanja" Text="PODEŠAVANJA" FontSize="10" FontWeight="SemiBold"
                                    Foreground="#7986CB" Margin="24,10,0,3"/>

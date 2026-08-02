@@ -6,6 +6,24 @@ Format je zasnovan na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) s
 
 ---
 
+## [1.6.0] - 2026-08-03
+
+> Odgovor na otvoreno pitanje 6.3 iz analize: **legacy kolone se prevode sve**, umesto da se
+> stari periodi zamrznu. Time nema dva puta kroz kod.
+
+### 🔀 Prevođenje zatečenih obračuna na model stavki
+- Dugme na ekranu vrsta primanja preslikava **postojeće obračune** u stavke, pa i stari periodi rade po novom modelu.
+- **Proba se izvršava uvek pre upisa** — prikazuje koliko će biti prevedeno i koji obračuni neće, i tek onda traži potvrdu. Radi se nad podacima koji su već isplaćeni, pa se ne upisuje ništa što korisnik nije video.
+- Obračun kod kog se zbir stavki **ne poklopi** sa bruto iznosom se ne prevodi, nego se prijavljuje poimenično sa razlikom. Delimično preveden obračun izgleda ispravno, a daje pogrešan listić.
+- Ponovno pokretanje ne udvostručuje stavke.
+
+### 🐛 Dve zamke u zatečenim podacima
+- **Kolone `Neto*` sadrže bruto iznose.** `NetoZar` je bruto osnovne zarade, `NetoPrek` bruto prekovremenog i tako dalje — naziv je ostatak iz DBF-a i navodi na pogrešan zaključak. Prevod ih čita kao bruto, kako i jesu.
+- **Bolovanje preko 30 dana i porodiljsko odsustvo nemaju sopstvenu kolonu sa iznosom** — imaju samo sate, a iznos je ulazio jedino u ukupan bruto. Rekonstruišu se istom formulom koju koristi obračun (sati × prosek); bez toga bi se zbir stavki razišao od bruta kod svakog radnika koji je bio na dužem bolovanju.
+
+### 🧪 Testovi
+- 143 ukupno (9 novih): ravnoteža posle prevoda, rekonstrukcija komponenti bez sopstvene kolone, odbijanje obračuna sa nepokrivenim delom bruta, tolerancija na zaokruživanje (do 0,50 RSD po obračunu) i idempotentnost.
+
 ## [1.5.0] - 2026-08-03
 
 > **Faza 2.1** — šifarnik vrsta primanja i stavke obračuna. Analiza ovo naziva najvećim

@@ -32,6 +32,78 @@ public partial class VrstePrimanjaPage : Page
         StatusMessage.Text = $"{_vrste.Count} vrsta primanja ({_vrste.Count(v => v.JeSistemska)} sistemskih).";
     }
 
+    /// <summary>
+    /// Prevodi zatečene obračune na model stavki. Proba se izvršava uvek pre upisa — radi
+    /// se nad podacima koji su već isplaćeni, pa se ne upisuje ništa što korisnik nije video.
+    /// </summary>
+    private void BtnPrevedi_Click(object sender, RoutedEventArgs e)
+    {
+        var servis = new Services.PrevodStavkiService(_db);
+
+        Services.PrevodRezultat proba;
+        try
+        {
+            proba = servis.Proveri();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Proba nije izvršena: {ex.Message}", "Greška",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        if (proba.Prevedeno == 0 && proba.JeCist)
+        {
+            MessageBox.Show(
+                proba.VecImajuStavke > 0
+                    ? $"Svi obračuni ({proba.VecImajuStavke}) već imaju stavke."
+                    : "Nema obračuna za prevođenje.",
+                "Nema šta da se prevede", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        string poruka =
+            $"Obračuna ukupno: {proba.UkupnoObracuna}\n" +
+            $"Već imaju stavke: {proba.VecImajuStavke}\n" +
+            $"Biće prevedeno: {proba.Prevedeno}\n";
+
+        if (!proba.JeCist)
+        {
+            poruka += $"\nNeće biti prevedeno (zbir stavki se ne slaže sa bruto iznosom): {proba.Neslaganja.Count}\n\n" +
+                      string.Join(Environment.NewLine, proba.Neslaganja.Take(10)
+                          .Select(n => $"• {n.Mesec:D2}/{n.Godina} {n.BrojRadnika} {n.Radnik} — razlika {n.Razlika:N2}"));
+
+            if (proba.Neslaganja.Count > 10)
+                poruka += $"{Environment.NewLine}… i još {proba.Neslaganja.Count - 10}.";
+
+            poruka += "\n\nTi obračuni ostaju nepromenjeni i mogu se prevesti kasnije, kad se utvrdi odakle razlika.";
+        }
+
+        poruka += "\n\nNastaviti sa upisom?";
+
+        if (MessageBox.Show(poruka, "Prevođenje na model stavki",
+                MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        try
+        {
+            var rezultat = servis.Prevedi();
+
+            StatusMessage.Text = $"Prevedeno {rezultat.Prevedeno} obračuna; neslaganja: {rezultat.Neslaganja.Count}.";
+            MessageBox.Show(
+                $"Prevedeno je {rezultat.Prevedeno} obračuna." +
+                (rezultat.JeCist ? "" : $"\n\n{rezultat.Neslaganja.Count} obračuna je ostalo nepromenjeno."),
+                "Prevođenje završeno", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Prevođenje nije izvršeno: {ex.Message}", "Greška",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void BtnDodaj_Click(object sender, RoutedEventArgs e)
     {
         var nova = new VrstaPrimanja

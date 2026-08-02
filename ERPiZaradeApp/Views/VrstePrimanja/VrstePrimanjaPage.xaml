@@ -23,6 +23,9 @@
                            Text="Novo primanje se dodaje kao red u ovoj tabeli — bez izmene baze. Sistemske vrste popunjava sam obračun i njima se šifra ne sme menjati."/>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="🔀" Style="{StaticResource SecondaryButton}" Width="36" Padding="0" Margin="0,0,16,0"
+                            Click="BtnPrevedi_Click"
+                            ToolTip="Prevedi zatečene obračune na model stavki (prikazuje probu pre upisa)"/>
                     <Button Content="➕" Style="{StaticResource SecondaryButton}" Width="36" Padding="0" Margin="0,0,8,0"
                             Click="BtnDodaj_Click" ToolTip="Dodaj vrstu primanja"/>
                     <Button Content="🗑" Style="{StaticResource SecondaryButton}" Width="36" Padding="0" Margin="0,0,8,0"

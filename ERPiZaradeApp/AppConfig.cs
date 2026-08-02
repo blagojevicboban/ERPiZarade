@@ -13,12 +13,148 @@ public static class AppConfig
     /// čiji se sadržaj briše i ponovo raspakuje pri svakom ažuriranju programa.
     /// Isti obrazac koriste ERPiFinansijeApp i ERPiSredstvaApp, zbog čega im baze preživljavaju update.
     /// </summary>
-    public static string BazeDir => Path.Combine(
+    public static string AppDataDir => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "ERPiZaradeApp", "Baze");
+        "ERPiZaradeApp");
+
+    public static string BazeDir => Path.Combine(AppDataDir, "Baze");
 
     /// <summary>Stara lokacija iz Inno Setup instalacije — koristi se samo kao izvor za migraciju.</summary>
     private static string StariBazeDir => @"C:\ERPiZaradeApp\Baze";
+
+    /// <summary>
+    /// Folderi sa podacima pod starim imenima aplikacije (pre preimenovanja u ERPi liniju).
+    /// Koriste se isključivo kao izvor jednokratnog preuzimanja podataka.
+    /// </summary>
+    private static string[] StariAppDataDirs => new[]
+    {
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PlataApp"),
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PlataSistemApp")
+    };
+
+    /// <summary>Marker da je preuzimanje iz starog foldera već obavljeno.</summary>
+    private static string MarkerPreuzimanja => Path.Combine(AppDataDir, "preuzeto_iz_starog_foldera.txt");
+
+    /// <summary>
+    /// Jednokratno preuzimanje SVIH zatečenih podataka iz foldera pod starim imenom
+    /// aplikacije (%LOCALAPPDATA%\PlataApp) u novi (%LOCALAPPDATA%\ERPiZaradeApp) —
+    /// baze, rezervne kopije, podešavanja i logove.
+    ///
+    /// Preimenovanje u ERPi liniju promenilo je i ime foldera sa podacima, pa bi bez ovoga
+    /// nova verzija startovala sa praznim spiskom firmi iako baze i dalje postoje na disku.
+    ///
+    /// Podaci se KOPIRAJU, ne premeštaju — stara instalacija ostaje upotrebljiva dok se
+    /// korisnik ne uveri da je sve preneto. Da se obrisana baza ne bi vraćala pri svakom
+    /// pokretanju, uspešno preuzimanje se beleži marker fajlom.
+    ///
+    /// Mora da se pozove PRE prvog pristupa <see cref="UserSettings.Instance"/>, jer se
+    /// odmah po kopiranju premapira putanja aktivne baze.
+    /// </summary>
+    public static void PreuzmiStariFolderPodataka()
+    {
+        try
+        {
+            var izvori = StariAppDataDirs.Where(Directory.Exists).ToArray();
+            if (izvori.Length == 0) return;
+
+            Directory.CreateDirectory(AppDataDir);
+            if (File.Exists(MarkerPreuzimanja)) return;
+
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+
+            int kopirano = 0;
+            foreach (var izvor in izvori)
+            {
+                kopirano += KopirajFolder(izvor, AppDataDir);
+            }
+
+            PremapirajAktivnuBazu();
+
+            File.WriteAllText(MarkerPreuzimanja,
+                $"Podaci su preuzeti iz: {string.Join(", ", izvori)} dana {DateTime.Now:dd.MM.yyyy. HH:mm:ss}.{Environment.NewLine}" +
+                $"Kopirano fajlova: {kopirano}. Original je ostao netaknut i može se obrisati ručno.{Environment.NewLine}" +
+                $"Brisanje ovog fajla ponovo pokreće preuzimanje pri sledećem startu.{Environment.NewLine}");
+
+            Serilog.Log.Information(
+                "Preuzeto {Broj} fajlova iz starih foldera {Izvori} u {Odrediste}",
+                kopirano, izvori, AppDataDir);
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Error(ex, "Greška pri preuzimanju podataka iz starog foldera aplikacije");
+        }
+    }
+
+    /// <summary>
+    /// Rekurzivno kopira ceo sadržaj foldera. Fajl koji na odredištu već postoji se ne dira —
+    /// novi podaci uvek pobeđuju nad zatečenim.
+    /// </summary>
+    private static int KopirajFolder(string izvor, string odrediste)
+    {
+        int kopirano = 0;
+        Directory.CreateDirectory(odrediste);
+
+        foreach (var fajl in Directory.GetFiles(izvor))
+        {
+            try
+            {
+                var cilj = Path.Combine(odrediste, Path.GetFileName(fajl));
+                if (File.Exists(cilj)) continue;
+
+                File.Copy(fajl, cilj);
+                kopirano++;
+            }
+            catch (Exception ex)
+            {
+                Serilog.Log.Warning(ex, "Fajl {Fajl} nije kopiran iz starog foldera", fajl);
+            }
+        }
+
+        foreach (var podfolder in Directory.GetDirectories(izvor))
+        {
+            kopirano += KopirajFolder(podfolder, Path.Combine(odrediste, Path.GetFileName(podfolder)));
+        }
+
+        return kopirano;
+    }
+
+    /// <summary>
+    /// Aktivna baza iz starih podešavanja pokazuje na stari folder. Ako nova instalacija
+    /// još nema ispravnu aktivnu bazu, preuzima se ona iz starih podešavanja — sada iz
+    /// kopije u novom folderu.
+    /// </summary>
+    private static void PremapirajAktivnuBazu()
+    {
+        try
+        {
+            var aktivna = UserSettings.Instance.ActiveDbPath;
+            if (!string.IsNullOrWhiteSpace(aktivna) && File.Exists(aktivna)) return;
+
+            var staraAktivna = aktivna;
+            if (string.IsNullOrWhiteSpace(staraAktivna))
+            {
+                staraAktivna = StariAppDataDirs
+                    .Select(dir => Path.Combine(dir, "settings.json"))
+                    .Where(File.Exists)
+                    .Select(putanja => System.Text.Json.JsonSerializer
+                        .Deserialize<UserSettings>(File.ReadAllText(putanja))?.ActiveDbPath)
+                    .FirstOrDefault(p => !string.IsNullOrWhiteSpace(p));
+            }
+
+            if (string.IsNullOrWhiteSpace(staraAktivna)) return;
+
+            var kandidat = Path.Combine(BazeDir, Path.GetFileName(staraAktivna));
+            if (!File.Exists(kandidat)) return;
+
+            UserSettings.Instance.ActiveDbPath = kandidat;
+            UserSettings.Instance.Save();
+            _dbPath = kandidat;
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Warning(ex, "Aktivna baza iz starih podešavanja nije premapirana");
+        }
+    }
 
     public static string DefaultDbPath => Path.Combine(BazeDir, "plata.db");
 

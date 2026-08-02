@@ -20,6 +20,11 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         Velopack.VelopackApp.Build().Run();
+
+        // Mora pre prvog pristupa UserSettings-u: preuzima baze i podešavanja
+        // zatečena pod starim imenom foldera (pre preimenovanja u ERPi liniju).
+        AppConfig.PreuzmiStariFolderPodataka();
+
         base.OnStartup(e);
 
         // Global QuestPDF license configuration to prevent exception during PDF generation

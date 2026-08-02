@@ -6,6 +6,59 @@ Format je zasnovan na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) s
 
 ---
 
+## [1.3.0] - 2026-08-02
+
+> **Faza 1 razvojne mape** iz `ANALIZA_I_PREDLOZI_FUNKCIONALNOSTI.md`: nalozi za prenos
+> (1.1), platni listići e-mailom (1.2) i uvoz radnih sati (1.5).
+
+### ✉️ Platni listići e-mailom (Faza 1.2)
+- Novo dugme na ekranu platnih listića šalje svakom selektovanom zaposlenom njegov listić na adresu iz kartona radnika. Pre slanja se traži potvrda, uz prikaz koliko zaposlenih nema e-mail.
+- **PDF se zaključava lozinkom**, a lozinka je JMBG radnika i **ne navodi se u poruci** — inače bi putovala istim kanalom kao dokument. Ako je zaštita uključena a radnik nema JMBG, listić se **ne šalje nezaštićen** nego se preskače.
+- Greška kod jednog radnika ne prekida slanje ostalima; po završetku se poimenično navodi ko listić **nije** dobio.
+- Novi tab **Podešavanja → E-mail**: SMTP server, port, TLS, nalog i adresa pošiljaoca, uz dugme „Proveri vezu" koje se poveže i prijavi bez slanja poruke. **Lozinka se čuva šifrovano** (Windows DPAPI, vezano za nalog na tom računaru) — `settings.json` je inače običan tekst u profilu korisnika.
+
+### 🔒 Evidencija slanja (obaveza po ZZPL)
+- Svako slanje se beleži: kome, kada, na koju adresu, sa kojim ishodom i da li je PDF bio zaštićen. Beleže se i **neuspesi i preskočeni**, jer je pitanje „ko listić nije dobio" jednako važno. Ime i adresa su denormalizovani da zapis ostane čitljiv i posle izmene kartona.
+- Migracija `Faza1_EvidencijaSlanjaListica`.
+
+### 🧾 Izgled listića izdvojen iz ekrana
+- `ConfigurePage` iz code-behinda prešao je u `PlatniListicDocument`, pa štampa i e-mail koriste **isti** kod. Dva puta kroz različit kod značilo bi da radnik dobije drugačiji listić nego što knjigovođa vidi na ekranu.
+
+### 🏦 Izvoz naloga u fajl za banku (Faza 1.1)
+Formati se razlikuju po aplikaciji, pa su napisana dva zapisivača nad istim, neutralnim modelom naloga:
+
+- **Hal E-Bank (TXT)** — format **fiksnih pozicija** koji prihvata većina poslovnih banaka: adresna stavka, sabirna sa zbirom i brojem naloga, pa po jedna individualna stavka po nalogu.
+- **Trezorski ePP (JSON)** — za korisnike sa računom kod Uprave za trezor. Suprotno očekivanju, taj sistem prima **JSON, ne XML**, najviše 5000 naloga po fajlu.
+
+Dva detalja iz specifikacije koja bi inače tiho oborila fajl:
+- **Šifra plaćanja je u Halcom formatu dvocifreno polje**, iako je šifra trocifrena: `240` se upisuje razdvojeno — prva cifra je *oblik plaćanja* (pozicija 167), preostale dve su *šifra* (pozicija 168). Upis `240` u dvocifreno polje pomerio bi svako polje iza njega.
+- **Iznos ide u parama, bez zareza, sa vodećim nulama**: `1.234,56` → `0000000123456`.
+
+Ako zapisivač nađe grešku (predugačko ime, račun koji se ne svodi na 18 cifara, prazna adresa primaoca za trezor), **fajl se ne snima** — inače bi se otkrilo tek pri učitavanju u banci, gde poruka o grešci obično ne kaže koji je nalog sporan.
+
+> ⚠️ **Kodni raspored Halcom fajla nije potvrđen.** Specifikacija ga ne navodi; postavljen je
+> `windows-1250`, kako Hal E-Bank radi u regionu. Pogrešan izbor ne obara uvoz, ali izobliči
+> „č", „ć" i „đ" u imenima — vidi se na prvom fajlu i menja se na jednom mestu u
+> `HalcomPpzWriter`.
+
+### 📦 Novi paketi
+- `MailKit` (slanje e-maila — ugrađeni `SmtpClient` je zastareo), `PDFsharp` (zaštita PDF-a lozinkom, što QuestPDF ne podržava), `System.Text.Encoding.CodePages` (windows-1250) i `ClosedXML` (čitanje i pisanje .xlsx). Sve pod MIT licencom.
+
+### 📥 Uvoz radnih sati iz Excel/CSV (Faza 1.5)
+- Dva nova dugmeta na ekranu radnih sati: **preuzimanje šablona** (.xlsx sa zaglavljem i već upisanim radnicima perioda) i **uvoz** popunjenog fajla. Bez šablona korisnik pogađa nazive kolona, pa prvi uvoz po pravilu padne na zaglavlju.
+- Nazivi kolona su isti kao natpisi na ekranu; prepoznaju se bez obzira na velika slova i dijakritiku (`Nocni rad` = `Noćni rad`). Nepoznate kolone se prijave i preskoče, ne blokiraju.
+- **Fajl sa ijednom greškom se odbija u celini**, uz spisak grešaka sa brojem reda i nazivom kolone — delimično uvezeni sati izgledaju kao uspeh, a daju pogrešan obračun radnicima iz neuvezenog dela. Prijavljuju se: nepostojeći radnik, isti radnik dva puta, vrednost koja nije broj, negativna vrednost i decimalni broj u koloni sa satima.
+- Uvoz **ne pokreće obračun** — sati se upisuju, a preračun ostaje na „Sačuvaj i preračunaj", da se unete vrednosti prvo provere.
+- Uvoz je zabranjen nad zaključanim periodom i beleži se u revizioni trag.
+
+> **Tumačenje brojeva se ne prepušta kulturi.** `decimal.Parse("5000,50")` u invariant kulturi
+> daje **500050**, jer zarez tumači kao razdvajač hiljada. Razdvajači se zato razvrstavaju
+> izričito: poslednji je decimalni, osim ako iza njega stoje tačno tri cifre — pa je `1.234`
+> jednako 1234, a `5000.50` i `5000,50` jednako 5000,50.
+
+### 🧪 Testovi
+- 90 ukupno (59 novih). Halcom TXT se proverava **po tačnim pozicijama iz specifikacije**, a ne „da liči na format": dužina reda, iznos u parama, podela šifre plaćanja, sečenje predugačkog imena bez pomeranja polja iza njega. Uvoz sati se proverava i tako što se **generisani šablon pročita istim uvozom** koji ga je napravio.
+
 ## [1.2.0] - 2026-08-02
 
 > **Faza 0 razvojne mape** iz `ANALIZA_I_PREDLOZI_FUNKCIONALNOSTI.md` — dopuna modela

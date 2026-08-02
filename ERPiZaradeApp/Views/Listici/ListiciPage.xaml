@@ -227,6 +227,24 @@
                             </StackPanel>
                         </Border>
 
+                        <!-- Slanje e-mailom -->
+                        <Border Background="#FDF4FF" CornerRadius="8" Padding="16" Margin="0,0,0,16" BorderBrush="#F5D0FE" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="✉️ SLANJE E-MAILOM" FontSize="11" FontWeight="Bold" Foreground="#A21CAF" Margin="0,0,0,6"/>
+                                <TextBlock Text="Pošalji svakom selektovanom zaposlenom njegov platni listić na e-mail iz kartona radnika. PDF se zaključava lozinkom (JMBG radnika), a svako slanje se beleži."
+                                           FontSize="12" Foreground="#86198F" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                                <Button x:Name="BtnPosaljiEmail"
+                                        Content="✉️"
+                                        Style="{StaticResource PrimaryButton}"
+                                        Background="#A21CAF"
+                                        Width="36"
+                                        Padding="0"
+                                        HorizontalAlignment="Left"
+                                        ToolTip="Pošalji platne listiće e-mailom"
+                                        Click="BtnPosaljiEmail_Click"/>
+                            </StackPanel>
+                        </Border>
+
                         <!-- Info rekapitulacija -->
                         <TextBlock Text="Uputstvo i napomene:" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,8,0,4"/>
                         <TextBlock Text="• Označite željene zaposlene u tabeli na levoj strani koristeći kućice za potvrdu (checkbox)." 

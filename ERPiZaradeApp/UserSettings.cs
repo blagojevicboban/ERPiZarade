@@ -44,6 +44,37 @@ public class UserSettings
     public string? PppPdNajnizaOsnovica { get; set; }
     public string? PppPdTipIsplatioca { get; set; }
 
+    // ── SMTP za slanje platnih listića ─────────────────────
+    public string? SmtpServer { get; set; }
+    public int SmtpPort { get; set; } = 587;
+    public bool SmtpKoristiSsl { get; set; } = true;
+    public string? SmtpKorisnik { get; set; }
+
+    /// <summary>
+    /// Lozinka SMTP naloga, šifrovana Windows DPAPI-jem i vezana za nalog na ovom računaru.
+    /// Ne upisuje se u čitljivom obliku — <c>settings.json</c> stoji u profilu korisnika i
+    /// čita ga svako ko dođe do fajla. Čita se i piše preko <see cref="SmtpLozinka"/>.
+    /// </summary>
+    public string? SmtpLozinkaZasticena { get; set; }
+
+    /// <summary>Adresa pošiljaoca; ako je prazna, koristi se e-mail firme.</summary>
+    public string? SmtpAdresaPosiljaoca { get; set; }
+    public string? SmtpImePosiljaoca { get; set; }
+
+    /// <summary>Da li se PDF listića štiti lozinkom pre slanja.</summary>
+    public bool ListiciZastitaLozinkom { get; set; } = true;
+
+    /// <summary>
+    /// SMTP lozinka u čitljivom obliku. Nije deo JSON zapisa — serijalizuje se samo
+    /// šifrovani oblik iz <see cref="SmtpLozinkaZasticena"/>.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string SmtpLozinka
+    {
+        get => TajnaZastita.Otkrij(SmtpLozinkaZasticena);
+        set => SmtpLozinkaZasticena = TajnaZastita.Zastiti(value);
+    }
+
     // ── Load / Save ────────────────────────────────────────
     public static UserSettings Load()
     {

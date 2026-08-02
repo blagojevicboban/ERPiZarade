@@ -30,6 +30,7 @@ public class PlataDbContext : DbContext
     public DbSet<Korisnik> Korisnici => Set<Korisnik>();
     public DbSet<PppPdPrijava> PppPdPrijave => Set<PppPdPrijava>();
     public DbSet<ObracunAudit> ObracunAuditi => Set<ObracunAudit>();
+    public DbSet<SlanjeListica> SlanjaListica => Set<SlanjeListica>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -99,6 +100,10 @@ public class PlataDbContext : DbContext
         // Revizioni trag se čita hronološki po periodu
         modelBuilder.Entity<ObracunAudit>()
             .HasIndex(a => new { a.Godina, a.Mesec, a.Vreme });
+
+        // Evidencija slanja se čita po periodu i po radniku („da li je dobio listić")
+        modelBuilder.Entity<SlanjeListica>()
+            .HasIndex(s => new { s.Godina, s.Mesec, s.BrojRadnika });
     }
 
     /// <summary>

@@ -3,6 +3,7 @@ using System;
 using ERPiZaradeData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ERPiZaradeData.Migrations
 {
     [DbContext(typeof(PlataDbContext))]
-    partial class PlataDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260802194839_Faza1_PodaciZaNalogZaPrenos")]
+    partial class Faza1_PodaciZaNalogZaPrenos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.16");
@@ -1573,58 +1576,6 @@ namespace ERPiZaradeData.Migrations
                     b.HasIndex("RadnikId");
 
                     b.ToTable("Samodoprinosi");
-                });
-
-            modelBuilder.Entity("ERPiZaradeData.Models.SlanjeListica", b =>
-                {
-                    b.Property<int>("SlanjeListicaId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("BrojRadnika")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Godina")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ImeRadnika")
-                        .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Ishod")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("KorisnickoIme")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int?>("KorisnikId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Mesec")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Napomena")
-                        .HasMaxLength(300)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("Vreme")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("ZasticenLozinkom")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("SlanjeListicaId");
-
-                    b.HasIndex("Godina", "Mesec", "BrojRadnika");
-
-                    b.ToTable("SlanjaListica");
                 });
 
             modelBuilder.Entity("ERPiZaradeData.Models.DoprinosiPoslodavca", b =>

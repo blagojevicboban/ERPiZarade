@@ -211,6 +211,9 @@
                         <Button x:Name="BtnPppPd" Content="📋  PPP-PD"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnPppPd_Click"/>
+                        <Button x:Name="BtnNalozi" Content="🏦  Nalozi za prenos"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnNalozi_Click"/>
 
                         <TextBlock x:Name="HeaderSifarnici" Text="ŠIFARNICI" FontSize="10" FontWeight="SemiBold"
                                    Foreground="#7986CB" Margin="24,10,0,3"/>

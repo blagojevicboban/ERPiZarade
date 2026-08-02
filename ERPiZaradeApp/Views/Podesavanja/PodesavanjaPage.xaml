@@ -213,6 +213,93 @@
                     </Border>
                 </ScrollViewer>
             </TabItem>
+
+            <!-- TAB 4: E-mail (slanje platnih listića) -->
+            <TabItem Header="✉️ E-mail">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,12,0,0">
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="✉️ Slanje platnih listića e-mailom" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,4"/>
+                            <TextBlock Text="Nalog odlaznog servera preko kog se šalju platni listići. Podaci važe za ovaj računar." FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,12"/>
+                            <Rectangle Height="1" Fill="{StaticResource BorderBrush}" Margin="0,0,0,16"/>
+
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="110"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                    <TextBlock Text="SMTP server" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                    <TextBox x:Name="TxtSmtpServer" Height="32" VerticalContentAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="0,0,8,0">
+                                    <TextBlock Text="Port" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                    <TextBox x:Name="TxtSmtpPort" Height="32" VerticalContentAlignment="Center"/>
+                                </StackPanel>
+                                <CheckBox x:Name="ChkSmtpSsl" Grid.Column="2" Content="TLS/SSL" VerticalAlignment="Bottom" Margin="0,0,0,8"/>
+                            </Grid>
+
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                    <TextBlock Text="Korisničko ime" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                    <TextBox x:Name="TxtSmtpKorisnik" Height="32" VerticalContentAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="Lozinka" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                    <PasswordBox x:Name="TxtSmtpLozinka" Height="32" VerticalContentAlignment="Center"
+                                                 ToolTip="Čuva se šifrovano i vezano za Windows nalog na ovom računaru"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                    <TextBlock Text="Adresa pošiljaoca" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                    <TextBox x:Name="TxtSmtpAdresa" Height="32" VerticalContentAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="Ime pošiljaoca" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                    <TextBox x:Name="TxtSmtpIme" Height="32" VerticalContentAlignment="Center"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Border Background="#F8FAFF" CornerRadius="8" Padding="16,12" Margin="0,4,0,12" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="Zaštiti platni listić lozinkom" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="PDF se zaključava lozinkom za otvaranje — lozinka je JMBG radnika i ne navodi se u poruci. Radnik bez JMBG-a se preskače umesto da mu se pošalje nezaštićen listić." TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkZastitaLozinkom" Grid.Column="1" VerticalAlignment="Center" Margin="16,0,0,0"/>
+                                </Grid>
+                            </Border>
+
+                            <Border Background="#FFF8E1" CornerRadius="8" Padding="16,12" Margin="0,0,0,16" BorderBrush="#FFE082" BorderThickness="1">
+                                <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="#856404"
+                                           Text="Slanjem listića iznose se lični podaci (JMBG, zarada) iz programa. Svako slanje se beleži — kome, kada i na koju adresu — što je obaveza po Zakonu o zaštiti podataka o ličnosti."/>
+                            </Border>
+
+                            <StackPanel Orientation="Horizontal">
+                                <Button x:Name="BtnSacuvajSmtp" Content="💾  Sačuvaj" Style="{StaticResource PrimaryButton}"
+                                        Click="BtnSacuvajSmtp_Click" Margin="0,0,8,0"/>
+                                <Button x:Name="BtnProveriSmtp" Content="🔌  Proveri vezu" Style="{StaticResource SecondaryButton}"
+                                        Click="BtnProveriSmtp_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </ScrollViewer>
+            </TabItem>
         </TabControl>
 
         <!-- ── STATUS BAR ────────────────────────────────────────────── -->

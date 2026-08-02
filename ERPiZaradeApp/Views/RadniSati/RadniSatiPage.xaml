@@ -403,6 +403,10 @@
                 <TextBlock x:Name="StatusMessage" Text="Učitavanje..." FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                 
                 <StackPanel x:Name="ActionBarButtons" Grid.Column="1" Orientation="Horizontal" Visibility="Collapsed">
+                    <Button Content="📄" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Width="36" Padding="0"
+                            ToolTip="Preuzmi šablon za unos sati (Excel, sa spiskom radnika)" Click="BtnSablonSati_Click"/>
+                    <Button Content="📥" Style="{StaticResource SecondaryButton}" Margin="0,0,12,0" Width="36" Padding="0"
+                            ToolTip="Uvezi radne sate iz Excel ili CSV fajla" Click="BtnUvoziSate_Click"/>
                     <Button Content="🔄  Osveži" Style="{StaticResource SecondaryButton}" Margin="0,0,12,0" Padding="14,6" Click="BtnOsvezi_Click"/>
                     <Button Content="💾  Sačuvaj i preračunaj" Style="{StaticResource PrimaryButton}" Padding="16,6" Click="BtnSacuvaj_Click"/>
                 </StackPanel>

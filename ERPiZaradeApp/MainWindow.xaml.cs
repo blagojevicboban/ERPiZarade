@@ -279,6 +279,9 @@ public partial class MainWindow : Window
     private void BtnPppPd_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnPppPd, "📋 Poreska uprava — PPP-PD prijava", new Views.PppPd.PppPdPage(), "Pregled, pre-validacija poreskih osnovica i generisanje XML datoteke poreske deklaracije za Poresku Upravu Republike Srbije", helpAnchor: "PppPd");
 
+    private void BtnNalozi_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnNalozi, "🏦 Nalozi za prenos", new Views.Nalozi.NaloziPage(), "Priprema naloga za isplatu neto zarada i jedinstvene uplate poreza i doprinosa po BOP-u iz prihvaćene PPP-PD prijave", helpAnchor: "Nalozi");
+
     private void BtnKrediti_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnKrediti, "💳 Krediti i obustave", new Views.Krediti.KreditiPage(), "Evidencija bankovnih kredita i administrativnih obustava zaposlenih", helpAnchor: "Krediti");
 

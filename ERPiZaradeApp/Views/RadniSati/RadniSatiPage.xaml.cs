@@ -148,6 +148,124 @@ public partial class RadniSatiPage : Page
         mainWin?.MainFrame.Navigate(new ObracuniPage());
     }
 
+    private void BtnSablonSati_Click(object sender, RoutedEventArgs e)
+    {
+        if (!AppConfig.ActiveGodina.HasValue || !AppConfig.ActiveMesec.HasValue) return;
+
+        int godina = AppConfig.ActiveGodina.Value;
+        int mesec = AppConfig.ActiveMesec.Value;
+
+        var sfd = new Microsoft.Win32.SaveFileDialog
+        {
+            Filter = "Excel radna sveska (*.xlsx)|*.xlsx",
+            FileName = $"Sati_{godina}_{mesec:D2}.xlsx",
+            Title = "Sačuvaj šablon za unos radnih sati"
+        };
+
+        if (sfd.ShowDialog() != true) return;
+
+        try
+        {
+            new Services.UvozSatiService(_db).SacuvajSablon(sfd.FileName, godina, mesec);
+            StatusMessage.Text = $"Šablon sačuvan: {sfd.FileName}";
+            MessageBox.Show(
+                "Šablon je sačuvan sa zaglavljem i spiskom radnika za ovaj period.\n\n" +
+                "Popunite kolone sa satima i vratite fajl kroz „Uvezi radne sate\".",
+                "Šablon sačuvan", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Šablon nije sačuvan: {ex.Message}", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void BtnUvoziSate_Click(object sender, RoutedEventArgs e)
+    {
+        if (!AppConfig.ActiveGodina.HasValue || !AppConfig.ActiveMesec.HasValue) return;
+
+        int godina = AppConfig.ActiveGodina.Value;
+        int mesec = AppConfig.ActiveMesec.Value;
+
+        if (_db.ObracuniPlata.Any(o => o.Godina == godina && o.Mesec == mesec && o.Zakljucan))
+        {
+            MessageBox.Show("Obračunski period je ZAKLJUČAN. Uvoz radnih sati nije dozvoljen.",
+                "Upozorenje", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var ofd = new Microsoft.Win32.OpenFileDialog
+        {
+            Filter = "Excel ili CSV (*.xlsx;*.csv)|*.xlsx;*.csv|Excel radna sveska (*.xlsx)|*.xlsx|CSV fajl (*.csv)|*.csv",
+            Title = "Izaberite fajl sa radnim satima"
+        };
+
+        if (ofd.ShowDialog() != true) return;
+
+        var servis = new Services.UvozSatiService(_db);
+        Services.RezultatUvoza rezultat;
+
+        try
+        {
+            rezultat = servis.Procitaj(ofd.FileName, godina, mesec);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Fajl se ne može pročitati:\n\n{ex.Message}", "Greška",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        // Fajl sa greškama se odbija u celini — delimično uvezeni sati izgledaju kao uspeh,
+        // a daju pogrešan obračun radnicima iz neuvezenog dela.
+        if (!rezultat.JeIspravan)
+        {
+            string spisak = rezultat.Greske.Count > 0
+                ? string.Join(Environment.NewLine, rezultat.Greske.Take(20).Select(g => $"• {g}"))
+                : "• Fajl ne sadrži nijedan red sa podacima.";
+
+            if (rezultat.Greske.Count > 20)
+                spisak += $"{Environment.NewLine}… i još {rezultat.Greske.Count - 20} grešaka.";
+
+            MessageBox.Show($"Uvoz nije izvršen jer fajl sadrži greške:\n\n{spisak}",
+                "Uvoz odbijen", MessageBoxButton.OK, MessageBoxImage.Error);
+            StatusMessage.Text = $"Uvoz odbijen — {rezultat.Greske.Count} grešaka u fajlu.";
+            return;
+        }
+
+        string upozorenje = rezultat.NepoznateKolone.Count > 0
+            ? $"\n\nKolone koje uvoz ne prepoznaje i preskače: {string.Join(", ", rezultat.NepoznateKolone)}."
+            : "";
+
+        var potvrda = MessageBox.Show(
+            $"Fajl je ispravan: {rezultat.Redovi.Count} radnika.\n\n" +
+            $"Postojeći sati za period {mesec:D2}/{godina} biće zamenjeni unetim vrednostima." +
+            upozorenje + "\n\nNastaviti?",
+            "Potvrda uvoza", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+        if (potvrda != MessageBoxResult.Yes) return;
+
+        try
+        {
+            int upisano = servis.Primeni(rezultat, godina, mesec);
+
+            Services.AuditService.Zabelezi(_db, godina, mesec, AkcijaObracuna.Prekalkulisan,
+                $"Uvezeni radni sati za {upisano} radnika iz {System.IO.Path.GetFileName(ofd.FileName)}");
+
+            _db = PlataDbContext.Create(AppConfig.DbPath);
+            LoadData();
+
+            StatusMessage.Text = $"Uvezeni sati za {upisano} radnika. Pokrenite „Sačuvaj i preračunaj\" da se obračun ažurira.";
+            MessageBox.Show(
+                $"Uvezeni su sati za {upisano} radnika.\n\n" +
+                "Obračun se ne menja automatski — pokrenite „Sačuvaj i preračunaj\" kada proverite unete vrednosti.",
+                "Uvoz završen", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Uvoz nije izvršen: {ex.Message}", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void BtnOsvezi_Click(object sender, RoutedEventArgs e)
     {
         // Ponovo učitaj iz baze, time se odbacuju sve nesnimljene promene

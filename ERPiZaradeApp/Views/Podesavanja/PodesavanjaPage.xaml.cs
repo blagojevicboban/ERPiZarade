@@ -37,8 +37,99 @@ public partial class PodesavanjaPage : Page
         }
         catch { }
 
+        UcitajSmtpPostavke();
+
         // Učitaj istoriju rezervnih kopija
         OsveziIstorijuKopija();
+    }
+
+    private void UcitajSmtpPostavke()
+    {
+        try
+        {
+            var s = UserSettings.Instance;
+            TxtSmtpServer.Text = s.SmtpServer ?? "";
+            TxtSmtpPort.Text = s.SmtpPort.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            ChkSmtpSsl.IsChecked = s.SmtpKoristiSsl;
+            TxtSmtpKorisnik.Text = s.SmtpKorisnik ?? "";
+            TxtSmtpLozinka.Password = s.SmtpLozinka;
+            TxtSmtpAdresa.Text = s.SmtpAdresaPosiljaoca ?? "";
+            TxtSmtpIme.Text = s.SmtpImePosiljaoca ?? "";
+            ChkZastitaLozinkom.IsChecked = s.ListiciZastitaLozinkom;
+        }
+        catch { }
+    }
+
+    private void BtnSacuvajSmtp_Click(object sender, RoutedEventArgs e)
+    {
+        if (!int.TryParse(TxtSmtpPort.Text.Trim(), out int port) || port <= 0 || port > 65535)
+        {
+            StatusMessage.Text = "Port mora biti broj između 1 i 65535.";
+            return;
+        }
+
+        try
+        {
+            var s = UserSettings.Instance;
+            s.SmtpServer = TxtSmtpServer.Text.Trim();
+            s.SmtpPort = port;
+            s.SmtpKoristiSsl = ChkSmtpSsl.IsChecked == true;
+            s.SmtpKorisnik = TxtSmtpKorisnik.Text.Trim();
+            s.SmtpLozinka = TxtSmtpLozinka.Password;
+            s.SmtpAdresaPosiljaoca = TxtSmtpAdresa.Text.Trim();
+            s.SmtpImePosiljaoca = TxtSmtpIme.Text.Trim();
+            s.ListiciZastitaLozinkom = ChkZastitaLozinkom.IsChecked == true;
+            s.Save();
+
+            StatusMessage.Text = "Postavke e-maila su sačuvane.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage.Text = $"Greška pri čuvanju postavki e-maila: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Otvara vezu i prijavljuje se, ali ne šalje poruku — greška u podešavanjima se tako
+    /// vidi odmah, a ne tek kad krene slanje desetinama radnika.
+    /// </summary>
+    private async void BtnProveriSmtp_Click(object sender, RoutedEventArgs e)
+    {
+        BtnProveriSmtp.IsEnabled = false;
+        StatusMessage.Text = "Povezivanje...";
+
+        try
+        {
+            if (!int.TryParse(TxtSmtpPort.Text.Trim(), out int port) || port <= 0)
+                throw new InvalidOperationException("Port nije ispravan.");
+
+            using var klijent = new MailKit.Net.Smtp.SmtpClient();
+            var bezbednost = ChkSmtpSsl.IsChecked == true
+                ? MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable
+                : MailKit.Security.SecureSocketOptions.None;
+
+            await klijent.ConnectAsync(TxtSmtpServer.Text.Trim(), port, bezbednost);
+
+            string korisnik = TxtSmtpKorisnik.Text.Trim();
+            if (!string.IsNullOrWhiteSpace(korisnik))
+                await klijent.AuthenticateAsync(korisnik, TxtSmtpLozinka.Password);
+
+            await klijent.DisconnectAsync(quit: true);
+
+            StatusMessage.Text = "Veza sa serverom je uspešno uspostavljena.";
+            MessageBox.Show("Veza sa SMTP serverom je uspešno uspostavljena.", "Provera veze",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage.Text = "Veza sa SMTP serverom nije uspostavljena.";
+            MessageBox.Show($"Veza nije uspostavljena:\n\n{ex.Message}", "Provera veze",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            BtnProveriSmtp.IsEnabled = true;
+        }
     }
 
     private void OsveziIstorijuKopija()

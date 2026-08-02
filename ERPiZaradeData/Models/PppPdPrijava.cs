@@ -57,11 +57,35 @@ public class PppPdPrijava
 
     // ── Odgovor Poreske uprave ───────────────────────────────────────
     /// <summary>
-    /// Broj odobrenja za plaćanje — poziv na broj na nalozima za prenos poreza i doprinosa.
-    /// Dobija se tek pošto PU prihvati prijavu, pa je prazan do tada.
+    /// Broj odobrenja za plaćanje — poziv na broj (model 97) na nalogu za objedinjenu
+    /// naplatu. Dobija se tek pošto PU prihvati prijavu, pa je prazan do tada.
+    /// Čuva se tačno onako kako ga ePorezi izda; kontrolne cifre se ne preračunavaju.
     /// </summary>
     [MaxLength(30)]
     public string Bop { get; set; } = "";
+
+    /// <summary>
+    /// Iznos za uplatu na objedinjeni račun, onako kako ga je utvrdila Poreska uprava.
+    /// Merodavan je on, a ne naš zbir — razlika između to dvoje je znak da obračun i
+    /// prihvaćena prijava nisu isti, i prijavljuje se pre formiranja naloga.
+    /// </summary>
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal IznosZaUplatu { get; set; }
+
+    /// <summary>
+    /// Uplatni račun objedinjene naplate. Od 01.03.2014. je to <c>840-4848-37</c>, ali se
+    /// preuzima iz dokumenta koji izda ePorezi umesto da se hardkoduje — račun se propisom
+    /// menjao i može ponovo.
+    /// </summary>
+    [MaxLength(25)]
+    public string RacunZaUplatu { get; set; } = "";
+
+    /// <summary>Model poziva na broj odobrenja; za objedinjenu naplatu „97".</summary>
+    [MaxLength(2)]
+    public string ModelPozivaNaBroj { get; set; } = "";
+
+    [MaxLength(140)]
+    public string SvrhaUplate { get; set; } = "";
 
     public StatusPrijave Status { get; set; } = StatusPrijave.Pripremljena;
 

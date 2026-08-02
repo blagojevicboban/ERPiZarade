@@ -1,0 +1,334 @@
+<Window x:Class="ERPiZaradeApp.Views.Obracun.NoviObracunWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Pokretanje novog obračuna plata" 
+        Height="650" Width="1113"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource SurfaceBrush}"
+        Style="{DynamicResource {x:Type Window}}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- Header -->
+            <RowDefinition Height="Auto"/>
+            <!-- Parameters (Godina, Mesec, Bod, Fond) -->
+            <RowDefinition Height="*"/>
+            <!-- DataGrid for Hours Input -->
+            <RowDefinition Height="Auto"/>
+            <!-- Actions (Save / Cancel) -->
+        </Grid.RowDefinitions>
+
+        <!-- ── HEADER ──────────────────────────────────────────────── -->
+        <Border Grid.Row="0" Padding="20,16">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <GradientStop Color="#2D1B42" Offset="0"/>
+                    <GradientStop Color="#43305F" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <StackPanel>
+                <TextBlock Text="⚙️ Obračun zarada za nov mesec" FontSize="18" FontWeight="Bold" Foreground="White"/>
+                <TextBlock Text="Unesite radne sate za zaposlene kako biste automatski obračunali neto zarade, poreze i doprinose."
+                           FontSize="12" Foreground="#90CAF9" Margin="0,4,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ── PARAMETERS ──────────────────────────────────────────── -->
+        <Border Grid.Row="1" Style="{StaticResource Card}" Margin="16,12,16,8" Padding="16,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <!-- Godina Lbl -->
+                    <ColumnDefinition Width="70"/>
+                    <!-- ComboGodina -->
+                    <ColumnDefinition Width="Auto"/>
+                    <!-- Mesec Lbl -->
+                    <ColumnDefinition Width="60"/>
+                    <!-- ComboMesec -->
+                    <ColumnDefinition Width="Auto"/>
+                    <!-- Bod Lbl -->
+                    <ColumnDefinition Width="120"/>
+                    <!-- TxtVrednostBoda -->
+                    <ColumnDefinition Width="Auto"/>
+                    <!-- Fond Lbl -->
+                    <ColumnDefinition Width="80"/>
+                    <!-- TxtFondCasova -->
+                    <ColumnDefinition Width="*"/>
+                    <!-- Spacer -->
+                    <ColumnDefinition Width="Auto"/>
+                    <!-- Prenos Lbl -->
+                    <ColumnDefinition Width="140"/>
+                    <!-- ComboPrenosIz -->
+                    <ColumnDefinition Width="Auto"/>
+                    <!-- BtnPrenesi -->
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="Godina:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
+                <ComboBox x:Name="ComboGodina" Grid.Column="1" Margin="0,0,12,0" Padding="6,4"/>
+
+                <TextBlock Grid.Column="2" Text="Mesec:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
+                <ComboBox x:Name="ComboMesec" Grid.Column="3" Margin="0,0,12,0" Padding="6,4"/>
+
+                <TextBlock Grid.Column="4" Text="Bod (RSD):" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
+                <TextBox x:Name="TxtVrednostBoda" Grid.Column="5" Text="1860.34" Margin="0,0,12,0" VerticalAlignment="Center" Padding="8,4"/>
+
+                <TextBlock Grid.Column="6" Text="Fond sati:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
+                <TextBox x:Name="TxtFondCasova" Grid.Column="7" Text="176" Margin="0,0,12,0" VerticalAlignment="Center" LostFocus="TxtFondCasova_LostFocus" Padding="8,4"/>
+
+
+
+                <TextBlock Grid.Column="9" Text="Kopiraj sate iz:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
+                <ComboBox x:Name="ComboPrenosIz" Grid.Column="10" Margin="0,0,8,0" Padding="6,4" DisplayMemberPath="Naziv" VerticalAlignment="Center"/>
+
+                <Button Grid.Column="11" x:Name="BtnPrenesi" Content="📋 Prenesi" 
+                        Style="{StaticResource SecondaryButton}" VerticalAlignment="Bottom" Padding="12,5"
+                        Click="BtnPrenesi_Click" Margin="0,0,0,2"/>
+            </Grid>
+        </Border>
+
+        <!-- ── DATAGRID ────────────────────────────────────────────── -->
+        <Border Grid.Row="2" Style="{StaticResource Card}" Margin="16,4,16,12" Padding="0">
+            <DataGrid x:Name="GridRadniciSati" 
+                      AutoGenerateColumns="False" 
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      BorderThickness="0"
+                      SelectionMode="Single"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="Horizontal"
+                      Background="Transparent"
+                      RowHeaderWidth="0"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      ScrollViewer.CanContentScroll="True"
+                      EnableRowVirtualization="True"
+                      EnableColumnVirtualization="True"
+                      VirtualizingStackPanel.IsVirtualizing="True"
+                      VirtualizingStackPanel.VirtualizationMode="Recycling"
+                      VirtualizingStackPanel.CacheLengthUnit="Item"
+                      VirtualizingStackPanel.CacheLength="10,10"
+                      FrozenColumnCount="3">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Br." Binding="{Binding BrojRadnika}" IsReadOnly="True" Width="55">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                                <Setter Property="Margin" Value="10,0"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Ime i Prezime" Binding="{Binding ImeIPrezime}" IsReadOnly="True" Width="160">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter Property="Margin" Value="10,0"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Koeficijent" Binding="{Binding Koeficijent, StringFormat=N4}" IsReadOnly="True" Width="100">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                                <Setter Property="Margin" Value="10,0"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Redovni sati" Binding="{Binding RedovniSati, UpdateSourceTrigger=PropertyChanged}" Width="105">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Bolovanje" Binding="{Binding BolovanjeSati, UpdateSourceTrigger=PropertyChanged}" Width="95">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Prekovremeni" Binding="{Binding PrekovremeneSati, UpdateSourceTrigger=PropertyChanged}" Width="110">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Godišnji odmor" Binding="{Binding GodisnjiOdmorSati, UpdateSourceTrigger=PropertyChanged}" Width="115">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Državni praznik" Binding="{Binding DrzavniPraznikSati, UpdateSourceTrigger=PropertyChanged}" Width="120">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Noćni rad" Binding="{Binding NocniSati, UpdateSourceTrigger=PropertyChanged}" Width="95">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Smenski rad" Binding="{Binding SmenskiSati, UpdateSourceTrigger=PropertyChanged}" Width="105">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Rad praznikom" Binding="{Binding RadPraznikomSati, UpdateSourceTrigger=PropertyChanged}" Width="115">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Noćni rad praznikom" Binding="{Binding NocniRadPraznikomSati, UpdateSourceTrigger=PropertyChanged}" Width="145">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Plaćeno odsustvo" Binding="{Binding PlacenoOdsustvoSati, UpdateSourceTrigger=PropertyChanged}" Width="130">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Rad nedeljom" Binding="{Binding RadNedeljomSati, UpdateSourceTrigger=PropertyChanged}" Width="110">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Plaćeno zakonski" Binding="{Binding PlacenoZakonskiSati, UpdateSourceTrigger=PropertyChanged}" Width="125">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Bolovanje >60 dana" Binding="{Binding BolovanjePreko60Sati, UpdateSourceTrigger=PropertyChanged}" Width="135">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Porodiljsko" Binding="{Binding PorodiljskoOdsustvoSati, UpdateSourceTrigger=PropertyChanged}" Width="95">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Bolovanje 100%" Binding="{Binding Bolovanje100Sati, UpdateSourceTrigger=PropertyChanged}" Width="110">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Topli obrok (dani)" Binding="{Binding TopliObrokDani, UpdateSourceTrigger=PropertyChanged}" Width="120">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Regres (iznos)" Binding="{Binding RegresIznos, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}" Width="110">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                                <Setter Property="Margin" Value="10,0"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Stimulacija (%)" Binding="{Binding Stimulacija, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}" Width="110">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Bruto dodatak" Binding="{Binding Varijabila, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}" Width="110">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                                <Setter Property="Margin" Value="10,0"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Prosek (12m)" Binding="{Binding Prosek, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}" Width="105">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                                <Setter Property="Margin" Value="10,0"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                </DataGrid.Columns>
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="Height" Value="36"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#EEF2FF"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#F8FAFF"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
+            </DataGrid>
+        </Border>
+
+        <!-- ── ACTIONS ─────────────────────────────────────────────── -->
+        <Border Grid.Row="3" Background="#F3F4F6" Padding="20,12" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0">
+            <Grid>
+                <TextBlock x:Name="TxtObavestenje" Text="Unesite sate i potvrdite obračun." VerticalAlignment="Center" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="🔄 Resetuj sate" x:Name="BtnResetuj" Style="{StaticResource SecondaryButton}" Width="130" Margin="0,0,12,0" Click="BtnResetuj_Click"/>
+                    <Button Content="Otkaži" Style="{StaticResource SecondaryButton}" Width="100" Margin="0,0,12,0" Click="BtnOtkazi_Click"/>
+                    <Button x:Name="BtnSacuvaj" Content="🧮  Izračunaj i sačuvaj" Style="{StaticResource PrimaryButton}" Padding="16,8" Click="BtnIzracunaj_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

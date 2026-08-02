@@ -14,6 +14,16 @@
   <PropertyGroup>
     <TreatWarningsAsErrors Condition="'$(Configuration)' == 'Release'">true</TreatWarningsAsErrors>
     <NoWarn>$(NoWarn);NU1701</NoWarn>
+
+    <!--
+      CI objavljuje single-file build (dotnet publish -p:PublishSingleFile=true), a taj
+      režim prijavljuje greške poput IL3000 (Assembly.Location nema smisla u single-file
+      paketu) koje obično prevođenje ne vidi. Bez ovoga upozorenja iskaču tek u koraku
+      objavljivanja — dakle POSLE nego što testovi prođu — pa kapija kvaliteta propusti
+      grešku koja onda obori release. Sa uključenim analizatorom iste greške iskaču već
+      pri "dotnet build", pa ih test job uhvati na vreme.
+    -->
+    <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
   </PropertyGroup>
 
 </Project>

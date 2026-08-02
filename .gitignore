@@ -20,7 +20,7 @@ bld/
 [Oo]bj/
 publish_output/
 ReleasePackage/
-PlataSistem_Instalacija.zip
+ERPiZarade_Instalacija.zip
 PlataSetup_v*.exe
 
 # ─── SQLite baze podataka (sadrže stvarne i osetljive podatke o zaradama) ──────

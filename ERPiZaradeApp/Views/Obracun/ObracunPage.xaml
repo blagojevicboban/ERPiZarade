@@ -1,0 +1,569 @@
+<Page x:Class="ERPiZaradeApp.Views.Obracun.ObracunPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:local="clr-namespace:ERPiZaradeApp.Views.Obracun"
+      Title="Obračun plate"
+      Background="{StaticResource SurfaceBrush}">
+
+    <Page.DataContext>
+        <local:ObracunViewModel/>
+    </Page.DataContext>
+
+    <Grid Margin="24,20,24,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Header -->
+            <RowDefinition Height="Auto"/>  <!-- Filters -->
+            <RowDefinition Height="*"/>     <!-- Main Content (Obračuni list / details) -->
+            <RowDefinition Height="Auto"/>  <!-- Status bar -->
+        </Grid.RowDefinitions>
+
+        <!-- ── HEADER ──────────────────────────────────────────────── -->
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <StackPanel>
+                <TextBlock Text="{Binding PeriodTitle}" Style="{StaticResource PageTitle}"/>
+                <TextBlock Text="Pregled i pretraga svih obračuna plata za izabrani period"
+                           Style="{StaticResource PageSubtitle}"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- ── FILTERS ─────────────────────────────────────────────── -->
+        <Border Grid.Row="1" Style="{StaticResource Card}" Padding="16,12" Margin="0,0,0,16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="240"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="Godina:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
+                <ComboBox Grid.Column="1" ItemsSource="{Binding Godine}" SelectedItem="{Binding SelectedGodina}" IsEnabled="False" Margin="0,0,16,0" Padding="8,5"/>
+
+                <TextBlock Grid.Column="2" Text="Mesec:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
+                <ComboBox Grid.Column="3" ItemsSource="{Binding Meseci}" SelectedItem="{Binding SelectedMesec}" IsEnabled="False" Margin="0,0,16,0" Padding="8,5"/>
+
+                <TextBlock Grid.Column="4" Text="Radnik:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
+                <Border Grid.Column="5" Background="#F9FAFB" CornerRadius="6"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                        VerticalAlignment="Center">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="🔍" FontSize="12" VerticalAlignment="Center" Margin="8,0,4,0" Foreground="#9CA3AF"/>
+                        <TextBox Grid.Column="1" BorderThickness="0" Background="Transparent"
+                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                 Padding="4,6" FontSize="13" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="Pretraži radnike..." Foreground="#9CA3AF"
+                                   FontSize="13" Margin="6,0,0,0" IsHitTestVisible="False" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SearchText}" Value="">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding SearchText}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        
+                        <Button Grid.Column="2" Content="❌" Command="{Binding ClearFilterCommand}"
+                                Background="Transparent" BorderThickness="0" Padding="6,0" Cursor="Hand" VerticalAlignment="Center"
+                                FontSize="10" Foreground="#9CA3AF">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SearchText}" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding SearchText}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- ── MAIN CONTENT ─────────────────────────────────────────── -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="380"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Lista obračuna -->
+            <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,16,0" Padding="0">
+                <DataGrid x:Name="ObracuniGrid"
+                          ItemsSource="{Binding Obracuni}"
+                          SelectedItem="{Binding SelectedObracun}"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          BorderThickness="0"
+                          EnableRowVirtualization="True"
+                          EnableColumnVirtualization="True"
+                          VirtualizingStackPanel.IsVirtualizing="True"
+                          VirtualizingStackPanel.VirtualizationMode="Recycling"
+                          VirtualizingStackPanel.CacheLengthUnit="Item"
+                          VirtualizingStackPanel.CacheLength="10,10"
+                          FrozenColumnCount="4">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="God." Binding="{Binding Godina}" Width="50"/>
+                        <DataGridTextColumn Header="Mes." Binding="{Binding Mesec}" Width="45"/>
+                        <DataGridTextColumn Header="Br." Binding="{Binding Radnik.BrojRadnika}" Width="55"/>
+                        <DataGridTextColumn Header="Radnik" Binding="{Binding Radnik.ImeIPrezime}" Width="140"/>
+                        <DataGridTextColumn Header="Za isplatu (Neto)" Binding="{Binding NetoIsplata, StringFormat=N2}" Width="105"/>
+                        <DataGridTextColumn Header="Bruto 1" Binding="{Binding BrutoZarada, StringFormat=N2}" Width="95"/>
+                        <DataGridTextColumn Header="Bruto 2" Binding="{Binding Bruto2, StringFormat=N2}" Width="95"/>
+                        <DataGridTextColumn Header="Porez na dohodak" Binding="{Binding PorezNaDohodak, StringFormat=N2}" Width="105"/>
+                        
+                        <!-- Sati -->
+                        <DataGridTextColumn Header="Redovni radni sati (po vremenu)" Binding="{Binding RedovniSati}" Width="120"/>
+                        <DataGridTextColumn Header="Bolovanje (sati)" Binding="{Binding BolovanjeSati}" Width="90"/>
+                        <DataGridTextColumn Header="Prekovremeni rad (sati)" Binding="{Binding PrekovremeneSati}" Width="110"/>
+                        <DataGridTextColumn Header="Godišnji odmor (sati)" Binding="{Binding GodisnjioOdmorSati}" Width="110"/>
+                        <DataGridTextColumn Header="Državni praznik (sati)" Binding="{Binding DrzavniPraznikSati}" Width="110"/>
+                        <DataGridTextColumn Header="Noćni rad (sati)" Binding="{Binding NocniSati}" Width="95"/>
+                        <DataGridTextColumn Header="Smenski sati" Binding="{Binding SmenskiSati}" Width="90"/>
+                        <DataGridTextColumn Header="Rad praznikom sati" Binding="{Binding RadPraznikomSati}" Width="115"/>
+                        <DataGridTextColumn Header="Noćni praznik sati" Binding="{Binding NocniRadPraznikomSati}" Width="115"/>
+                        <DataGridTextColumn Header="Plaćeno odsustvo sati" Binding="{Binding PlacenoOdsustvoSati}" Width="130"/>
+                        <DataGridTextColumn Header="Rad nedeljom sati" Binding="{Binding NedeljaSati}" Width="110"/>
+                        <DataGridTextColumn Header="Bolovanje >60 sati" Binding="{Binding BolovanjePreko60SatiLegacy}" Width="115"/>
+                        <DataGridTextColumn Header="Porodiljsko sati" Binding="{Binding PorodiljskoOdsustvoSatiLegacy}" Width="100"/>
+                        <DataGridTextColumn Header="Plaćeno odsustvo legacy" Binding="{Binding PlacenoOdsustvoSatiLegacy}" Width="130"/>
+                        <DataGridTextColumn Header="Plaćeno zakonski sati" Binding="{Binding PlacenoZakonskiSatiLegacy}" Width="130"/>
+                        <DataGridTextColumn Header="Bolovanje 100% sati" Binding="{Binding Bolovanje100SatiLegacy}" Width="115"/>
+                        
+                        <!-- Bruto iznosi -->
+                        <DataGridTextColumn Header="Bruto Naknade" Binding="{Binding BrutoNaknade, StringFormat=N2}" Width="100"/>
+                        <DataGridTextColumn Header="Bruto naknada - stimulacija" Binding="{Binding BrutoStimulacija, StringFormat=N2}" Width="120"/>
+                        <DataGridTextColumn Header="Bruto naknada - minuli rad" Binding="{Binding BrutoMinuliRad, StringFormat=N2}" Width="120"/>
+                        <DataGridTextColumn Header="Bruto dodatak" Binding="{Binding Varijabila, StringFormat=N2}" Width="100"/>
+                        
+                        <!-- Detaljni bruto delovi (Neto zarada/naknade) -->
+                        <DataGridTextColumn Header="Bruto zarada (redovan rad)" Binding="{Binding NetoZar, StringFormat=N2}" Width="120"/>
+                        <DataGridTextColumn Header="Bruto naknada - neradni državni praznik" Binding="{Binding NetoNerd, StringFormat=N2}" Width="140"/>
+                        <DataGridTextColumn Header="Bruto naknada - godišnji odmor" Binding="{Binding NetoGOd, StringFormat=N2}" Width="125"/>
+                        <DataGridTextColumn Header="Bruto dodatak - topli obrok" Binding="{Binding NetoTo, StringFormat=N2}" Width="120"/>
+                        <DataGridTextColumn Header="Bruto dodatak - regres" Binding="{Binding NetoReg, StringFormat=N2}" Width="115"/>
+                        <DataGridTextColumn Header="Ukupan Bruto" Binding="{Binding Neto, StringFormat=N2}" Width="100"/>
+                        <DataGridTextColumn Header="Bruto naknada - bolovanje do 30 dana" Binding="{Binding NetoBol, StringFormat=N2}" Width="140"/>
+                        <DataGridTextColumn Header="Neto Bolovanje 100%" Binding="{Binding NetoB100, StringFormat=N2}" Width="120"/>
+                        <DataGridTextColumn Header="Neto Plaćeno" Binding="{Binding NetoPlac, StringFormat=N2}" Width="100"/>
+                        <DataGridTextColumn Header="Neto Plaćeno zakonski" Binding="{Binding NetoPlZ, StringFormat=N2}" Width="130"/>
+                        <DataGridTextColumn Header="Bruto naknada - rad na praznik" Binding="{Binding NetoDrza, StringFormat=N2}" Width="125"/>
+                        <DataGridTextColumn Header="Bruto naknada - noćni rad" Binding="{Binding NetoNocni, StringFormat=N2}" Width="120"/>
+                        <DataGridTextColumn Header="Neto Vežba" Binding="{Binding NetoVezba, StringFormat=N2}" Width="100"/>
+                        <DataGridTextColumn Header="Bruto naknada - prekovremeni rad" Binding="{Binding NetoPrek, StringFormat=N2}" Width="140"/>
+                        <DataGridTextColumn Header="Neto Terenski" Binding="{Binding NetoTer, StringFormat=N2}" Width="110"/>
+                        <DataGridTextColumn Header="Korekcija dodatak" Binding="{Binding KorDod, StringFormat=N2}" Width="115"/>
+                        <DataGridTextColumn Header="Korekcija dodatak 1" Binding="{Binding KorDod1, StringFormat=N2}" Width="125"/>
+                        <DataGridTextColumn Header="Kumul" Binding="{Binding Kumul, StringFormat=N2}" Width="90"/>
+                        <DataGridTextColumn Header="Neto Nedelja" Binding="{Binding NetoNede, StringFormat=N2}" Width="100"/>
+                        
+                        <!-- Doprinosi i porezi -->
+                        <DataGridTextColumn Header="Doprinos za PIO (radnik)" Binding="{Binding DoprinosPioRadnik, StringFormat=N2}" Width="110"/>
+                        <DataGridTextColumn Header="Doprinos za zdravstvo (radnik)" Binding="{Binding DoprinosZdravstvoRadnik, StringFormat=N2}" Width="125"/>
+                        <DataGridTextColumn Header="Doprinos za nezaposlenost (radnik)" Binding="{Binding DoprinosNezaposlenostRadnik, StringFormat=N2}" Width="135"/>
+                        <DataGridTextColumn Header="Doprinos za PIO (poslodavac)" Binding="{Binding DoprinosPioPoslodavac, StringFormat=N2}" Width="120"/>
+                        <DataGridTextColumn Header="Doprinos za zdravstvo (poslodavac)" Binding="{Binding DoprinosZdravstvoPoslodavac, StringFormat=N2}" Width="130"/>
+                        <DataGridTextColumn Header="Doprinos za nezaposlenost (poslodavac)" Binding="{Binding DoprinosNezaposlenostPoslodavac, StringFormat=N2}" Width="140"/>
+                        <DataGridTextColumn Header="Osnovica za porez" Binding="{Binding PoreskaOsnovica, StringFormat=N2}" Width="105"/>
+                        <DataGridTextColumn Header="Poresko oslobođenje" Binding="{Binding LicniOdbitak, StringFormat=N2}" Width="110"/>
+                        <DataGridTextColumn Header="Krediti i obustave" Binding="{Binding KreditObustava, StringFormat=N2}" Width="105"/>
+                        <DataGridTextColumn Header="Samodoprinosi i ostalo" Binding="{Binding Samodoprinosi, StringFormat=N2}" Width="115"/>
+                        <DataGridTextColumn Header="Ostali odbici" Binding="{Binding OstaliOdbici, StringFormat=N2}" Width="100"/>
+                        
+                        <!-- Ostali legacy parametri -->
+                        <DataGridTextColumn Header="Koeficijent" Binding="{Binding Koeficijent, StringFormat=N2}" Width="95"/>
+                        <DataGridTextColumn Header="Staž" Binding="{Binding MinuliRadGodine}" Width="75"/>
+                        <DataGridTextColumn Header="Razred" Binding="{Binding Kategorija}" Width="75"/>
+                        <DataGridTextColumn Header="Radna jedinica" Binding="{Binding BrojRadneJedinice}" Width="105"/>
+                        <DataGridTextColumn Header="Radni sati (legacy)" Binding="{Binding UkupnoRadnihSatiLegacy}" Width="120"/>
+                        <DataGridTextColumn Header="Fond sati (mesec)" Binding="{Binding FondSatiMesecni}" Width="120"/>
+                        <DataGridTextColumn Header="Cena sata redovan" Binding="{Binding CenaSataRedovan, StringFormat=N4}" Width="125"/>
+                        <DataGridTextColumn Header="Cena sata staž" Binding="{Binding CenaSataMinuliRad, StringFormat=N4}" Width="110"/>
+                        <DataGridTextColumn Header="Dodaci (legacy)" Binding="{Binding DodaciLegacy, StringFormat=N2}" Width="110"/>
+                        <DataGridTextColumn Header="Dodatak 1" Binding="{Binding DodatakNaM1, StringFormat=N2}" Width="90"/>
+                        <DataGridTextColumn Header="Dodatak 2" Binding="{Binding DodatakNaM2, StringFormat=N2}" Width="90"/>
+                        <DataGridTextColumn Header="Dodatak 3" Binding="{Binding DodatakNaM3, StringFormat=N2}" Width="90"/>
+                        <DataGridTextColumn Header="Bruto osnovica" Binding="{Binding BrutoOsnovica, StringFormat=N2}" Width="110"/>
+                        <DataGridTextColumn Header="Topli obrok iznos" Binding="{Binding TopliObrokIznos, StringFormat=N2}" Width="115"/>
+                        <DataGridTextColumn Header="Osnovica PIO Bruto" Binding="{Binding BrutoPioOsnovica, StringFormat=N2}" Width="125"/>
+                        <DataGridTextColumn Header="Neto naknade (legacy)" Binding="{Binding NetoNaknadeLegacy, StringFormat=N2}" Width="140"/>
+                        <DataGridTextColumn Header="Operativni" Binding="{Binding Operativni}" Width="85"/>
+                        <DataGridTextColumn Header="Oznaka" Binding="{Binding Oznaka}" Width="65"/>
+                        <DataGridTextColumn Header="Minimalna plata osnovica" Binding="{Binding MinimalnaPlataOsnovica, StringFormat=N2}" Width="150"/>
+                        <DataGridTextColumn Header="Šifra samodoprinosa 1" Binding="{Binding SifraSamodoprinosa1}" Width="140"/>
+                        <DataGridTextColumn Header="Šifra samodoprinosa 2" Binding="{Binding SifraSamodoprinosa2}" Width="140"/>
+                        <DataGridTextColumn Header="Poseban porez" Binding="{Binding PosebanPorez, StringFormat=N2}" Width="105"/>
+                        <DataGridTextColumn Header="Neto porez osnovica" Binding="{Binding NetoPorez, StringFormat=N2}" Width="130"/>
+                        <DataGridTextColumn Header="Neto bez poreza" Binding="{Binding NetoBezPoreza, StringFormat=N2}" Width="110"/>
+                        <DataGridTextColumn Header="Prosek (12m)" Binding="{Binding Prosek, StringFormat=N2}" Width="100"/>
+                    </DataGrid.Columns>
+                    <DataGrid.RowStyle>
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="Cursor" Value="Hand"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#EEF2FF"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.RowStyle>
+                </DataGrid>
+            </Border>
+
+            <!-- Detaljan prikaz jednog obračuna -->
+            <Border Grid.Column="1" Style="{StaticResource Card}" Padding="0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="20">
+                        <TextBlock Text="Stavke platnog listića" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                        <Rectangle Height="2" Margin="0,8,0,16">
+                            <Rectangle.Fill>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="#3949AB" Offset="0"/>
+                                    <GradientStop Color="#00BCD4" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Rectangle.Fill>
+                        </Rectangle>
+
+                        <StackPanel Visibility="{Binding SelectedObracun, Converter={x:Static local:NullToVisibilityConverter.Instance}}">
+                            <!-- Lični podaci i parametri -->
+                            <TextBlock Text="OSNOVNI PODACI I PARAMETRI" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"/>
+                            <Grid Margin="0,0,0,12">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0" Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding SelectedObracun.Radnik.ImeIPrezime}" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SelectedObracun.Radnik.Jmbg}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                </Grid>
+                                <Grid Grid.Row="1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                        <TextBlock Text="Razred: " FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                        <TextBlock Text="{Binding SelectedObracun.Radnik.Kategorija}" FontSize="12" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,12,0">
+                                        <TextBlock Text="Koeficijent: " FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                        <TextBlock Text="{Binding SelectedObracun.Radnik.Koeficijent, StringFormat=N2}" FontSize="12" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,12,0">
+                                        <TextBlock Text="Bod: " FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                        <TextBlock Text="{Binding SelectedVrBoda, StringFormat=N2}" FontSize="12" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="3" Orientation="Horizontal">
+                                        <TextBlock Text="Staž: " FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                        <TextBlock Text="{Binding SelectedObracun.MinuliRadGodine}" FontSize="12" FontWeight="SemiBold"/>
+                                        <TextBlock Text=" g" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+
+                            <!-- Sati i učinak -->
+                            <Border Background="#F9FAFB" CornerRadius="6" Padding="12" Margin="0,0,0,16" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="ODRAĐENI SATI I UČINAK" FontSize="10" FontWeight="Bold" Foreground="{StaticResource PrimaryLightBrush}" Margin="0,0,0,8"/>
+                                    
+                                    <Grid Margin="0,0,0,4">
+                                        <TextBlock Text="Redovni radni sati (po vremenu):" FontSize="12"/>
+                                        <TextBlock Text="{Binding SelectedObracun.RedovniSati}" HorizontalAlignment="Right" FontWeight="SemiBold"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,4">
+                                        <TextBlock Text="Bolovanje (sati):" FontSize="12"/>
+                                        <TextBlock Text="{Binding SelectedObracun.BolovanjeSati}" HorizontalAlignment="Right" FontWeight="SemiBold"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,4">
+                                        <TextBlock Text="Prekovremeni rad (sati):" FontSize="12"/>
+                                        <TextBlock Text="{Binding SelectedObracun.PrekovremeneSati}" HorizontalAlignment="Right" FontWeight="SemiBold"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,4">
+                                        <TextBlock Text="Godišnji odmor (sati):" FontSize="12"/>
+                                        <TextBlock Text="{Binding SelectedObracun.GodisnjioOdmorSati}" HorizontalAlignment="Right" FontWeight="SemiBold"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,4">
+                                        <TextBlock Text="Državni praznik (sati):" FontSize="12"/>
+                                        <TextBlock Text="{Binding SelectedObracun.DrzavniPraznikSati}" HorizontalAlignment="Right" FontWeight="SemiBold"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,4">
+                                        <TextBlock Text="Noćni rad (sati):" FontSize="12"/>
+                                        <TextBlock Text="{Binding SelectedObracun.NocniSati}" HorizontalAlignment="Right" FontWeight="SemiBold"/>
+                                    </Grid>
+                                    <Separator Margin="0,6,0,6"/>
+                                    <Grid>
+                                        <TextBlock Text="Ukupno radnih časova:" FontSize="12" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"/>
+                                        <TextBlock Text="{Binding SelectedObracun.UkupnoSati}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Finansijski iznosi -->
+                            <TextBlock Text="FINANSIJSKA REKAPITULACIJA" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"/>
+                            
+                            <Grid Margin="0,0,0,6" Visibility="{Binding SelectedObracun.NetoZar, Converter={x:Static local:NullToVisibilityConverter.Instance}}">
+                                <TextBlock Text="Bruto zarada (redovan rad):" FontSize="13"/>
+                                <TextBlock Text="{Binding SelectedObracun.NetoZar, StringFormat=N2}" HorizontalAlignment="Right" FontWeight="SemiBold"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,6" Visibility="{Binding SelectedObracun.BrutoMinuliRad, Converter={x:Static local:NullToVisibilityConverter.Instance}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Bruto naknada - minuli rad (" FontSize="13"/>
+                                    <TextBlock Text="{Binding SelectedMinuliRadPercent, StringFormat={}{0:F2}%}" FontSize="13"/>
+                                    <TextBlock Text="):" FontSize="13"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding SelectedObracun.BrutoMinuliRad, StringFormat=N2}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,6" Visibility="{Binding SelectedObracun.BrutoStimulacija, Converter={x:Static local:NullToVisibilityConverter.Instance}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Bruto naknada - stimulacija (" FontSize="13"/>
+                                    <TextBlock Text="{Binding SelectedStimulacijaPercent, StringFormat={}{0:F2}%}" FontSize="13"/>
+                                    <TextBlock Text="):" FontSize="13"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding SelectedObracun.BrutoStimulacija, StringFormat=N2}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,6" Visibility="{Binding SelectedObracun.NetoBol, Converter={x:Static local:NullToVisibilityConverter.Instance}}">
+                                <TextBlock Text="Bruto naknada - bolovanje do 30 dana:" FontSize="13"/>
+                                <TextBlock Text="{Binding SelectedObracun.NetoBol, StringFormat=N2}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,6" Visibility="{Binding SelectedObracun.NetoNerd, Converter={x:Static local:NullToVisibilityConverter.Instance}}">
+                                <TextBlock Text="Bruto naknada - neradni državni praznik:" FontSize="13"/>
+                                <TextBlock Text="{Binding SelectedObracun.NetoNerd, StringFormat=N2}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,6" Visibility="{Binding SelectedObracun.NetoGOd, Converter={x:Static local:NullToVisibilityConverter.Instance}}">
+                                <TextBlock Text="Bruto naknada - godišnji odmor:" FontSize="13"/>
+                                <TextBlock Text="{Binding SelectedObracun.NetoGOd, StringFormat=N2}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,6" Visibility="{Binding SelectedObracun.NetoTo, Converter={x:Static local:NullToVisibilityConverter.Instance}}">
+                                <TextBlock Text="Bruto dodatak - topli obrok:" FontSize="13"/>
+                                <TextBlock Text="{Binding SelectedObracun.NetoTo, StringFormat=N2}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,6" Visibility="{Binding SelectedObracun.NetoReg, Converter={x:Static local:NullToVisibilityConverter.Instance}}">
+                                <TextBlock Text="Bruto dodatak - regres:" FontSize="13"/>
+                                <TextBlock Text="{Binding SelectedObracun.NetoReg, StringFormat=N2}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,6">
+                                <TextBlock Text="Bruto dodatak:" FontSize="13"/>
+                                <TextBlock Text="{Binding SelectedObracun.Varijabila, StringFormat=N2}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,6" Visibility="{Binding SelectedObracun.NetoPrek, Converter={x:Static local:NullToVisibilityConverter.Instance}}">
+                                <TextBlock Text="Bruto naknada - prekovremeni rad:" FontSize="13"/>
+                                <TextBlock Text="{Binding SelectedObracun.NetoPrek, StringFormat=N2}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,6" Visibility="{Binding SelectedObracun.NetoNocni, Converter={x:Static local:NullToVisibilityConverter.Instance}}">
+                                <TextBlock Text="Bruto naknada - noćni rad:" FontSize="13"/>
+                                <TextBlock Text="{Binding SelectedObracun.NetoNocni, StringFormat=N2}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,6" Visibility="{Binding SelectedObracun.NetoDrza, Converter={x:Static local:NullToVisibilityConverter.Instance}}">
+                                <TextBlock Text="Bruto naknada - rad na praznik:" FontSize="13"/>
+                                <TextBlock Text="{Binding SelectedObracun.NetoDrza, StringFormat=N2}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,6">
+                                <TextBlock Text="UKUPAN BRUTO:" FontSize="13" FontWeight="Bold"/>
+                                <TextBlock Text="{Binding SelectedObracun.Neto, StringFormat=N2}" HorizontalAlignment="Right" FontWeight="Bold"/>
+                            </Grid>
+
+                            
+                            <Separator Margin="0,6"/>
+
+                            <!-- Poreski obračun -->
+                            <Grid Margin="0,0,0,6">
+                                <TextBlock Text="Poresko oslobođenje:" FontSize="13"/>
+                                <TextBlock Text="{Binding SelectedObracun.LicniOdbitak, StringFormat=N2}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,6">
+                                <TextBlock Text="Osnovica za porez:" FontSize="13"/>
+                                <TextBlock Text="{Binding SelectedObracun.PoreskaOsnovica, StringFormat=N2}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,6">
+                                <TextBlock Text="Porez na dohodak (10%):" FontSize="13" Foreground="#991B1B"/>
+                                <TextBlock Text="{Binding SelectedObracun.PorezNaDohodak, StringFormat=N2}" HorizontalAlignment="Right" Foreground="#991B1B" FontWeight="SemiBold"/>
+                            </Grid>
+
+                            <Separator Margin="0,6"/>
+
+                            <!-- Osnovica za doprinose -->
+                            <Grid Margin="0,0,0,6">
+                                <TextBlock Text="Osnovica za doprinose:" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource PrimaryBrush}"/>
+                                <TextBlock Text="{Binding SelectedObracun.UkupnoBruto, StringFormat=N2}" HorizontalAlignment="Right" FontWeight="SemiBold" Foreground="{StaticResource PrimaryBrush}"/>
+                            </Grid>
+
+                            <Separator Margin="0,6"/>
+
+                            <!-- Doprinosi -->
+                            <TextBlock Text="DOPRINOSI NA TERET RADNIKA" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,8"/>
+                            <Grid Margin="0,0,0,4">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Doprinos za PIO (" FontSize="12"/>
+                                    <TextBlock Text="{Binding SelectedObracun.StopaPioRadnikStr}" FontSize="12"/>
+                                    <TextBlock Text="):" FontSize="12"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding SelectedObracun.DoprinosPioRadnik, StringFormat=N2}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Doprinos za zdravstvo (" FontSize="12"/>
+                                    <TextBlock Text="{Binding SelectedObracun.StopaZdravstvoRadnikStr}" FontSize="12"/>
+                                    <TextBlock Text="):" FontSize="12"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding SelectedObracun.DoprinosZdravstvoRadnik, StringFormat=N2}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Doprinos za nezaposlenost (" FontSize="12"/>
+                                    <TextBlock Text="{Binding SelectedObracun.StopaNezaposlenostRadnikStr}" FontSize="12"/>
+                                    <TextBlock Text="):" FontSize="12"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding SelectedObracun.DoprinosNezaposlenostRadnik, StringFormat=N2}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,4,0,6">
+                                <TextBlock Text="Ukupni doprinosi radnika:" FontSize="12" FontWeight="Bold"/>
+                                <TextBlock Text="{Binding SelectedObracun.UkupniDoprinosi, StringFormat=N2}" HorizontalAlignment="Right" FontWeight="Bold"/>
+                            </Grid>
+
+                            <Separator Margin="0,6"/>
+
+                            <Grid Margin="0,4,0,6">
+                                <TextBlock Text="Umanjena zarada (Neto 1):" FontSize="13" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"/>
+                                <TextBlock Text="{Binding SelectedObracun.NetoPreDoprinosa, StringFormat=N2}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"/>
+                            </Grid>
+
+                            <Separator Margin="0,6"/>
+
+                            <!-- Odbici / Obustave -->
+                            <TextBlock Text="OBUSTAVE I ODBICI" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,8"/>
+                            <Grid Margin="0,0,0,4">
+                                <TextBlock Text="Krediti i obustave:" FontSize="12"/>
+                                <TextBlock Text="{Binding SelectedObracun.KreditObustava, StringFormat=N2}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <TextBlock Text="Samodoprinosi i ostalo:" FontSize="12"/>
+                                <TextBlock Text="{Binding SelectedObracun.Samodoprinosi, StringFormat=N2}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,4,0,12">
+                                <TextBlock Text="Ukupne obustave:" FontSize="12" FontWeight="Bold"/>
+                                <TextBlock Text="{Binding SelectedObracun.UkupniOdbici, StringFormat=N2}" HorizontalAlignment="Right" FontWeight="Bold"/>
+                            </Grid>
+
+                            <!-- Neto za isplatu -->
+                            <Border Margin="0,4,0,8" Background="#EEF2FF" Padding="10" CornerRadius="6">
+                                <Grid>
+                                    <TextBlock Text="ZA ISPLATU:" FontSize="15" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding SelectedObracun.NetoIsplata, StringFormat=N2}" HorizontalAlignment="Right" FontSize="18" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"/>
+                                </Grid>
+                            </Border>
+
+                            <Grid Margin="0,0,0,8">
+                                <TextBlock Text="Bruto 1:" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                <TextBlock Text="{Binding SelectedObracun.Bruto1, StringFormat=N2}" HorizontalAlignment="Right" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            </Grid>
+
+                            <!-- Doprinosi na teret poslodavca -->
+                            <Border Background="#FFF8F0" CornerRadius="6" Padding="12" Margin="0,0,0,8" BorderBrush="#FED7AA" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="DOPRINOSI NA TERET POSLODAVCA" FontSize="10" FontWeight="Bold" Foreground="#92400E" Margin="0,0,0,8"/>
+                                    <Grid Margin="0,0,0,4">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Doprinos za PIO (" FontSize="12" Foreground="#78350F"/>
+                                            <TextBlock Text="{Binding SelectedObracun.StopaPioPoslodavacStr}" FontSize="12" Foreground="#78350F"/>
+                                            <TextBlock Text="):" FontSize="12" Foreground="#78350F"/>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding SelectedObracun.DoprinosPioPoslodavac, StringFormat=N2}" HorizontalAlignment="Right" Foreground="#78350F"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,4">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Doprinos za zdravstvo (" FontSize="12" Foreground="#78350F"/>
+                                            <TextBlock Text="{Binding SelectedObracun.StopaZdravstvoPoslodavacStr}" FontSize="12" Foreground="#78350F"/>
+                                            <TextBlock Text="):" FontSize="12" Foreground="#78350F"/>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding SelectedObracun.DoprinosZdravstvoPoslodavac, StringFormat=N2}" HorizontalAlignment="Right" Foreground="#78350F"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,4">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Doprinos za nezaposlenost (" FontSize="12" Foreground="#78350F"/>
+                                            <TextBlock Text="{Binding SelectedObracun.StopaNezaposlenostPoslodavacStr}" FontSize="12" Foreground="#78350F"/>
+                                            <TextBlock Text="):" FontSize="12" Foreground="#78350F"/>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding SelectedObracun.DoprinosNezaposlenostPoslodavac, StringFormat=N2}" HorizontalAlignment="Right" Foreground="#78350F"/>
+                                    </Grid>
+                                    <Separator Margin="0,6,0,6" Background="#FED7AA"/>
+                                    <Grid>
+                                        <TextBlock Text="Ukupni doprinosi poslodavca:" FontSize="12" FontWeight="Bold" Foreground="#92400E"/>
+                                        <TextBlock Text="{Binding SelectedObracun.UkupniDoprinosiPoslodavca, StringFormat=N2}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="#92400E"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Bruto 2 -->
+                            <Border Margin="0,0,0,16" Background="#FEF3C7" Padding="10" CornerRadius="6" BorderBrush="#F59E0B" BorderThickness="1.5">
+                                <Grid>
+                                    <StackPanel>
+                                        <TextBlock Text="BRUTO 2" FontSize="11" FontWeight="Bold" Foreground="#92400E"/>
+                                        <TextBlock Text="(Bruto 1 + doprinosi poslodavca)" FontSize="10" Foreground="#B45309"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding SelectedObracun.Bruto2, StringFormat=N2}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="18" FontWeight="Bold" Foreground="#78350F"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- PDF i XML izvoz -->
+                            <Grid Margin="0,8,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0" Content="🖨️" Style="{StaticResource SecondaryButton}" Width="36" Padding="0" HorizontalAlignment="Left" ToolTip="Preuzmi PDF" Margin="0,0,4,0" Click="BtnStampajListic_Click"/>
+                                <Button Grid.Column="1" Content="🌐  Izvezi PPP-PD" Style="{StaticResource PrimaryButton}" Margin="4,0,0,0" Click="BtnIzveziXml_Click"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Placeholder -->
+                        <TextBlock Text="← Izaberite obračun za detalje"
+                                   FontSize="13" Foreground="#9CA3AF"
+                                   HorizontalAlignment="Center" Margin="0,40,0,0"
+                                   Visibility="{Binding SelectedObracun, Converter={x:Static local:NullToVisibilityConverter.InverseInstance}}"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- ── STATUS BAR ────────────────────────────────────────────── -->
+        <Border Grid.Row="3" Margin="0,12,0,0"
+                Background="White" CornerRadius="6" Padding="12,6"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+            <TextBlock Text="{Binding StatusText}" FontSize="12"
+                       Foreground="{StaticResource TextSecondaryBrush}"/>
+        </Border>
+    </Grid>
+</Page>

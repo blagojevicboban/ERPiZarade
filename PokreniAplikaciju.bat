@@ -5,4 +5,4 @@ echo         PLATA - Pokretanje C# WPF Aplikacije
 echo ==========================================================
 echo.
 echo Kompajliranje i pokretanje aplikacije...
-dotnet run --project PlataApp\PlataApp.csproj
+dotnet run --project ERPiZaradeApp\ERPiZaradeApp.csproj

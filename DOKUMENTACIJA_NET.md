@@ -1,6 +1,6 @@
-# Tehnička Dokumentacija Modernog .NET Podsistema (PlataSistem)
+# Tehnička Dokumentacija Modernog .NET Podsistema (ERPiZarade)
 
-Ovaj dokument pruža sveobuhvatan tehnički pregled modernog .NET podsistema za obračun zarada (**PlataSistem**). Sistem je dizajniran da radi u simbiozi sa nasleđenim (legacy) Clipper/Harbour kodom (smeštenim u `PLATA` direktorijumu), omogućavajući prelazak na modernu desktop arhitekturu uz očuvanje stabilnosti i istorijskih kalkulacija.
+Ovaj dokument pruža sveobuhvatan tehnički pregled modernog .NET podsistema za obračun zarada (**ERPiZarade**). Sistem je dizajniran da radi u simbiozi sa nasleđenim (legacy) Clipper/Harbour kodom (smeštenim u `PLATA` direktorijumu), omogućavajući prelazak na modernu desktop arhitekturu uz očuvanje stabilnosti i istorijskih kalkulacija.
 
 ---
 
@@ -15,13 +15,13 @@ flowchart TD
     end
 
     subgraph Sinhronizacioni Sloj [Migracija Podataka]
-        Migrator[PlataMigration.exe] <--> DBF_Fajlovi
+        Migrator[ERPiZaradeMigration.exe] <--> DBF_Fajlovi
     end
 
     subgraph Moderni .NET Sloj [WPF Desktop Aplikacija]
         Migrator <--> SQLite_DB[(SQLite: plata.db)]
-        PlataApp[PlataApp.exe WPF Klijent] <--> SQLite_DB
-        PlataData[PlataData.dll EF Core] <--> SQLite_DB
+        ERPiZaradeApp[ERPiZaradeApp.exe WPF Klijent] <--> SQLite_DB
+        ERPiZaradeData[ERPiZaradeData.dll EF Core] <--> SQLite_DB
     end
 
     style Legacy DOS Sloj fill:#ffebee,stroke:#c62828,stroke-width:2px
@@ -37,9 +37,9 @@ Za razliku od standardnih migracionih sistema gde je radnik jedinstveni entitet 
 
 ---
 
-## 2. Detaljan Pregled PlataData sloja (EF Core + SQLite)
+## 2. Detaljan Pregled ERPiZaradeData sloja (EF Core + SQLite)
 
-`PlataData` je biblioteka klasa (Class Library) koja preko Entity Framework Core (EF Core) mapira SQLite bazu podataka `plata.db`.
+`ERPiZaradeData` je biblioteka klasa (Class Library) koja preko Entity Framework Core (EF Core) mapira SQLite bazu podataka `plata.db`.
 
 ### Ključni Entiteti i Tabele
 
@@ -89,15 +89,15 @@ Port za detaljnu rekapitulaciju poslodavca (`POSL_OBR.DBF` i `POSLOBRI.DBF`). Sa
 
 ---
 
-## 3. Detaljan Pregled PlataMigration sloja
+## 3. Detaljan Pregled ERPiZaradeMigration sloja
 
-`PlataMigration` je visokooptimizovana konzolna aplikacija koja vrši prenos podataka iz DBF datoteka u SQLite bazu. Aplikacija se oslanja na paket `DbfDataReader` sa kodnom stranicom `cp852` (OEM Latin 2) kako bi se ispravno sačuvala naša slova (`Š`, `Đ`, `Č`, `Ć`, `Ž`).
+`ERPiZaradeMigration` je visokooptimizovana konzolna aplikacija koja vrši prenos podataka iz DBF datoteka u SQLite bazu. Aplikacija se oslanja na paket `DbfDataReader` sa kodnom stranicom `cp852` (OEM Latin 2) kako bi se ispravno sačuvala naša slova (`Š`, `Đ`, `Č`, `Ć`, `Ž`).
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant DBF as DBF Fajlovi (DOS)
-    participant Mig as PlataMigration.exe
+    participant Mig as ERPiZaradeMigration.exe
     participant SQL as SQLite (plata.db)
 
     Note over Mig: Pokretanje migracije
@@ -132,9 +132,9 @@ sequenceDiagram
 
 ---
 
-## 4. Detaljan Pregled PlataApp sloja (WPF Aplikacija)
+## 4. Detaljan Pregled ERPiZaradeApp sloja (WPF Aplikacija)
 
-`PlataApp` je WPF desktop aplikacija izgrađena po uzoru na moderne standarde vizuelnog dizajna (sleek dark/light modovi, zaobljene ivice, harmonizovane palete boja bazirane na Indigo i Blue nijansama).
+`ERPiZaradeApp` je WPF desktop aplikacija izgrađena po uzoru na moderne standarde vizuelnog dizajna (sleek dark/light modovi, zaobljene ivice, harmonizovane palete boja bazirane na Indigo i Blue nijansama).
 
 ### Navigacija i MainWindow
 Glavni prozor aplikacije koristi Sidebar sa navigacionim dugmićima koji učitavaju WPF stranice (`Page`) unutar centralnog `Frame` elementa:
@@ -181,7 +181,7 @@ graph TD
 Jedna od najnaprednijih funkcionalnosti podsistema je podrška za rad sa više firmi (Multi-Tenancy) preko izolovanih SQLite baza podataka.
 
 Aplikacija to rešava na sledeći način u klasi `AppConfig`:
-1. Kada se aplikacija pokrene, ona proverava prisustvo baze pod nazivom `plata_zajednicka.db` u direktorijumu `C:\PlataApp\Baze\`.
+1. Kada se aplikacija pokrene, ona proverava prisustvo baze pod nazivom `plata_zajednicka.db` u direktorijumu `C:\ERPiZaradeApp\Baze\`.
 2. Ukoliko baza postoji, privremeno je otvara i čita podatke o firmi iz tabele `Firme`.
 3. Na osnovu pročitanog **PIB-a** i očišćenog **naziva firme**, aplikacija automatski preimenuje bazu u format:
    `firma_{pib}_{nazivClean}.db`

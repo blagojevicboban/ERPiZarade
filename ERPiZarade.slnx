@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="ERPiZaradeApp/ERPiZaradeApp.csproj" />
+  <Project Path="ERPiZaradeApp.Tests/ERPiZaradeApp.Tests.csproj" />
+  <Project Path="ERPiZaradeData/ERPiZaradeData.csproj" />
+  <Project Path="ERPiZaradeMigration/ERPiZaradeMigration.csproj" />
+</Solution>

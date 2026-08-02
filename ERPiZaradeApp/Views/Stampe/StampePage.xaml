@@ -1,0 +1,172 @@
+<Page x:Class="ERPiZaradeApp.Views.Stampe.StampePage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:local="clr-namespace:ERPiZaradeApp.Views.Stampe"
+      Title="Knjigovodstveni izveštaji i rekapitulacije"
+      Background="{StaticResource SurfaceBrush}">
+
+    <Page.DataContext>
+        <local:StampeViewModel x:Name="ViewModel"/>
+    </Page.DataContext>
+
+    <Grid Margin="24,20,24,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Header -->
+            <RowDefinition Height="Auto"/>  <!-- Filters Card -->
+            <RowDefinition Height="*"/>     <!-- Actions / Content -->
+            <RowDefinition Height="Auto"/>  <!-- Status bar -->
+        </Grid.RowDefinitions>
+
+
+        <!-- ── FILTERS CARD ────────────────────────────────────────── -->
+        <Border Grid.Row="1" Style="{StaticResource Card}" Padding="20,16" Margin="0,0,0,20">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="120"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="140"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="Godina obračuna:" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="13" FontWeight="SemiBold"/>
+                <ComboBox Grid.Column="1" ItemsSource="{Binding Godine}" SelectedItem="{Binding SelectedGodina}" IsEnabled="False" Margin="0,0,24,0" Padding="8,5"/>
+
+                <TextBlock Grid.Column="2" Text="Mesec obračuna:" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="13" FontWeight="SemiBold"/>
+                <ComboBox Grid.Column="3" ItemsSource="{Binding Meseci}" SelectedItem="{Binding SelectedMesec}" IsEnabled="False" Margin="0,0,24,0" Padding="8,5"/>
+
+                <TextBlock Grid.Column="4" Text="Radna jedinica (RJ):" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="13" FontWeight="SemiBold"/>
+                <ComboBox Grid.Column="5" ItemsSource="{Binding RadneJedinice}" SelectedItem="{Binding SelectedRadnaJedinica}" Padding="8,5"/>
+            </Grid>
+        </Border>
+
+        <!-- ── ACTIONS (CARDS) ─────────────────────────────────────── -->
+        <Grid Grid.Row="2" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Card 1: Platni Spisak -->
+            <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,12,0" Padding="24">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0">
+                        <TextBlock Text="📋 MESEČNI PLATNI SPISAK" FontSize="16" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,8"/>
+                        <Rectangle Height="2" Fill="#E0E0E0" HorizontalAlignment="Stretch" Margin="0,0,0,16"/>
+                    </StackPanel>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,0,20">
+                        <TextBlock TextWrapping="Wrap" FontSize="13" LineHeight="20" Foreground="#37474F">
+                            Kompletan tabelarni pregled pojedinačnih obračuna zarada za celo preduzeće ili odabranu radnu jedinicu. 
+                            <LineBreak/><LineBreak/>
+                            Izveštaj sadrži:
+                            <LineBreak/>• Detaljnu evidenciju svih časova rada, praznika i bolovanja.
+                            <LineBreak/>• Pojedinačnu osnovnu bruto platu, minuli rad i ostale bruto naknade.
+                            <LineBreak/>• Poreske osnovice, poreska davanja i doprinose radnika po stopama (PIO, Zdravstvo, Nezaposlenost).
+                            <LineBreak/>• Obustave po kreditima i opštinskim samodoprinosima.
+                            <LineBreak/>• Neto zaradu zaposlenog i konačni iznos za isplatu.
+                            <LineBreak/><LineBreak/>
+                            Izveštaj se generiše u elegantnom <Bold>A4 Landscape</Bold> formatu sa automatskim proračunom kolona i zbirnim redom na dnu.
+                        </TextBlock>
+                    </ScrollViewer>
+
+                    <StackPanel Grid.Row="2">
+                        <Button Content="🖨️  Generiši platni spisak" Style="{StaticResource PrimaryButton}" 
+                                Height="40" FontSize="14" FontWeight="SemiBold" Click="BtnGenerisiSpisak_Click"/>
+                        <Button Content="🏢  Generiši spisak po radnim jedinicama" Style="{StaticResource SecondaryButton}" 
+                                Height="36" FontSize="13" Margin="0,10,0,0" Click="BtnGenerisiSpisakRj_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Card 2: Rekapitulacija -->
+            <Border Grid.Column="1" Style="{StaticResource Card}" Margin="6,0,6,0" Padding="24">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0">
+                        <TextBlock Text="📊 MESEČNA REKAPITULACIJA" FontSize="16" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,8"/>
+                        <Rectangle Height="2" Fill="#E0E0E0" HorizontalAlignment="Stretch" Margin="0,0,0,16"/>
+                    </StackPanel>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,0,20">
+                        <TextBlock TextWrapping="Wrap" FontSize="13" LineHeight="20" Foreground="#37474F">
+                            Zbirni knjigovodstveni izveštaj koji predstavlja kumulativne podatke celokupnog obračuna zarada za knjiženje i finansijske analize.
+                            <LineBreak/><LineBreak/>
+                            Izveštaj sadrži:
+                            <LineBreak/>• Ukupne bruto troškove zarada, naknada i bolovanja do 30 dana.
+                            <LineBreak/>• Sumiranu poresku osnovicu i ukupno obračunat porez na dohodak (10%).
+                            <LineBreak/>• Kumulativne doprinose radnika i poslodavca pojedinačno po stopama.
+                            <LineBreak/>• Ukupne opštinske samodoprinose i sumirane kredite radnika.
+                            <LineBreak/>• Ukupnu neto zaradu i finalne iznose za isplatu na račune banaka.
+                            <LineBreak/>• Proračun Bruto 1 obaveza sa doprinosima na teret poslodavca.
+                            <LineBreak/><LineBreak/>
+                            Izveštaj se generiše u preglednom <Bold>A4 Portrait</Bold> formatu sa postavljenim potpisnim linijama za ovlašćeno lice i šefa računovodstva.
+                        </TextBlock>
+                    </ScrollViewer>
+
+                    <Button Grid.Row="2" Content="📊  Generiši zbirnu rekapitulaciju" Style="{StaticResource PrimaryButton}" 
+                            Height="40" FontSize="14" FontWeight="SemiBold" Click="BtnGenerisiRekapitulaciju_Click"/>
+                </Grid>
+            </Border>
+
+            <!-- Card 3: Izveštaj za banke -->
+            <Border Grid.Column="2" Style="{StaticResource Card}" Margin="12,0,0,0" Padding="24">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0">
+                        <TextBlock Text="🏦 IZVEŠTAJI ZA BANKE" FontSize="16" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,8"/>
+                        <Rectangle Height="2" Fill="#E0E0E0" HorizontalAlignment="Stretch" Margin="0,0,0,16"/>
+                    </StackPanel>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,0,20">
+                        <TextBlock TextWrapping="Wrap" FontSize="13" LineHeight="20" Foreground="#37474F">
+                            Izvoz i štampa platnih spiskova grupisanih po komercijalnim bankama za potrebe prenosa sredstava na tekuće račune zaposlenih.
+                            <LineBreak/><LineBreak/>
+                            Izveštaj generiše:
+                            <LineBreak/>• Pojedinačne stranice za svaku banku definisanu u SQLite šifrarniku <Bold>Banke</Bold> za odabrani mesec.
+                            <LineBreak/>• Prikaz reg. broja radnika, tekućeg računa i punog imena.
+                            <LineBreak/>• Neto iznos za isplatu za svakog zaposlenog (`NetoIsplata`).
+                            <LineBreak/>• Zbirnu sumu (rekord) za prenos po svakoj banci.
+                            <LineBreak/><LineBreak/>
+                            Izveštaj se generiše u elegantnom <Bold>A4 Portrait</Bold> formatu sa svim zakonskim i računovodstvenim elementima.
+                        </TextBlock>
+                    </ScrollViewer>
+
+                    <Button Grid.Row="2" Content="🏦  Generiši izveštaj za banke" Style="{StaticResource PrimaryButton}" 
+                            Height="40" FontSize="14" FontWeight="SemiBold" Click="BtnGenerisiBanke_Click"/>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ── STATUS BAR ──────────────────────────────────────────── -->
+        <Border Grid.Row="3" Background="#ECEFF1" CornerRadius="4" Padding="12,8" Margin="0,10,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding StatusText}" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#37474F"/>
+                <TextBlock Grid.Column="1" Text="Sistem za izveštavanje v1.1.0" Foreground="#78909C" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Page>

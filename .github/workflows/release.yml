@@ -1,4 +1,4 @@
-name: Release PlataSistem
+name: Release ERPiZarade
 
 on:
   push:
@@ -29,10 +29,10 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Prevođenje celog rešenja
-        run: dotnet build PlataSistem.slnx -c Release
+        run: dotnet build ERPiZarade.slnx -c Release
 
       - name: Pokretanje testova
-        run: dotnet test PlataApp.Tests\PlataApp.Tests.csproj -c Release --no-build --verbosity normal
+        run: dotnet test ERPiZaradeApp.Tests\ERPiZaradeApp.Tests.csproj -c Release --no-build --verbosity normal
 
   build:
     needs: test
@@ -51,7 +51,7 @@ jobs:
 
       - name: Čitanje verzije iz fajla
         id: get_version
-        # Jedini version.txt u repou — isti onaj iz kog PlataApp.csproj čita verziju
+        # Jedini version.txt u repou — isti onaj iz kog ERPiZaradeApp.csproj čita verziju
         # ugrađenu u .exe. Ranije su postojala dva na različitim nivoima, pa su se
         # verzija binarnog fajla i verzija Velopack paketa mogle raziću.
         run: |
@@ -60,15 +60,15 @@ jobs:
 
       - name: Prevođenje koda (dotnet publish)
         run: |
-          dotnet publish PlataApp\PlataApp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=$env:VERSION -o publish_output
+          dotnet publish ERPiZaradeApp\ERPiZaradeApp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=$env:VERSION -o publish_output
 
       - name: Kopiranje baza i help fajlova
         run: |
           if (Test-Path "plata.db") { Copy-Item -Path "plata.db" -Destination "publish_output\plata.db" -Force }
           
-          if (Test-Path "PlataApp\Resources\Help") {
+          if (Test-Path "ERPiZaradeApp\Resources\Help") {
               New-Item -ItemType Directory -Path "publish_output\Resources\Help" -Force | Out-Null
-              Copy-Item -Path "PlataApp\Resources\Help\*" -Destination "publish_output\Resources\Help" -Recurse -Force
+              Copy-Item -Path "ERPiZaradeApp\Resources\Help\*" -Destination "publish_output\Resources\Help" -Recurse -Force
           }
 
 
@@ -78,13 +78,13 @@ jobs:
 
       - name: Pakovanje (vpk pack)
         run: |
-          $iconPath = "PlataApp\plata.ico"
+          $iconPath = "ERPiZaradeApp\plata.ico"
           $vpkArgs = @(
               "pack",
-              "--packId", "PlataSistem",
+              "--packId", "ERPiZarade",
               "--packVersion", $env:VERSION,
               "--packDir", "publish_output",
-              "--mainExe", "PlataApp.exe",
+              "--mainExe", "ERPiZaradeApp.exe",
               "--outputDir", "ReleasePackage",
               "--packTitle", "ERPi Zarade"
           )

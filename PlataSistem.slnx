@@ -1,6 +1,0 @@
-<Solution>
-  <Project Path="PlataApp/PlataApp.csproj" />
-  <Project Path="PlataApp.Tests/PlataApp.Tests.csproj" />
-  <Project Path="PlataData/PlataData.csproj" />
-  <Project Path="PlataMigration/PlataMigration.csproj" />
-</Solution>

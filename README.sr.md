@@ -35,15 +35,15 @@
 ## 📁 Struktura projekta
 
 ```
-PayrollSystem/
-├── PlataSistem/
-│   ├── PlataApp/           # Glavni WPF projekat (Views, ViewModels, Services)
+ERPiZarade/
+├── ERPiZarade/
+│   ├── ERPiZaradeApp/           # Glavni WPF projekat (Views, ViewModels, Services)
 │   │   ├── Views/          # Stranice: Radnici, Obračun, RadniSati, Krediti...
 │   │   ├── Services/       # ObracunService, BackupService, XmlExportService...
 │   │   └── Resources/      # Stilovi, Help dokumentacija
-│   ├── PlataData/          # Data Access Layer (EF Core entiteti, DbContext)
+│   ├── ERPiZaradeData/          # Data Access Layer (EF Core entiteti, DbContext)
 │   │   └── Models/         # Radnik, ObracunPlate, Doprinos, Firma...
-│   ├── PlataMigration/     # Alat za migraciju legacy podataka iz DBF fajlova
+│   ├── ERPiZaradeMigration/     # Alat za migraciju legacy podataka iz DBF fajlova
 │   ├── PlataInspect/       # Pomoćni alat za inspekciju baze
 │   ├── CheckDb/            # Provera integriteta baze podataka
 │   └── FixHistory/         # Korekcija istorijskih podataka
@@ -65,23 +65,23 @@ PayrollSystem/
 
 ```bash
 # 1. Klonirati repozitorijum
-git clone https://github.com/blagojevicboban/PayrollSystem.git
-cd PayrollSystem
+git clone https://github.com/blagojevicboban/ERPiZarade.git
+cd ERPiZarade
 
 # 2. Prevesti projekat
-dotnet build PlataSistem.slnx
+dotnet build ERPiZarade.slnx
 
 # 3. Pokrenuti aplikaciju
-dotnet run --project PlataApp/PlataApp.csproj
+dotnet run --project ERPiZaradeApp/ERPiZaradeApp.csproj
 ```
 
-> **Napomena:** Baza podataka se automatski kreira pri prvom pokretanju u folderu `C:\PlataApp\`. Ne treba nikakvo manuelno podešavanje.
+> **Napomena:** Baza podataka se automatski kreira pri prvom pokretanju u folderu `C:\ERPiZaradeApp\`. Ne treba nikakvo manuelno podešavanje.
 
 ---
 
 ## 📦 Instalacija (za krajnje korisnike)
 
-Preuzmi najnoviji instalacioni paket sa stranice **[Releases](../../releases)** i pokreni `PlataSistemSetup.exe`. Aplikacija se instalira u korisnički profil **bez administratorskih prava** i automatski se ažurira u pozadini.
+Preuzmi najnoviji instalacioni paket sa stranice **[Releases](../../releases)** i pokreni `ERPiZaradeSetup.exe`. Aplikacija se instalira u korisnički profil **bez administratorskih prava** i automatski se ažurira u pozadini.
 
 ---
 
@@ -89,10 +89,10 @@ Preuzmi najnoviji instalacioni paket sa stranice **[Releases](../../releases)** 
 
 Verzionisanje je potpuno automatizovano putem GitHub Actions:
 
-1. Otvori `PlataSistem/version.txt` i upiši novu verziju (npr. `1.2.0`)
+1. Otvori `ERPiZarade/version.txt` i upiši novu verziju (npr. `1.2.0`)
 2. Komituj i pushuj na `main` granu:
    ```bash
-   git add PlataSistem/version.txt
+   git add ERPiZarade/version.txt
    git commit -m "bump: version 1.2.0"
    git push
    ```

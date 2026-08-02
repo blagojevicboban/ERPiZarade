@@ -1,4 +1,4 @@
-# 💼 PayrollSystem — Salary Calculation System
+# 💼 ERPiZarade — Salary Calculation System
 
 > A Windows desktop application for payroll processing, employee management, and generation of legally required reports — built with C# / .NET 8 / WPF.
 
@@ -37,15 +37,15 @@
 ## 📁 Project Structure
 
 ```
-PayrollSystem/
-├── PlataSistem/
-│   ├── PlataApp/           # Main WPF project (Views, ViewModels, Services)
+ERPiZarade/
+├── ERPiZarade/
+│   ├── ERPiZaradeApp/           # Main WPF project (Views, ViewModels, Services)
 │   │   ├── Views/          # Pages: Employees, Payroll, WorkHours, Loans...
 │   │   ├── Services/       # PayrollService, BackupService, XmlExportService...
 │   │   └── Resources/      # Styles, Help documentation
-│   ├── PlataData/          # Data Access Layer (EF Core entities, DbContext)
+│   ├── ERPiZaradeData/          # Data Access Layer (EF Core entities, DbContext)
 │   │   └── Models/         # Employee, PayrollRecord, Contribution, Company...
-│   ├── PlataMigration/     # Legacy DBF data migration tool
+│   ├── ERPiZaradeMigration/     # Legacy DBF data migration tool
 │   ├── PlataInspect/       # Database inspection utility
 │   ├── CheckDb/            # Database integrity checker
 │   └── FixHistory/         # Historical data correction tool
@@ -65,23 +65,23 @@ PayrollSystem/
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/blagojevicboban/PayrollSystem.git
-cd PayrollSystem
+git clone https://github.com/blagojevicboban/ERPiZarade.git
+cd ERPiZarade
 
 # 2. Build the solution
-dotnet build PlataSistem.slnx
+dotnet build ERPiZarade.slnx
 
 # 3. Run the application
-dotnet run --project PlataApp/PlataApp.csproj
+dotnet run --project ERPiZaradeApp/ERPiZaradeApp.csproj
 ```
 
-> **Note:** The SQLite database is automatically created on first launch at `C:\PlataApp\`. No manual setup required.
+> **Note:** The SQLite database is automatically created on first launch at `C:\ERPiZaradeApp\`. No manual setup required.
 
 ---
 
 ## 📦 Installation (End Users)
 
-Download the latest installer from the **[Releases](../../releases)** page and run `PlataSistemSetup.exe`.  
+Download the latest installer from the **[Releases](../../releases)** page and run `ERPiZaradeSetup.exe`.  
 The application installs to the user profile **without administrator rights** and updates silently in the background.
 
 ---
@@ -90,10 +90,10 @@ The application installs to the user profile **without administrator rights** an
 
 The release process is fully automated via GitHub Actions:
 
-1. Edit `PlataSistem/version.txt` and set the new version (e.g. `1.2.0`)
+1. Edit `ERPiZarade/version.txt` and set the new version (e.g. `1.2.0`)
 2. Commit and push to the `main` branch:
    ```bash
-   git add PlataSistem/version.txt
+   git add ERPiZarade/version.txt
    git commit -m "bump: version 1.2.0"
    git push
    ```

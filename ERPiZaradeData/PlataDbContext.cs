@@ -34,6 +34,7 @@ public class PlataDbContext : DbContext
     public DbSet<Praznik> Praznici => Set<Praznik>();
     public DbSet<VrstaPrimanja> VrstePrimanja => Set<VrstaPrimanja>();
     public DbSet<ObracunStavka> ObracunStavke => Set<ObracunStavka>();
+    public DbSet<UnetoPrimanje> UnetaPrimanja => Set<UnetoPrimanje>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -136,6 +137,23 @@ public class PlataDbContext : DbContext
         modelBuilder.Entity<ObracunStavka>()
             .HasIndex(s => new { s.ObracunPlateId, s.VrstaPrimanjaId })
             .IsUnique();
+
+        // Uneto primanje: jedan iznos po radniku, periodu i vrsti
+        modelBuilder.Entity<UnetoPrimanje>()
+            .HasIndex(p => new { p.RadnikId, p.Godina, p.Mesec, p.VrstaPrimanjaId })
+            .IsUnique();
+
+        modelBuilder.Entity<UnetoPrimanje>()
+            .HasOne(p => p.Radnik)
+            .WithMany()
+            .HasForeignKey(p => p.RadnikId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<UnetoPrimanje>()
+            .HasOne(p => p.VrstaPrimanja)
+            .WithMany()
+            .HasForeignKey(p => p.VrstaPrimanjaId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 
     /// <summary>

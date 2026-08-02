@@ -187,6 +187,9 @@
                         <Button x:Name="BtnRadniSati" Content="⏱️  Radni sati"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnRadniSati_Click"/>
+                        <Button x:Name="BtnPrimanja" Content="🎁  Ostala primanja"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnPrimanja_Click"/>
                         <Button x:Name="BtnObracun" Content="📊  Obračun plate"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnObracun_Click"/>

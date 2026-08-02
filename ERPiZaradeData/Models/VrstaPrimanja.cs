@@ -39,8 +39,9 @@ public class VrstaPrimanja
     public bool UlaziUOsnovicuDoprinosa { get; set; } = true;
 
     /// <summary>
-    /// Mesečni neoporezivi iznos; preko njega primanje postaje oporezivo. Nula znači da
-    /// neoporezivog dela nema.
+    /// Mesečni neoporezivi iznos; prekoračenje po zakonu postaje oporezivo. Nula znači da
+    /// gornje granice nema, pa je kod neoporezive vrste ceo iznos neoporeziv — na takvu
+    /// vrstu u upotrebi upozoravaju kontrolne provere, da limit ne bi ostao neunet.
     /// </summary>
     [Column(TypeName = "decimal(14,2)")]
     public decimal NeoporeziviLimit { get; set; }
@@ -81,9 +82,53 @@ public class ObracunStavka
     /// <summary>Sati na koje se primanje odnosi; nula za primanja koja se ne mere satima.</summary>
     public int Sati { get; set; }
 
+    /// <summary>Ukupno isplaćeno po ovoj vrsti primanja.</summary>
     [Column(TypeName = "decimal(14,2)")]
     public decimal Iznos { get; set; }
 
+    /// <summary>
+    /// Deo iznosa koji je ušao u poresku osnovicu. Kod zarade je jednak <see cref="Iznos"/>;
+    /// kod neoporezivih primanja je to samo <b>prekoračenje</b> neoporezivog limita, koje po
+    /// zakonu postaje oporezivo.
+    /// </summary>
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal OporeziviDeo { get; set; }
+
+    /// <summary>Deo koji je ostao neoporezovan — isplaćuje se radniku, ali ne ulazi u osnovicu.</summary>
+    public decimal NeoporeziviDeo => Iznos - OporeziviDeo;
+
     public ObracunPlate Obracun { get; set; } = null!;
+    public VrstaPrimanja VrstaPrimanja { get; set; } = null!;
+}
+
+/// <summary>
+/// Primanje uneto za radnika u obračunskom periodu — ulaz iz kog obračun pravi stavku.
+///
+/// Postoji da bi se novo primanje moglo <b>uneti</b> bez izmene baze, isto kao što se u
+/// šifarnik dodaje bez izmene baze. Ranije je svako primanje moralo da dobije kolonu u
+/// <see cref="RadniSat"/> i u <see cref="ObracunPlate"/>.
+/// </summary>
+[Table("UnetaPrimanja")]
+public class UnetoPrimanje
+{
+    [Key]
+    public int UnetoPrimanjeId { get; set; }
+
+    [ForeignKey(nameof(Radnik))]
+    public int RadnikId { get; set; }
+
+    public int Godina { get; set; }
+    public int Mesec { get; set; }
+
+    [ForeignKey(nameof(VrstaPrimanja))]
+    public int VrstaPrimanjaId { get; set; }
+
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal Iznos { get; set; }
+
+    [MaxLength(200)]
+    public string Napomena { get; set; } = "";
+
+    public Radnik Radnik { get; set; } = null!;
     public VrstaPrimanja VrstaPrimanja { get; set; } = null!;
 }

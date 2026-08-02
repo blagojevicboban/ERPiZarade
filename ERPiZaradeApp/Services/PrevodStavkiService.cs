@@ -157,11 +157,15 @@ public class PrevodStavkiService
             if (iznos == 0m && sati == 0) return;
             if (!sifarnik.TryGetValue(sifra, out int vrstaId)) return;
 
+            decimal zaokruzen = Math.Round(iznos, 2);
             stavke.Add(new ObracunStavka
             {
                 VrstaPrimanjaId = vrstaId,
                 Sati = sati,
-                Iznos = Math.Round(iznos, 2)
+                Iznos = zaokruzen,
+                // Zatečeni obračuni ne poznaju neoporeziva primanja — sve što je u njima
+                // bilo isplaćeno bilo je i oporezovano.
+                OporeziviDeo = zaokruzen
             });
         }
 

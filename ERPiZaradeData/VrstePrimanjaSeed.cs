@@ -100,7 +100,9 @@ public static class VrstePrimanjaSeed
             Konto = "529",
             Oporezivo = false,
             UlaziUOsnovicuDoprinosa = false,
-            // Nula znači „limit nije unet"; unosi se u šifarniku prema važećem propisu.
+            // Nula znači da gornje granice nema — ceo iznos je neoporeziv. Limiti su
+            // promenljivi propisom, pa se ne ugrađuju u kod nego unose u šifarnik; dok se
+            // ne unesu, kontrolne provere na to upozoravaju.
             NeoporeziviLimit = 0m,
             Redosled = redosled,
             Aktivna = true,

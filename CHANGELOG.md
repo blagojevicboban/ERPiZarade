@@ -6,6 +6,28 @@ Format je zasnovan na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) s
 
 ---
 
+## [1.7.0] - 2026-08-03
+
+> **Faza 2.5** — neoporeziva primanja kao parametar. Kriterijum iz razvojne mape:
+> „prekoračenje neoporezivog limita automatski prelazi u oporezivi deo".
+
+### 🎁 Ostala primanja (novi ekran)
+- Prevoz, jubilarne nagrade, solidarne pomoći i slično se unose po radniku i periodu — **kao red, ne kao nova kolona**. Ranije je svako takvo primanje moralo da dobije kolonu i u `RadniSati` i u `ObracunPlate`.
+- Vrsta se bira iz šifarnika, gde stoje poreski tretman, neoporezivi limit i konto.
+- Isti radnik ne može dva puta istu vrstu u istom periodu — inače bi se neoporezivi limit primenio na svaki red posebno.
+
+### ⚖️ Podela na neoporezivi i oporezivi deo
+- **Prekoračenje limita automatski ulazi u poresku osnovicu**, a ostatak se isplaćuje neoporezovan.
+- Poštuje se i razlika između poreza i doprinosa: primanje koje se oporezuje ali **ne ulazi u osnovicu doprinosa** podiže porez, a doprinose ne.
+- Neoporezivi deo se **isplaćuje radniku u punom iznosu** — nije bio ni u bruto iznosu ni u osnovicama, pa se dodaje na kraju, u neto.
+- Stavka obračuna sada nosi i `OporeziviDeo`, pa se podela vidi po primanju, a ne samo u zbiru.
+
+### 🐛 Limit nula je značio suprotno od onoga što polje kaže
+- Prvo tumačenje je računalo oporezivi deo kao `Iznos − Limit`, pa je kod limita nula **ceo iznos ispadao oporeziv** — tačno obrnuto od značenja polja „neoporezivo". Sada limit nula znači da gornje granice nema, a takva vrsta u upotrebi se prijavljuje kroz kontrolne provere, da limit iz propisa ne bi ostao neunet.
+
+### 🧪 Testovi
+- 151 ukupno (8 novih): iznos ispod limita ne dira porez ni doprinose a diže neto za pun iznos; prekoračenje diže i porez i doprinose; primanje van osnovice doprinosa diže samo porez; i kontrolna provera za neunet limit.
+
 ## [1.6.0] - 2026-08-03
 
 > Odgovor na otvoreno pitanje 6.3 iz analize: **legacy kolone se prevode sve**, umesto da se

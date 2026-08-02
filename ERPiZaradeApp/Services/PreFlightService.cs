@@ -92,6 +92,7 @@ public class PreFlightService
         }
 
         ProveriDuplikate(obracuni, nalazi);
+        ProveriNeoporezivePrimanja(godina, mesec, nalazi);
 
         return new RezultatProvere
         {
@@ -183,6 +184,42 @@ public class PreFlightService
                 yield return Nalaz(TezinaNalaza.Greska, "Istekla poreska olakšica",
                     $"Olakšica je važila do {radnik.OlaksicaVaziDo.Value:dd.MM.yyyy}, a i dalje se primenjuje.");
             }
+        }
+    }
+
+    /// <summary>
+    /// Neoporezivo primanje bez unetog limita se isplaćuje u punom iznosu bez poreza. To je
+    /// ispravno kad gornje granice zaista nema, ali je najčešće znak da limit iz propisa nije
+    /// unet u šifarnik — pa se prijavljuje, umesto da prođe nezapaženo.
+    /// </summary>
+    private void ProveriNeoporezivePrimanja(int godina, int mesec, List<NalazProvere> nalazi)
+    {
+        List<string> bezLimita;
+        try
+        {
+            bezLimita = _db.UnetaPrimanja
+                .AsNoTracking()
+                .Include(p => p.VrstaPrimanja)
+                .Where(p => p.Godina == godina && p.Mesec == mesec && p.Iznos != 0m)
+                .Select(p => p.VrstaPrimanja)
+                .Where(v => !v.Oporezivo && v.NeoporeziviLimit == 0m)
+                .Select(v => v.Naziv)
+                .Distinct()
+                .ToList();
+        }
+        catch
+        {
+            return;   // baza starije verzije nema tabelu unetih primanja
+        }
+
+        foreach (string naziv in bezLimita)
+        {
+            nalazi.Add(new NalazProvere
+            {
+                Tezina = TezinaNalaza.Upozorenje,
+                Provera = "Neoporezivo primanje bez limita",
+                Opis = $"„{naziv}“ se isplaćuje bez poreza u punom iznosu jer neoporezivi limit nije unet u šifarnik."
+            });
         }
     }
 

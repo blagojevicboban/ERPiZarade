@@ -127,10 +127,21 @@ public class ObracunService
         decimal brutoBolovanjePreko60 = sati.BolovanjePreko60Sati * prosek;
         decimal brutoPorodiljsko = sati.PorodiljskoOdsustvoSati * prosek;
 
-        decimal totalBruto = brutoRedovni + brutoBolovanje + brutoPrekovremeni + brutoGodisnji + brutoPraznik + brutoNeradniPraznik + brutoNocni + brutoNedelja + brutoMinuliRad + brutoStimulacija 
-                           + topliObrokIznos + regresIznos 
+        decimal totalBruto = brutoRedovni + brutoBolovanje + brutoPrekovremeni + brutoGodisnji + brutoPraznik + brutoNeradniPraznik + brutoNocni + brutoNedelja + brutoMinuliRad + brutoStimulacija
+                           + topliObrokIznos + regresIznos
                            + brutoBolovanje100 + brutoPlacenoOdsustvo + brutoPlacenoZakonski + brutoBolovanjePreko60 + brutoPorodiljsko
                            + sati.Varijabila;
+
+        // Primanja uneta kroz šifarnik (prevoz, jubilarna nagrada, solidarna pomoć…).
+        // Prekoračenje neoporezivog limita po zakonu postaje oporezivo, pa se dodaje u
+        // osnovicu; neoporezivi deo se samo isplaćuje i ne ulazi ni u porez ni u doprinose.
+        var unetaPrimanja = UcitajUnetaPrimanja(radnik.Id, godina, mesec);
+
+        decimal neoporezivoZaIsplatu = unetaPrimanja.Sum(p => p.NeoporeziviDeo);
+        decimal dodatnoUOsnovicuDoprinosa = unetaPrimanja.Where(p => p.UlaziUOsnovicuDoprinosa).Sum(p => p.OporeziviDeo);
+        decimal dodatnoSamoOporezivo = unetaPrimanja.Where(p => !p.UlaziUOsnovicuDoprinosa).Sum(p => p.OporeziviDeo);
+
+        totalBruto += dodatnoUOsnovicuDoprinosa;
 
         // Load contribution rates and bases from database
         var dbDoprinosi = _db.Doprinosi
@@ -195,7 +206,8 @@ public class ObracunService
         if (workFactor > 1.0m) workFactor = 1.0m;
 
         decimal scaledExemption = taxExemption * workFactor;
-        decimal poreskaOsnovica = Math.Max(0, totalBruto - scaledExemption);
+        // Primanja koja se oporezuju a ne ulaze u osnovicu doprinosa dodaju se samo poreskoj osnovici.
+        decimal poreskaOsnovica = Math.Max(0, totalBruto + dodatnoSamoOporezivo - scaledExemption);
         decimal porez = poreskaOsnovica * taxRate;
 
         // 6. Social security contributions bases on Employee class (platni razredi - minimum gross bases)
@@ -381,7 +393,12 @@ public class ObracunService
 
         // 9. Net salary calculation (doprinosi i porez se odbijaju od ukupnog bruto iznosa)
         decimal totalEmployeeDeductions = dopPioRadnik + dopZdrRadnik + dopNezRadnik + porez;
-        decimal netoIsplata = totalBruto - totalEmployeeDeductions - kreditiObustava - samodoprinosiIznos;
+
+        // Neoporezivi deo se isplaćuje radniku u punom iznosu — nije bio ni u bruto iznosu
+        // ni u osnovicama, pa se dodaje tek ovde. Deo koji se samo oporezuje već je oporezovan
+        // gore, a isplaćuje se uz zaradu.
+        decimal netoIsplata = totalBruto + dodatnoSamoOporezivo + neoporezivoZaIsplatu
+                              - totalEmployeeDeductions - kreditiObustava - samodoprinosiIznos;
         if (netoIsplata < 0m) netoIsplata = 0m;
 
         var obracun = new ObracunPlate
@@ -495,7 +512,81 @@ public class ObracunService
             BrutoDodatak = sati.Varijabila
         }, sati);
 
+        // Uneta primanja dobijaju svoju stavku sa vidljivom podelom na neoporezivi deo i
+        // prekoračenje limita, koje je oporezovano.
+        foreach (var primanje in unetaPrimanja)
+        {
+            obracun.Stavke.Add(new ObracunStavka
+            {
+                VrstaPrimanjaId = primanje.VrstaPrimanjaId,
+                Iznos = Math.Round(primanje.Iznos, 2),
+                OporeziviDeo = Math.Round(primanje.OporeziviDeo, 2)
+            });
+        }
+
         return obracun;
+    }
+
+    /// <summary>
+    /// Koliko od iznosa ulazi u poresku osnovicu.
+    ///
+    /// Oporeziva vrsta se oporezuje u punom iznosu. Kod neoporezive, oporezivo je samo
+    /// prekoračenje limita — a limit <b>nula znači da gornje granice nema</b>, pa je ceo
+    /// iznos neoporeziv. Bez tog izuzetka bi `Iznos − 0` dalo suprotno od onoga što polje
+    /// „neoporezivo" znači.
+    /// </summary>
+    internal static decimal OporeziviDeo(decimal iznos, VrstaPrimanja vrsta)
+    {
+        if (vrsta.Oporezivo) return iznos;
+        if (vrsta.NeoporeziviLimit <= 0m) return 0m;
+
+        return Math.Max(0m, iznos - vrsta.NeoporeziviLimit);
+    }
+
+    /// <summary>Uneto primanje sa već izvršenom podelom na neoporezivi i oporezivi deo.</summary>
+    private sealed class PodeljenoPrimanje
+    {
+        public required int VrstaPrimanjaId { get; init; }
+        public required decimal Iznos { get; init; }
+        public required decimal OporeziviDeo { get; init; }
+        public required bool UlaziUOsnovicuDoprinosa { get; init; }
+
+        public decimal NeoporeziviDeo => Iznos - OporeziviDeo;
+    }
+
+    /// <summary>
+    /// Učitava primanja uneta za radnika u periodu i deli svako na neoporezivi i oporezivi
+    /// deo prema šifarniku.
+    ///
+    /// Pravilo: kod oporezive vrste ceo iznos je oporeziv. Kod neoporezive, oporezivo je samo
+    /// <b>prekoračenje</b> neoporezivog limita. Limit nula znači da gornje granice nema —
+    /// takva vrsta se prijavljuje u kontrolnim proverama, da se ne bi tiho izostavio limit
+    /// koji propis predviđa.
+    /// </summary>
+    private List<PodeljenoPrimanje> UcitajUnetaPrimanja(int radnikId, int godina, int mesec)
+    {
+        try
+        {
+            return _db.UnetaPrimanja
+                .AsNoTracking()
+                .Include(p => p.VrstaPrimanja)
+                .Where(p => p.RadnikId == radnikId && p.Godina == godina && p.Mesec == mesec)
+                .ToList()
+                .Where(p => p.VrstaPrimanja != null && p.Iznos != 0m)
+                .Select(p => new PodeljenoPrimanje
+                {
+                    VrstaPrimanjaId = p.VrstaPrimanjaId,
+                    Iznos = p.Iznos,
+                    OporeziviDeo = OporeziviDeo(p.Iznos, p.VrstaPrimanja),
+                    UlaziUOsnovicuDoprinosa = p.VrstaPrimanja.UlaziUOsnovicuDoprinosa
+                })
+                .ToList();
+        }
+        catch
+        {
+            // Baza starije verzije još nema tabelu unetih primanja — obračun radi kao i pre.
+            return [];
+        }
     }
 
     /// <summary>
@@ -553,11 +644,14 @@ public class ObracunService
             if (iznos == 0m && satiStavke == 0) return;
             if (!sifarnik.TryGetValue(sifra, out int vrstaId)) return;
 
+            decimal zaokruzen = Math.Round(iznos, 2);
             obracun.Stavke.Add(new ObracunStavka
             {
                 VrstaPrimanjaId = vrstaId,
                 Sati = satiStavke,
-                Iznos = Math.Round(iznos, 2)
+                Iznos = zaokruzen,
+                // Komponente zarade su oporezive u punom iznosu.
+                OporeziviDeo = zaokruzen
             });
         }
 

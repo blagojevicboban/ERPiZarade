@@ -1,5 +1,7 @@
 using System.IO;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using ERPiZaradeData;
 using ERPiZaradeData.Models;
 
@@ -27,6 +29,17 @@ public class PlataDbContextMigrationTests : IDisposable
     }
 
     private string NovaPutanja() => Path.Combine(_dir, Guid.NewGuid().ToString("N") + ".db");
+
+    /// <summary>
+    /// Podiže bazu na šemu prve migracije, pa briše istoriju migracija — čime nastaje
+    /// tačno ono što je kod korisnika zatečeno: puna baza bez __EFMigrationsHistory.
+    /// </summary>
+    private static void NapraviZatecenuSemu(PlataDbContext ctx)
+    {
+        var prvaMigracija = ctx.Database.GetMigrations().First();
+        ctx.GetService<IMigrator>().Migrate(prvaMigracija);
+        ctx.Database.ExecuteSqlRaw("DROP TABLE IF EXISTS __EFMigrationsHistory;");
+    }
 
     private static List<string> PrimenjeneMigracije(string putanja)
     {
@@ -66,24 +79,31 @@ public class PlataDbContextMigrationTests : IDisposable
     {
         string putanja = NovaPutanja();
 
-        // 1. Simulacija stare baze — tačno onako kako ju je pravila ranija verzija.
+        // 1. Simulacija stare baze — šema iz vremena pre uvođenja migracija, bez istorije.
+        //    Namerno se NE koristi EnsureCreated(): on uvek pravi šemu po današnjem modelu,
+        //    pa bi fikstur bio noviji od `InitialCreate` i svaka nova migracija bi ga rušila.
         var options = new DbContextOptionsBuilder<PlataDbContext>()
             .UseSqlite($"Data Source={putanja}")
             .Options;
 
         using (var staraBaza = new PlataDbContext(options))
         {
-            staraBaza.Database.EnsureCreated();
-            staraBaza.Radnici.Add(new Radnik
-            {
-                BrojRadnika = 7,
-                ImeIPrezime = "Mika Mikić",
-                Jmbg = "0101990710014",
-                Godina = 2026,
-                Mesec = 1,
-                Koeficijent = 2.5m
-            });
-            staraBaza.SaveChanges();
+            NapraviZatecenuSemu(staraBaza);
+
+            // Upis ide sirovim SQL-om, jer bi EF pisao i kolone koje stara šema nema.
+            staraBaza.Database.ExecuteSqlRaw(@"
+                INSERT INTO Radnici
+                    (Godina, Mesec, BrojRadnika, ImeIPrezime, Jmbg, MaticniBroj, MestoRodjenja,
+                     AdresaStanovanja, Mesto, SifraOpstine, Kategorija, Radno_Mesto,
+                     BrojRadneJedinice, MinuliRadGodine, Koeficijent, Koeficijent1, OsnovnaPlata,
+                     StopaPio, StopaZdravstvo, StopaNezaposlenost, BankovniRacun, NazivBanke,
+                     Aktivan, LicnoOslobodjenje, Operativni, DatumUnosa)
+                VALUES
+                    (2026, 1, 7, 'Mika Mikić', '0101990710014', '', '',
+                     '', '', '', '', '',
+                     1, 0, 2.5, 0, 0,
+                     0, 0, 0, '', '',
+                     1, 0, '', '2026-01-31 00:00:00');");
         }
 
         // Stanje pre nadogradnje: podaci postoje, istorija migracija ne.
@@ -96,11 +116,19 @@ public class PlataDbContextMigrationTests : IDisposable
             Assert.NotNull(radnik);
             Assert.Equal("Mika Mikić", radnik.ImeIPrezime);
             Assert.Equal(2.5m, radnik.Koeficijent);
+
+            // Naknadne migracije su se izvršile nad živim podacima: nova polja postoje,
+            // a duplirano polje za zaključavanje je uklonjeno.
+            radnik.Email = "mika@firma.rs";
+            db.SaveChanges();
+            Assert.True(db.PppPdPrijave.Count() == 0);
+            Assert.True(db.ObracunAuditi.Count() == 0);
         }
 
         // 3. Baza je usvojena u sistem migracija bez ponovnog kreiranja tabela.
         var primenjene = PrimenjeneMigracije(putanja);
         Assert.Contains(primenjene, m => m.EndsWith("InitialCreate", StringComparison.Ordinal));
+        Assert.Contains(primenjene, m => m.EndsWith("Faza0_ModelPodatakaIKontrole", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -121,6 +149,9 @@ public class PlataDbContextMigrationTests : IDisposable
             Assert.Single(db.PlatniRazredi);
         }
 
-        Assert.Single(PrimenjeneMigracije(putanja));
+        // Broj migracija raste kroz vreme, pa se proverava odsustvo duplikata, ne tačan broj.
+        var primenjene = PrimenjeneMigracije(putanja);
+        Assert.NotEmpty(primenjene);
+        Assert.Equal(primenjene.Count, primenjene.Distinct().Count());
     }
 }

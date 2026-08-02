@@ -3,6 +3,20 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ERPiZaradeData.Models;
 
+/// <summary>
+/// Vrsta obustave. Redosled vrednosti prati zakonski redosled naplate — zakonsko
+/// izdržavanje ima prvenstvo nad potrošačkim kreditima (Zakon o izvršenju i obezbeđenju).
+/// </summary>
+public enum TipObustave
+{
+    ZakonskoIzdrzavanje = 0,
+    SudskaZabrana = 1,
+    Kredit = 2,
+    Administrativna = 3,
+    Sindikat = 4,
+    Ostalo = 5
+}
+
 /// <summary>Kredit ili obustava — port KREDIT.DBF</summary>
 [Table("Krediti")]
 public class Kredit
@@ -21,6 +35,26 @@ public class Kredit
     public DateTime DatumPocetka { get; set; }
     public DateTime? DatumZavrsetka { get; set; }
     public bool Aktivan { get; set; } = true;
+
+    // ── Primalac obustave (uslov za nalog za prenos, Faza 1.1) ──────────
+    /// <summary>Kome se rata uplaćuje — banka, izvršitelj, sud. Bez ovoga nema virmana.</summary>
+    [MaxLength(60)] public string PrimalacNaziv { get; set; } = "";
+
+    [MaxLength(25)] public string PrimalacRacun { get; set; } = "";
+
+    /// <summary>Model poziva na broj odobrenja (npr. „97"); prazno = bez modela.</summary>
+    [MaxLength(2)] public string ModelPozivaNaBroj { get; set; } = "";
+
+    [MaxLength(25)] public string PozivNaBroj { get; set; } = "";
+
+    // ── Redosled i limit naplate ────────────────────────────────────────
+    public TipObustave Tip { get; set; } = TipObustave.Kredit;
+
+    /// <summary>
+    /// Redosled naplate kad radnik ima više obustava, a neto ne pokriva sve.
+    /// Manji broj = ranije se naplaćuje. Podrazumevano se izvodi iz <see cref="Tip"/>.
+    /// </summary>
+    public int RedosledNaplate { get; set; }
 
     public Radnik Radnik { get; set; } = null!;
 }

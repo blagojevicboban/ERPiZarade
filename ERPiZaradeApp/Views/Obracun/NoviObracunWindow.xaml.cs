@@ -343,6 +343,9 @@ public partial class NoviObracunWindow : Window
                 .Where(o => o.Godina == godina && o.Mesec == mesec)
                 .ToListAsync();
 
+            bool jePrekalkulacija = postojeci.Count > 0;
+            int brojZamenjenih = postojeci.Count;
+
             if (postojeci.Count > 0)
             {
                 var rez = MessageBox.Show(
@@ -454,6 +457,14 @@ public partial class NoviObracunWindow : Window
             }
 
             await _db.SaveChangesAsync();
+
+            // Prekalkulacija i prvi obračun se u tragu razlikuju — kod prekalkulacije se
+            // beleži i koliko je obračuna zamenjeno, jer to znači brisanje ranijeg rezultata.
+            AuditService.Zabelezi(_db, godina, mesec,
+                jePrekalkulacija ? AkcijaObracuna.Prekalkulisan : AkcijaObracuna.Kreiran,
+                jePrekalkulacija
+                    ? $"{calculatedCount} obračuna; zamenjeno prethodnih {brojZamenjenih}"
+                    : $"{calculatedCount} obračuna, fond {fondSati} sati");
 
             // Aktivirati novi mesec
             AppConfig.ActiveGodina = godina;

@@ -72,6 +72,10 @@ public class PppPdViewModel : INotifyPropertyChanged
 
         UcitajFirmaPodatke();
         UcitajSacuvanePostavke();
+        // Šifra opštine sedišta je od Faze 0 svojstvo firme, a ne aplikacije. Za agencije
+        // koje vode više firmi jedna vrednost u postavkama daje pogrešno zaglavlje svima
+        // osim jednoj, pa podatak iz kartona firme ima prednost nad zapamćenom postavkom.
+        PreuzmiSedisteIzFirme();
 
         SaveCommand = new RelayCommand(_ => SacuvajPostavke());
 
@@ -92,6 +96,16 @@ public class PppPdViewModel : INotifyPropertyChanged
                 if (!string.IsNullOrWhiteSpace(firma.Adresa)) Adresa = $"{firma.Adresa} {firma.Grad}".Trim();
                 if (!string.IsNullOrWhiteSpace(firma.Email)) Email = firma.Email;
             }
+        }
+        catch { }
+    }
+
+    private void PreuzmiSedisteIzFirme()
+    {
+        try
+        {
+            var sifra = _db.Firme.FirstOrDefault()?.SifraOpstine;
+            if (!string.IsNullOrWhiteSpace(sifra)) Sediste = sifra;
         }
         catch { }
     }

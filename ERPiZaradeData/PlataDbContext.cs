@@ -28,6 +28,8 @@ public class PlataDbContext : DbContext
     public DbSet<DoprinosiPoslodavca> DoprinosiPoslodavca => Set<DoprinosiPoslodavca>();
     public DbSet<Banka> Banke => Set<Banka>();
     public DbSet<Korisnik> Korisnici => Set<Korisnik>();
+    public DbSet<PppPdPrijava> PppPdPrijave => Set<PppPdPrijava>();
+    public DbSet<ObracunAudit> ObracunAuditi => Set<ObracunAudit>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -88,6 +90,15 @@ public class PlataDbContext : DbContext
 
         modelBuilder.Entity<DoprinosiPoslodavca>()
             .HasIndex(dp => new { dp.RadnikId, dp.Godina, dp.Mesec });
+
+        // Jedna prijava po periodu i rednom broju isplate
+        modelBuilder.Entity<PppPdPrijava>()
+            .HasIndex(p => new { p.Godina, p.Mesec, p.RedniBroj })
+            .IsUnique();
+
+        // Revizioni trag se čita hronološki po periodu
+        modelBuilder.Entity<ObracunAudit>()
+            .HasIndex(a => new { a.Godina, a.Mesec, a.Vreme });
     }
 
     /// <summary>
@@ -187,6 +198,12 @@ public class PlataDbContext : DbContext
 
         // ObracuniPlata: Zakljucavanje obracuna
         try { ctx.Database.ExecuteSqlRaw("ALTER TABLE ObracuniPlata ADD COLUMN Zakljucan INTEGER NOT NULL DEFAULT 0;"); } catch { }
+
+        // Migracija Faza0 briše duplirano polje `Zakljucen`. Zatečene baze ga mogu imati
+        // ili ne — zavisno od verzije koja ih je napravila — a DROP COLUMN nad nepostojećom
+        // kolonom bi oborio nadogradnju. Zato ga ovde bezuslovno obezbeđujemo; ako već
+        // postoji, ALTER pukne i catch ga proguta.
+        try { ctx.Database.ExecuteSqlRaw("ALTER TABLE ObracuniPlata ADD COLUMN Zakljucen INTEGER NOT NULL DEFAULT 0;"); } catch { }
 
         // Migracija starih baza: BrojRadnika = Id (stara arhitektura)
         try { ctx.Database.ExecuteSqlRaw("UPDATE Radnici SET BrojRadnika = Id WHERE BrojRadnika = 0 OR BrojRadnika IS NULL;"); } catch { }

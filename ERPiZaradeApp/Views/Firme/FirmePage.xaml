@@ -172,19 +172,25 @@
                                     </StackPanel>
                                 </Grid>
 
-                                <!-- Adresa i Grad -->
+                                <!-- Adresa, Grad i šifra opštine sedišta -->
                                 <Grid Margin="0,0,0,12">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="90"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0" Margin="0,0,8,0">
                                         <TextBlock Text="Adresa" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                                         <TextBox x:Name="TxtAdresa" Height="32"/>
                                     </StackPanel>
-                                    <StackPanel Grid.Column="1">
+                                    <StackPanel Grid.Column="1" Margin="0,0,8,0">
                                         <TextBlock Text="Grad" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                                         <TextBox x:Name="TxtGrad" Height="32"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Šifra opštine" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                        <TextBox x:Name="TxtSifraOpstine" Height="32" MaxLength="3"
+                                                 ToolTip="Šifra opštine sedišta po šifarniku Poreske uprave — ide u zaglavlje PPP-PD prijave"/>
                                     </StackPanel>
                                 </Grid>
 

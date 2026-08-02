@@ -173,6 +173,7 @@ public partial class FirmePage : Page
         TxtMb.Clear();
         TxtAdresa.Clear();
         TxtGrad.Clear();
+        TxtSifraOpstine.Clear();
         TxtBankovniRacun.Clear();
         TxtSifraPlacanja.Clear();
         TxtTelefon.Clear();
@@ -198,6 +199,7 @@ public partial class FirmePage : Page
         TxtMb.Text = f.Mb;
         TxtAdresa.Text = f.Adresa;
         TxtGrad.Text = f.Grad;
+        TxtSifraOpstine.Text = f.SifraOpstine;
         TxtBankovniRacun.Text = f.BankovniRacun;
         TxtSifraPlacanja.Text = f.SifraPlacanja;
         TxtTelefon.Text = f.Telefon;
@@ -265,6 +267,7 @@ public partial class FirmePage : Page
         TxtMb.Clear();
         TxtAdresa.Clear();
         TxtGrad.Clear();
+        TxtSifraOpstine.Clear();
         TxtBankovniRacun.Clear();
         TxtSifraPlacanja.Clear();
         TxtTelefon.Clear();
@@ -340,6 +343,7 @@ public partial class FirmePage : Page
                     Mb = TxtMb.Text.Trim(),
                     Adresa = TxtAdresa.Text.Trim(),
                     Grad = TxtGrad.Text.Trim(),
+                    SifraOpstine = TxtSifraOpstine.Text.Trim(),
                     BankovniRacun = TxtBankovniRacun.Text.Trim(),
                     SifraPlacanja = TxtSifraPlacanja.Text.Trim(),
                     Telefon = TxtTelefon.Text.Trim(),
@@ -362,6 +366,7 @@ public partial class FirmePage : Page
                 f.Mb = TxtMb.Text.Trim();
                 f.Adresa = TxtAdresa.Text.Trim();
                 f.Grad = TxtGrad.Text.Trim();
+                f.SifraOpstine = TxtSifraOpstine.Text.Trim();
                 f.BankovniRacun = TxtBankovniRacun.Text.Trim();
                 f.SifraPlacanja = TxtSifraPlacanja.Text.Trim();
                 f.Telefon = TxtTelefon.Text.Trim();

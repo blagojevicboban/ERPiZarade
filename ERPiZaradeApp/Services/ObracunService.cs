@@ -455,7 +455,6 @@ public class ObracunService
             CenaSataRedovan = Math.Round(hourlyBase, 5),
             CenaSataMinuliRad = Math.Round(min_po_cas, 5),
             Varijabila = Math.Round(sati.Varijabila, 2),
-            Zakljucen = false,
             DatumObracuna = DateTime.Now,
             Napomena = $"Obračun kreiran {DateTime.Now:dd.MM.yyyy HH:mm}",
 

@@ -555,6 +555,10 @@ public partial class ObracunPage : Page
                 string pib = "";
                 string maticniBroj = "";
                 string naziv = "NAZIV FIRME";
+                string sediste = "";
+                string telefon = "";
+                string adresa = "";
+                string email = "";
                 try
                 {
                     using var db = ERPiZaradeData.PlataDbContext.Create(ERPiZaradeApp.AppConfig.DbPath);
@@ -564,6 +568,10 @@ public partial class ObracunPage : Page
                         pib = firma.Pib ?? "";
                         maticniBroj = firma.Mb ?? "";
                         naziv = firma.Naziv?.ToUpper() ?? "";
+                        sediste = firma.SifraOpstine ?? "";
+                        telefon = firma.Telefon ?? "";
+                        adresa = $"{firma.Adresa} {firma.Grad}".Trim();
+                        email = firma.Email ?? "";
                     }
                 }
                 catch {}
@@ -573,7 +581,11 @@ public partial class ObracunPage : Page
                     datumPlacanja.Value,
                     pib,
                     maticniBroj,
-                    naziv
+                    naziv,
+                    sediste,
+                    telefon,
+                    adresa,
+                    email
                 );
 
                 File.WriteAllText(sfd.FileName, xmlSadrzaj, System.Text.Encoding.UTF8);

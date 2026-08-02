@@ -202,16 +202,28 @@ public class ObracunViewModel : INotifyPropertyChanged
                 return;
             }
 
+            // Pre-flight provere idu PRE potvrde: nema smisla tražiti potvrdu za radnju
+            // koja će se svejedno zaustaviti na greškama.
+            var provera = new Services.PreFlightService(_db).Proveri(SelectedGodina, SelectedMesec);
+            if (!Services.PreFlightPrompt.DozvoliZakljucavanje(provera))
+            {
+                StatusText = $"Zaključavanje zaustavljeno — {Services.PreFlightPrompt.OpisZaAudit(provera)}.";
+                return;
+            }
+
             var res = System.Windows.MessageBox.Show($"Da li ste sigurni da želite da zaključate sve obračune ({Obracuni.Count}) za {SelectedMesec}.{SelectedGodina}?\n\nNakon ovoga, izmena podataka u ovim obračunima neće biti moguća.",
                                       "Potvrda", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question);
             if (res == System.Windows.MessageBoxResult.Yes)
             {
                 StatusText = "Zaključavanje obračuna...";
-                
+
                 // Koristimo raw sql da izbegnemo problem sa EF core cachingom
                 await _db.Database.ExecuteSqlRawAsync(
-                    "UPDATE ObracuniPlata SET Zakljucan = 1 WHERE Godina = {0} AND Mesec = {1}", 
+                    "UPDATE ObracuniPlata SET Zakljucan = 1 WHERE Godina = {0} AND Mesec = {1}",
                     SelectedGodina, SelectedMesec);
+
+                Services.AuditService.Zabelezi(_db, SelectedGodina, SelectedMesec, AkcijaObracuna.Zakljucan,
+                    $"{Obracuni.Count} obračuna, {Services.PreFlightPrompt.OpisZaAudit(provera)}");
 
                 await LoadObracuneAsync();
                 StatusText = $"Uspešno zaključano svih {Obracuni.Count} obračuna za {SelectedMesec}.{SelectedGodina}.";

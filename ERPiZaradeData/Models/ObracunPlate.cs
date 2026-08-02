@@ -165,7 +165,8 @@ public class ObracunPlate
     public int PlacenoOdsustvoSati { get; set; }
 
     // ── META ───────────────────────────────────────────────
-    public bool Zakljucen { get; set; } = false;
+    // Napomena: nekadašnje polje `Zakljucen` je uklonjeno — bilo je duplikat
+    // `Zakljucan` (linija 21) koji je jedini izvor istine za zaključavanje.
     public DateTime DatumObracuna { get; set; } = DateTime.Now;
 
     [Column(TypeName = "decimal(14,4)")]

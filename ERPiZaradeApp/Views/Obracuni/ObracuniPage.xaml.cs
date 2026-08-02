@@ -165,9 +165,22 @@ public partial class ObracuniPage : Page
             {
                 StatusMessage.Text = "Zaključavanje...";
                 
+                // Periodi se očitavaju pre izmene — posle nje se više ne zna koji su bili otključani.
+                var otkljucaniPeriodi = _db.ObracuniPlata
+                    .Where(o => !o.Zakljucan)
+                    .Select(o => new { o.Godina, o.Mesec })
+                    .Distinct()
+                    .ToList();
+
                 // Set Zakljucan = 1 for all rows that are currently 0 or NULL
                 _db.Database.ExecuteSqlRaw("UPDATE ObracuniPlata SET Zakljucan = 1 WHERE Zakljucan = 0 OR Zakljucan IS NULL");
-                
+
+                foreach (var p in otkljucaniPeriodi)
+                {
+                    Services.AuditService.Zabelezi(_db, p.Godina, p.Mesec, AkcijaObracuna.Zakljucan,
+                        "Grupno zaključavanje svih otključanih perioda");
+                }
+
                 StatusMessage.Text = "Svi obračunski periodi su uspešno zaključani.";
                 MessageBox.Show("Svi obračunski periodi su uspešno zaključani.", "Uspeh", MessageBoxButton.OK, MessageBoxImage.Information);
                 
@@ -188,6 +201,19 @@ public partial class ObracuniPage : Page
             bool noviStatus = !row.Zakljucan;
             string akcija = noviStatus ? "zaključate" : "otključate";
 
+            // Kontrolne provere se izvršavaju samo pri zaključavanju — otključavanje vraća
+            // period u stanje u kom se greške i ispravljaju, pa ga nema smisla zaustavljati.
+            Services.RezultatProvere? provera = null;
+            if (noviStatus)
+            {
+                provera = new Services.PreFlightService(_db).Proveri(row.Godina, row.Mesec);
+                if (!Services.PreFlightPrompt.DozvoliZakljucavanje(provera))
+                {
+                    StatusMessage.Text = $"Zaključavanje perioda {row.PeriodStr} zaustavljeno — {Services.PreFlightPrompt.OpisZaAudit(provera)}.";
+                    return;
+                }
+            }
+
             var res = MessageBox.Show($"Da li ste sigurni da želite da {akcija} obračunski period {row.PeriodStr}?",
                                       "Potvrda", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
@@ -197,7 +223,13 @@ public partial class ObracuniPage : Page
                 {
                     _db.Database.ExecuteSqlRaw("UPDATE ObracuniPlata SET Zakljucan = {0} WHERE Godina = {1} AND Mesec = {2}",
                         noviStatus ? 1 : 0, row.Godina, row.Mesec);
-                    
+
+                    Services.AuditService.Zabelezi(_db, row.Godina, row.Mesec,
+                        noviStatus ? AkcijaObracuna.Zakljucan : AkcijaObracuna.Otkljucan,
+                        provera != null
+                            ? $"{row.BrojRadnika} obračuna, {Services.PreFlightPrompt.OpisZaAudit(provera)}"
+                            : $"{row.BrojRadnika} obračuna u periodu");
+
                     StatusMessage.Text = $"Period {row.PeriodStr} je uspešno {(noviStatus ? "zaključan" : "otključan")}.";
                     UcitajPeriodiSummary(); // Osveži tabelu
                 }
@@ -292,6 +324,9 @@ public partial class ObracuniPage : Page
                 _db.Samodoprinosi.RemoveRange(samodoprinosi);
 
                 await _db.SaveChangesAsync();
+
+                Services.AuditService.Zabelezi(_db, selected.Godina, selected.Mesec, AkcijaObracuna.Obrisan,
+                    $"Obrisano {obracuni.Count} obračuna sa pratećim podacima perioda");
 
                 MessageBox.Show($"Uspešno obrisan obračun za period {selected.PeriodStr}.", "Uspeh", MessageBoxButton.OK, MessageBoxImage.Information);
 

@@ -337,11 +337,35 @@
 
                                     <!-- Olakšica -->
                                     <TextBlock Text="Poreska olakšica (OL)" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,3"/>
-                                    <ComboBox ItemsSource="{Binding OpcijeOL}" 
-                                              SelectedValuePath="Sifra" 
-                                              DisplayMemberPath="Prikaz" 
+                                    <ComboBox ItemsSource="{Binding OpcijeOL}"
+                                              SelectedValuePath="Sifra"
+                                              DisplayMemberPath="Prikaz"
                                               SelectedValue="{Binding SelectedOL, Mode=TwoWay}"
                                               Margin="0,0,0,8" Height="28" FontSize="12"/>
+
+                                    <!-- Dejstvo olakšice: vidljivo tek kad je olakšica izabrana -->
+                                    <Grid Margin="0,0,0,8" Visibility="{Binding ImaOlaksicu, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Margin="0,0,6,0">
+                                            <TextBlock Text="Povraćaj poreza %" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,3"/>
+                                            <TextBox Text="{Binding EditingRadnik.ProcenatPovracajaPoreza, StringFormat=N2, UpdateSourceTrigger=PropertyChanged}"
+                                                     Height="28" FontSize="12"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Margin="0,0,6,0">
+                                            <TextBlock Text="Povraćaj doprinosa %" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,3"/>
+                                            <TextBox Text="{Binding EditingRadnik.ProcenatPovracajaDoprinosa, StringFormat=N2, UpdateSourceTrigger=PropertyChanged}"
+                                                     Height="28" FontSize="12"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Olakšica važi do" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,3"/>
+                                            <DatePicker SelectedDate="{Binding EditingRadnik.OlaksicaVaziDo, UpdateSourceTrigger=PropertyChanged}"
+                                                        Height="28" FontSize="12"/>
+                                        </StackPanel>
+                                    </Grid>
 
                                     <!-- Beneficirani staž -->
                                     <TextBlock Text="Beneficirani staž (B)" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,3"/>
@@ -381,6 +405,24 @@
                                           SelectedValue="{Binding EditingRadnik.NazivBanke, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                           Padding="8,5" FontSize="13"/>
                             </StackPanel>
+
+                            <!-- E-mail i mesto troška -->
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="140"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                    <TextBlock Text="E-mail" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                    <TextBox Text="{Binding EditingRadnik.Email, UpdateSourceTrigger=PropertyChanged}"
+                                             ToolTip="Adresa na koju se šalje platni listić"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="Mesto troška" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                    <TextBox Text="{Binding EditingRadnik.SifraMestaTroska, UpdateSourceTrigger=PropertyChanged}"
+                                             ToolTip="Šifra mesta troška iz ERPiFinansije (npr. MT-01)"/>
+                                </StackPanel>
+                            </Grid>
 
                             <!-- Aktivan -->
                             <CheckBox Content="Aktivan zaposleni"

@@ -18,6 +18,14 @@ public class Firma
     [MaxLength(100)]
     public string Grad { get; set; } = "";
 
+    /// <summary>
+    /// Šifra opštine sedišta po šifarniku Poreske uprave — ide u PPP-PD zaglavlje
+    /// (element SedistePrebivaliste). Do sada je stajala u podešavanjima aplikacije,
+    /// što je za agencije značilo jednu vrednost za sve firme.
+    /// </summary>
+    [MaxLength(3)]
+    public string SifraOpstine { get; set; } = "";
+
     [MaxLength(30)]
     public string Pib { get; set; } = ""; // PIB / PDV ID
 

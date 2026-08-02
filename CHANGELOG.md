@@ -6,6 +6,40 @@ Format je zasnovan na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) s
 
 ---
 
+## [1.2.0] - 2026-08-02
+
+> **Faza 0 razvojne mape** iz `ANALIZA_I_PREDLOZI_FUNKCIONALNOSTI.md` — dopuna modela
+> podataka i kontrola bez kojih virmani, e-mail listići i PPP-PO iz Faze 1 nemaju odakle
+> da povuku podatke. Sve izmene šeme su u jednoj migraciji (`Faza0_ModelPodatakaIKontrole`).
+
+### ✅ Kontrolne provere pre zaključavanja (`PreFlightService`, `PreFlightPrompt`)
+- Pred zaključavanje se sada izvršava **jedan zbirni izveštaj**: negativan neto, bruto ispod najniže osnovice doprinosa, nedostajući ili neispravan JMBG, radnik bez tekućeg računa, sati veći od mesečnog fonda, istekla poreska olakšica koja se i dalje primenjuje i **dva obračuna za isti JMBG** u istom periodu.
+- **Greške zaustavljaju zaključavanje**; pregaziti ih može isključivo administrator, uz izričitu potvrdu. Nedostajući e-mail je upozorenje — ne tiče se ispravnosti obračuna.
+- Prekovremeni sati se izuzimaju iz provere fonda, jer su po definiciji preko njega.
+- Provera je uklopljena u **oba** puta zaključavanja (ekran obračuna i lista perioda).
+
+### 🧾 Revizioni trag nad obračunima (`ObracunAudit`, `AuditService`)
+- Kreiranje, prekalkulacija, zaključavanje, otključavanje i brisanje obračuna beleže **korisnika, vreme i period**. Isti obrazac kao `NalogAudit` u ERPiFinansije.
+- Korisničko ime i ime radnika su namerno denormalizovani — zapis ostaje čitljiv i pošto se obračun obriše ili korisnik ukloni.
+
+### 🆕 Dopune modela podataka
+- **`Radnik.Email`** — preduslov za slanje platnih listića (Faza 1.2).
+- **`Radnik.SifraMestaTroska`** — veza ka `MestoTroska` iz ERPiFinansije, po šifri (baze su zasebne), za raspored troška zarade pri knjiženju.
+- **Dejstvo poreske olakšice** — `ProcenatPovracajaPoreza`, `ProcenatPovracajaDoprinosa`, `OlaksicaVaziDo`. Oznaka olakšice se **ne duplira**: ona je i dalje deo SVP šifre u `Radno_Mesto` i unosi se postojećom padajućom listom.
+- **`PppPdPrijava`** — evidencija prijava sa **BOP-om** i statusom (pripremljena / podneta / prihvaćena / odbijena / stornirana). Bez BOP-a se ne mogu formirati nalozi za prenos poreza i doprinosa. `RedniBroj` unapred razdvaja više isplata u istom mesecu.
+- **`Kredit`**: primalac obustave (naziv, račun, model i poziv na broj), tip obustave i **redosled naplate** — zakonsko izdržavanje ispred potrošačkih kredita.
+- **`Firma.SifraOpstine`** — šifra opštine sedišta za PPP-PD zaglavlje.
+
+### 🐛 PPP-PD prijava sa tuđim sedištem
+- `XmlExportService` je imao **hardkodovane podrazumevane vrednosti** firme (`"079"`, `"010-123456"`, `info@firma.rs`). Izvoz sa ekrana obračuna se oslanjao na njih i tiho slao prijavu sa pogrešnom opštinom. Sada se svi podaci čitaju iz kartona firme, a **prazna šifra opštine odbija generisanje** umesto da propusti prijavu koju će Poreska uprava odbiti.
+- Za agencije: šifra opštine iz kartona firme ima prednost nad vrednošću zapamćenom u podešavanjima aplikacije, koja je bila zajednička za sve firme.
+
+### 🧹 Objedinjen flag zaključavanja
+- Uklonjeno duplirano polje **`ObracunPlate.Zakljucen`** — upisivalo se, a nikad nije čitano. Jedini izvor istine je `Zakljucan`.
+
+### 🧪 Testovi
+- 15 novih testova za kontrolne provere. Test zatečene baze više ne koristi `EnsureCreated()` (koji uvek pravi šemu po **današnjem** modelu, pa bi ga svaka nova migracija rušila) — sada se šema podiže tačno do prve migracije, a istorija briše.
+
 ## [1.1.15] - 2026-08-02
 
 ### 🐛 Preuzimanje podataka i kada je nova verzija već pokrenuta (`AppConfig`)

@@ -18,16 +18,21 @@ public class XmlExportService
         public override Encoding Encoding => Encoding.UTF8;
     }
 
+    /// <param name="sedisteFirme">
+    /// Šifra opštine sedišta iz kartona firme. Namerno nema podrazumevanu vrednost —
+    /// ranije je stajala literalna „079", koja je tiho davala pogrešno zaglavlje svakoj
+    /// firmi koja nije iz te opštine.
+    /// </param>
     public string GeneratePppPdXml(
-        List<ObracunPlate> obracuni, 
-        DateTime datumPlacanja, 
-        string pibFirme, 
-        string maticniBrojFirme, 
+        List<ObracunPlate> obracuni,
+        DateTime datumPlacanja,
+        string pibFirme,
+        string maticniBrojFirme,
         string nazivFirme,
-        string sedisteFirme = "079",
-        string telefonFirme = "010-123456",
-        string adresaFirme = "Ulica i broj",
-        string emailFirme = "info@firma.rs",
+        string sedisteFirme,
+        string telefonFirme,
+        string adresaFirme,
+        string emailFirme,
         string? klijentskaOznaka = null,
         string vrstaPrijave = "1",
         string oznakaZaKonacnu = "K",
@@ -37,6 +42,13 @@ public class XmlExportService
     {
         if (obracuni == null || obracuni.Count == 0)
             throw new ArgumentException("Lista obračuna ne može biti prazna.");
+
+        // Prijava sa praznim ili izmišljenim sedištem prolazi generisanje, a pada tek kod
+        // Poreske uprave — zato se odbija ovde, dok je ispravka još jeftina.
+        if (string.IsNullOrWhiteSpace(sedisteFirme))
+            throw new ArgumentException(
+                "Šifra opštine sedišta nije uneta. Popunite je u kartonu firme pre generisanja PPP-PD prijave.",
+                nameof(sedisteFirme));
 
         var prvi = obracuni.First();
         int godina = prvi.Godina;

@@ -150,9 +150,16 @@ public class RadniciViewModel : INotifyPropertyChanged
         {
             _selectedOL = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(ImaOlaksicu));
             RekombinujSvpKod();
         }
     }
+
+    /// <summary>
+    /// Da li je izabrana neka poreska olakšica („00" = bez olakšice). Upravlja prikazom
+    /// procenata povraćaja — oni imaju smisla samo uz olakšicu.
+    /// </summary>
+    public bool ImaOlaksicu => !string.IsNullOrEmpty(_selectedOL) && _selectedOL != "00";
 
     public string SelectedB
     {
@@ -228,6 +235,7 @@ public class RadniciViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(SelectedPP));
             OnPropertyChanged(nameof(SelectedOL));
             OnPropertyChanged(nameof(SelectedB));
+            OnPropertyChanged(nameof(ImaOlaksicu));
         }
         else
         {
@@ -351,7 +359,12 @@ public class RadniciViewModel : INotifyPropertyChanged
                             NazivBanke = sr.NazivBanke,
                             Aktivan = sr.Aktivan,
                             LicnoOslobodjenje = sr.LicnoOslobodjenje,
-                            Operativni = sr.Operativni
+                            Operativni = sr.Operativni,
+                            Email = sr.Email,
+                            SifraMestaTroska = sr.SifraMestaTroska,
+                            ProcenatPovracajaPoreza = sr.ProcenatPovracajaPoreza,
+                            ProcenatPovracajaDoprinosa = sr.ProcenatPovracajaDoprinosa,
+                            OlaksicaVaziDo = sr.OlaksicaVaziDo
                         };
                         _db.Radnici.Add(newRadnik);
                     }
@@ -583,6 +596,11 @@ public class RadniciViewModel : INotifyPropertyChanged
         Aktivan = src.Aktivan,
         LicnoOslobodjenje = src.LicnoOslobodjenje,
         Operativni = src.Operativni,
+        Email = src.Email,
+        SifraMestaTroska = src.SifraMestaTroska,
+        ProcenatPovracajaPoreza = src.ProcenatPovracajaPoreza,
+        ProcenatPovracajaDoprinosa = src.ProcenatPovracajaDoprinosa,
+        OlaksicaVaziDo = src.OlaksicaVaziDo,
         DatumUnosa = src.DatumUnosa,
         DatumIzmene = src.DatumIzmene
     };

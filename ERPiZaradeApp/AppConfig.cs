@@ -99,7 +99,20 @@ public static class AppConfig
             try
             {
                 var cilj = Path.Combine(odrediste, Path.GetFileName(fajl));
-                if (File.Exists(cilj)) continue;
+                if (File.Exists(cilj))
+                {
+                    // Sudar imena: prazna podrazumevana baza, koju nova verzija napravi pri
+                    // prvom pokretanju, ne sme da proguta istoimenu zatečenu bazu sa podacima —
+                    // takva se preuzima pod sufiksom. Ostali fajlovi se preskaču.
+                    if (!fajl.EndsWith(".db", StringComparison.OrdinalIgnoreCase)) continue;
+
+                    // Ako je i zatečena baza prazna podrazumevana, nema šta da se spasava;
+                    // kopija bi se samo pojavila kao lažna firma u spisku.
+                    if (JePraznaPodrazumevanaBaza(fajl)) continue;
+
+                    cilj = Path.Combine(odrediste, Path.GetFileNameWithoutExtension(fajl) + "_stara.db");
+                    if (File.Exists(cilj)) continue;
+                }
 
                 File.Copy(fajl, cilj);
                 kopirano++;
@@ -119,40 +132,87 @@ public static class AppConfig
     }
 
     /// <summary>
-    /// Aktivna baza iz starih podešavanja pokazuje na stari folder. Ako nova instalacija
-    /// još nema ispravnu aktivnu bazu, preuzima se ona iz starih podešavanja — sada iz
-    /// kopije u novom folderu.
+    /// Vraća aktivnu bazu na firmu koja je bila otvorena pre preimenovanja — sada iz kopije
+    /// u novom folderu.
+    ///
+    /// Nije dovoljno proveriti samo da li aktivna baza postoji: ako je nova verzija već
+    /// jednom pokrenuta, ona je napravila praznu podrazumevanu bazu i upisala je kao aktivnu.
+    /// Takva baza postoji, ali je prazna i ne sme da pobedi nad zatečenim podacima.
     /// </summary>
     private static void PremapirajAktivnuBazu()
     {
         try
         {
             var aktivna = UserSettings.Instance.ActiveDbPath;
-            if (!string.IsNullOrWhiteSpace(aktivna) && File.Exists(aktivna)) return;
-
-            var staraAktivna = aktivna;
-            if (string.IsNullOrWhiteSpace(staraAktivna))
+            if (!string.IsNullOrWhiteSpace(aktivna) && File.Exists(aktivna) &&
+                !JePraznaPodrazumevanaBaza(aktivna))
             {
-                staraAktivna = StariAppDataDirs
-                    .Select(dir => Path.Combine(dir, "settings.json"))
-                    .Where(File.Exists)
-                    .Select(putanja => System.Text.Json.JsonSerializer
-                        .Deserialize<UserSettings>(File.ReadAllText(putanja))?.ActiveDbPath)
-                    .FirstOrDefault(p => !string.IsNullOrWhiteSpace(p));
+                return;
             }
+
+            var staraAktivna = StariAppDataDirs
+                .Select(dir => Path.Combine(dir, "settings.json"))
+                .Where(File.Exists)
+                .Select(putanja => System.Text.Json.JsonSerializer
+                    .Deserialize<UserSettings>(File.ReadAllText(putanja))?.ActiveDbPath)
+                .FirstOrDefault(p => !string.IsNullOrWhiteSpace(p)) ?? aktivna;
 
             if (string.IsNullOrWhiteSpace(staraAktivna)) return;
 
             var kandidat = Path.Combine(BazeDir, Path.GetFileName(staraAktivna));
+
+            // Ako je zatečena baza preuzeta pod sufiksom (zbog sudara imena), tu je i tražimo.
+            if (!File.Exists(kandidat) || JePraznaPodrazumevanaBaza(kandidat))
+            {
+                var suSufiksom = Path.Combine(BazeDir,
+                    Path.GetFileNameWithoutExtension(staraAktivna) + "_stara.db");
+                if (File.Exists(suSufiksom)) kandidat = suSufiksom;
+            }
+
             if (!File.Exists(kandidat)) return;
 
             UserSettings.Instance.ActiveDbPath = kandidat;
             UserSettings.Instance.Save();
             _dbPath = kandidat;
+
+            Serilog.Log.Information("Aktivna baza premapirana na {Baza}", kandidat);
         }
         catch (Exception ex)
         {
             Serilog.Log.Warning(ex, "Aktivna baza iz starih podešavanja nije premapirana");
+        }
+    }
+
+    /// <summary>
+    /// Tačno kada je reč o podrazumevanoj bazi (plata.db) u kojoj još nema nijedne firme —
+    /// takvu aplikacija sama napravi pri prvom pokretanju na praznom folderu.
+    /// </summary>
+    private static bool JePraznaPodrazumevanaBaza(string putanja)
+    {
+        if (!string.Equals(Path.GetFileName(putanja), "plata.db", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var conn = new Microsoft.Data.Sqlite.SqliteConnection(
+                new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder
+                {
+                    DataSource = putanja,
+                    Mode = Microsoft.Data.Sqlite.SqliteOpenMode.ReadOnly,
+                    Pooling = false
+                }.ConnectionString);
+            conn.Open();
+
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT COUNT(*) FROM Firme;";
+            return Convert.ToInt64(cmd.ExecuteScalar() ?? 0L) == 0;
+        }
+        catch
+        {
+            // Baza ne postoji ili nema tabelu Firme => sveže napravljena i prazna.
+            return true;
         }
     }
 

@@ -6,6 +6,15 @@ Format je zasnovan na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) s
 
 ---
 
+## [1.1.15] - 2026-08-02
+
+### 🐛 Preuzimanje podataka i kada je nova verzija već pokrenuta (`AppConfig`)
+- **Prazna podrazumevana baza više ne pobeđuje nad zatečenim podacima.** Ako je nova verzija već jednom pokrenuta, ona je napravila praznu `plata.db` i upisala je kao aktivnu — pa se posle preuzimanja podataka i dalje otvarala prazna. Sada se takva baza prepoznaje (nema nijedne firme) i aktivna se vraća na firmu koja je bila otvorena pre preimenovanja.
+- **Zatečena istoimena baza sa podacima se ne gubi** — preuzima se pod sufiksom `_stara`, a ako je i ona prazna podrazumevana, preskače se da se ne bi pojavila kao lažna firma u spisku.
+
+### 🎨 Ikonica aplikacije u boji modula
+- `app.ico` je regenerisan iz originalnog 1024px izvora u **ljubičastoj boji** kartice modula, sa providnom pozadinom i svim veličinama do 256px (ranije samo do 64px, u istoj plavoj kao Finansije i Hub).
+
 ## [1.1.14] - 2026-08-02
 
 ### 🐛 Firme i baze nestale posle preimenovanja (`AppConfig`)

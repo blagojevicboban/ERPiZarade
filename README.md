@@ -2,7 +2,7 @@
 
 > A Windows desktop application for payroll processing, employee management, and generation of legally required reports — built with C# / .NET 8 / WPF.
 
-🇷🇸 [Srpska dokumentacija](PlataSistem/README.md)
+🇷🇸 [Srpska dokumentacija](README.sr.md)
 
 ---
 
@@ -69,10 +69,10 @@ git clone https://github.com/blagojevicboban/PayrollSystem.git
 cd PayrollSystem
 
 # 2. Build the solution
-dotnet build PlataSistem/PlataSistem.slnx
+dotnet build PlataSistem.slnx
 
 # 3. Run the application
-dotnet run --project PlataSistem/PlataApp/PlataApp.csproj
+dotnet run --project PlataApp/PlataApp.csproj
 ```
 
 > **Note:** The SQLite database is automatically created on first launch at `C:\PlataApp\`. No manual setup required.

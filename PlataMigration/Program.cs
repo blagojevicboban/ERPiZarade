@@ -113,7 +113,7 @@ if (clearTables)
 // ══════════════════════════════════════════════════════════════════
 var radnikIdMap = new Dictionary<(int BrojRadnika, int Godina, int Mesec), int>();
 
-async Task<int> GetOrCreateRadnikId(PlataDbContext context, int brojRadnika, int godina, int mesec, Radnik prototype = null)
+async Task<int> GetOrCreateRadnikId(PlataDbContext context, int brojRadnika, int godina, int mesec, Radnik? prototype = null)
 {
     var key = (brojRadnika, godina, mesec);
     if (radnikIdMap.TryGetValue(key, out var existingId))
@@ -1413,7 +1413,6 @@ async Task ImportRazrediDbf(string dbfPath)
         string currentPath = path;
         string tempDbfPath = "";
         Console.Write($"\nUvoz {Path.GetFileName(currentPath)} ... ");
-        int cnt = 0;
 
         try
         {
@@ -1469,8 +1468,6 @@ async Task ImportRazrediDbf(string dbfPath)
                     db.PlatniRazredi.Add(r);
                     await db.SaveChangesAsync();
                 }
-
-                cnt = 1;
             }
 
             Console.WriteLine($"\r  [OK] Uspešno uvezeno iz {Path.GetFileName(path)}");
@@ -1534,7 +1531,7 @@ static string GetIntAsString(DbfDataReader.DbfDataReader r, List<string> cols, p
                 var val = r.GetValue(i);
                 if (val != null)
                 {
-                    string s = val.ToString().Trim();
+                    string s = val.ToString()?.Trim() ?? "";
                     if (!string.IsNullOrEmpty(s)) return s;
                 }
             }

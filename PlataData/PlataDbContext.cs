@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using PlataData.Models;
 
 namespace PlataData;
@@ -113,12 +115,66 @@ public class PlataDbContext : DbContext
 
     private static void InitializeDatabase(PlataDbContext ctx)
     {
-        ctx.Database.EnsureCreated();
+        bool zatecenaBaza = PostojiZatecenaSema(ctx);
+
+        if (zatecenaBaza)
+        {
+            // Baza je napravljena ranijom verzijom preko EnsureCreated() i nema istoriju
+            // migracija. Prvo je starim zakrpama dovodimo na aktuelnu šemu, pa je tek onda
+            // žigošemo kao da je početna migracija već primenjena — u suprotnom bi Migrate()
+            // pokušao da kreira tabele koje već postoje i pao nad živim podacima.
+            PrimeniLegacyZakrpe(ctx);
+            OznaciPocetnuMigracijuKaoPrimenjenu(ctx);
+        }
+
+        // Nova baza: kreira kompletnu šemu i istoriju. Zatečena: primenjuje samo nove migracije.
+        ctx.Database.Migrate();
 
         // Optimizacija performansi SQLite-a na nivou same baze
         try { ctx.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;"); } catch { }
         try { ctx.Database.ExecuteSqlRaw("PRAGMA synchronous=NORMAL;"); } catch { }
 
+        UbaciPodrazumevanePodatke(ctx);
+    }
+
+    /// <summary>
+    /// Da li baza već sadrži tabele — znak da je nastala pre uvođenja EF migracija.
+    /// </summary>
+    private static bool PostojiZatecenaSema(PlataDbContext ctx)
+    {
+        var creator = ctx.Database.GetService<IRelationalDatabaseCreator>();
+        return creator.Exists() && creator.HasTables();
+    }
+
+    /// <summary>
+    /// Upisuje početnu migraciju u __EFMigrationsHistory BEZ izvršavanja njenog sadržaja,
+    /// čime se zatečena baza usvaja u sistem migracija a da se nijedan podatak ne dira.
+    /// Od tog trenutka svaka naredna izmena šeme ide kroz uobičajenu EF migraciju.
+    /// </summary>
+    private static void OznaciPocetnuMigracijuKaoPrimenjenu(PlataDbContext ctx)
+    {
+        var pocetnaMigracija = ctx.Database.GetMigrations().FirstOrDefault();
+        if (string.IsNullOrEmpty(pocetnaMigracija)) return;
+
+        ctx.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS __EFMigrationsHistory (
+                MigrationId TEXT NOT NULL CONSTRAINT PK___EFMigrationsHistory PRIMARY KEY,
+                ProductVersion TEXT NOT NULL
+            );");
+
+        ctx.Database.ExecuteSqlRaw(
+            "INSERT OR IGNORE INTO __EFMigrationsHistory (MigrationId, ProductVersion) VALUES ({0}, {1});",
+            pocetnaMigracija,
+            typeof(DbContext).Assembly.GetName().Version?.ToString() ?? "8.0.16");
+    }
+
+    /// <summary>
+    /// Dopune šeme za baze nastale ranijim verzijama programa. Pokreće se SAMO nad
+    /// zatečenim bazama — nove baze dobijaju ispravnu šemu direktno iz migracije.
+    /// Ovde se više ne dodaju nove kolone; za izmene šeme koristiti "dotnet ef migrations add".
+    /// </summary>
+    private static void PrimeniLegacyZakrpe(PlataDbContext ctx)
+    {
         // ── Bezbedno dodavanje novih kolona (za starije baze) ──────────────
 
         // Radnici: nova periodična arhitektura — Godina i Mesec
@@ -288,22 +344,6 @@ public class PlataDbContext : DbContext
         try { ctx.Database.ExecuteSqlRaw("ALTER TABLE Doprinosi ADD COLUMN NajnizaOsnovica DECIMAL(14,2) NOT NULL DEFAULT 0;"); } catch { }
         try { ctx.Database.ExecuteSqlRaw("ALTER TABLE Doprinosi ADD COLUMN NajvisaOsnovica DECIMAL(14,2) NOT NULL DEFAULT 0;"); } catch { }
 
-        try
-        {
-            if (!ctx.PlatniRazredi.Any())
-            {
-                ctx.PlatniRazredi.Add(new PlatniRazred
-                {
-                    R1 = 51297.00m, R2 = 51297.00m, R3 = 51297.00m, R4 = 51297.00m, R5 = 51297.00m,
-                    R6 = 51297.00m, R7 = 51297.00m, R8 = 51297.00m, R9 = 0m,
-                    P1 = 51297.00m, P2 = 51297.00m, P3 = 51297.00m, P4 = 51297.00m, P5 = 51297.00m,
-                    P6 = 51297.00m, P7 = 51297.00m, P8 = 51297.00m, P9 = 0m
-                });
-                ctx.SaveChanges();
-            }
-        }
-        catch { }
-
         // Banke
         try
         {
@@ -336,6 +376,29 @@ public class PlataDbContext : DbContext
                 );
                 CREATE UNIQUE INDEX IF NOT EXISTS IX_Korisnici_KorisnickoIme ON Korisnici(KorisnickoIme);
             ");
+        }
+        catch { }
+    }
+
+    /// <summary>
+    /// Podrazumevani sadržaj šifarnika koji mora postojati da bi program radio.
+    /// Pokreće se i nad novom i nad zatečenom bazom; ništa ne prepisuje.
+    /// </summary>
+    private static void UbaciPodrazumevanePodatke(PlataDbContext ctx)
+    {
+        try
+        {
+            if (!ctx.PlatniRazredi.Any())
+            {
+                ctx.PlatniRazredi.Add(new PlatniRazred
+                {
+                    R1 = 51297.00m, R2 = 51297.00m, R3 = 51297.00m, R4 = 51297.00m, R5 = 51297.00m,
+                    R6 = 51297.00m, R7 = 51297.00m, R8 = 51297.00m, R9 = 0m,
+                    P1 = 51297.00m, P2 = 51297.00m, P3 = 51297.00m, P4 = 51297.00m, P5 = 51297.00m,
+                    P6 = 51297.00m, P7 = 51297.00m, P8 = 51297.00m, P9 = 0m
+                });
+                ctx.SaveChanges();
+            }
         }
         catch { }
 

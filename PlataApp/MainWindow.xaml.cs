@@ -68,7 +68,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             // Logovanje greške (možemo izostaviti prikazivanje kako ne bismo plašili korisnika)
-            System.Diagnostics.Debug.WriteLine($"Greška pri ažuriranju: {ex.Message}");
+            Serilog.Log.Error(ex, "Greška pri ažuriranju");
         }
     }
 

@@ -69,10 +69,10 @@ git clone https://github.com/blagojevicboban/PayrollSystem.git
 cd PayrollSystem
 
 # 2. Prevesti projekat
-dotnet build PlataSistem/PlataSistem.slnx
+dotnet build PlataSistem.slnx
 
 # 3. Pokrenuti aplikaciju
-dotnet run --project PlataSistem/PlataApp/PlataApp.csproj
+dotnet run --project PlataApp/PlataApp.csproj
 ```
 
 > **Napomena:** Baza podataka se automatski kreira pri prvom pokretanju u folderu `C:\PlataApp\`. Ne treba nikakvo manuelno podešavanje.

@@ -5,11 +5,22 @@ using System.Text.Json;
 namespace PlataApp;
 
 /// <summary>
-/// Korisničke postavke programa — čuvaju se u JSON fajlu u AppData.
+/// Korisničke postavke programa — čuvaju se u JSON fajlu u LocalAppData.
+///
+/// Lokacija je usklađena sa AccountingApp i SredstvaApp: %LOCALAPPDATA%\PlataApp\.
+/// Ranije se koristio %APPDATA%\PlataSistem\ (Roaming), što je bilo i neusklađeno sa
+/// ostalim modulima i zbunjujuće jer Velopack pod imenom "PlataSistem" drži sasvim
+/// drugi folder (%LOCALAPPDATA%\PlataSistem\) koji se briše pri svakom ažuriranju.
 /// </summary>
 public class UserSettings
 {
     private static readonly string _settingsPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "PlataApp",
+        "settings.json");
+
+    /// <summary>Zatečena lokacija iz ranijih verzija — čita se jednom, pa se briše.</summary>
+    private static readonly string _staraPutanja = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "PlataSistem",
         "settings.json");
@@ -43,8 +54,28 @@ public class UserSettings
                 var json = File.ReadAllText(_settingsPath);
                 return JsonSerializer.Deserialize<UserSettings>(json) ?? new UserSettings();
             }
+
+            // Jednokratno preuzimanje podešavanja sa stare Roaming lokacije, da se ne
+            // izgube aktivna firma, izbor baze i zapamćeni PPP-PD podaci.
+            if (File.Exists(_staraPutanja))
+            {
+                var stariJson = File.ReadAllText(_staraPutanja);
+                var preuzeto = JsonSerializer.Deserialize<UserSettings>(stariJson);
+                if (preuzeto != null)
+                {
+                    preuzeto.Save();
+                    try { File.Delete(_staraPutanja); } catch { }
+
+                    Serilog.Log.Information(
+                        "Podešavanja preuzeta sa stare lokacije {Stara} u {Nova}", _staraPutanja, _settingsPath);
+                    return preuzeto;
+                }
+            }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Serilog.Log.Error(ex, "Greška pri učitavanju podešavanja");
+        }
         return new UserSettings();
     }
 

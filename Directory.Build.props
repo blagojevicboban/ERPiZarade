@@ -1,0 +1,19 @@
+<Project>
+
+  <!--
+    Zajedničke postavke prevođenja za sve projekte u ovom rešenju.
+
+    Upozorenja se tretiraju kao greške SAMO u Release konfiguraciji - to je ona koju
+    gradi CI (release.yml), pa nijedno upozorenje ne može da prođe u objavljenu verziju.
+    U Debug-u ostaju obična upozorenja da rad na kodu ne bi bio prekidan pri svakoj
+    nedovršenoj izmeni.
+
+    NU1701 je izuzet: LiveCharts/SkiaSharp povlače pakete građene za .NET Framework,
+    što ne možemo popraviti iz ovog koda.
+  -->
+  <PropertyGroup>
+    <TreatWarningsAsErrors Condition="'$(Configuration)' == 'Release'">true</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
+  </PropertyGroup>
+
+</Project>

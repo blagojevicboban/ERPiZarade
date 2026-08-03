@@ -4,7 +4,7 @@
 > [`ANALIZA_I_PREDLOZI_FUNKCIONALNOSTI.md`](ANALIZA_I_PREDLOZI_FUNKCIONALNOSTI.md) i beleži
 > šta je urađeno, šta je namerno odloženo i **na čemu se stalo zbog podataka koji nedostaju**.
 >
-> Stanje na dan **03.08.2026**, verzija **1.11.0**, 272 testa.
+> Stanje na dan **03.08.2026**, verzija **1.12.0**, 272 testa.
 
 ---
 

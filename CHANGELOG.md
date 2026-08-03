@@ -6,6 +6,20 @@ Format je zasnovan na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) s
 
 ---
 
+## [1.12.0] - 2026-08-03
+
+> Dopuna uputstva uz Fazu 2.3. Nema izmena u obračunu, prijavama ni nalozima — objavljuje se
+> zato što je 1.11.0 već kod korisnika, a bez ovog objašnjenja je prvi korak sa ugovorima
+> izgledao kao kvar.
+
+### 📖 Uputstvo
+- **Zašto padajuća lista primalaca ume da bude prazna.** Primalac je karton radnika sa oznakom „Van radnog odnosa", a ta oznaka je nova — nijedan zatečeni karton je nema. Uputstvo sada kaže da se najbrže dodaje dugmetom **„＋ novi"** pored same liste, koje otvara unos novog kartona ili označavanje postojećeg (penzioner, bivši zaposleni).
+- Zabeleženo je i zašto isti čekboks u meniju „Radnici" ne reaguje dok se karton ne otvori dugmetom **„Izmeni"**: polja kartona su van režima izmene onemogućena. To je bio pravi razlog zašto je lista ostajala prazna i posle pokušaja.
+- Dopunjen redosled provere pre testiranja: unos primaoca, pa potvrda da ga ekrani zarade više ne nude za obračun plate, radne sate i platni listić, a da su mu zatečene zarade ostale netaknute.
+
+### 🧭 Plan nastavka
+- Upisano pravilo koje je proizašlo iz greške u 1.11.0: **InMemory provajder nije SQLite.** `SUM` nad `decimal` kolonom prolazi kroz ceo paket testova, a kod korisnika pada sa „cannot apply aggregate operator 'Sum' on expressions of type 'decimal'". Zbrajanje decimalnih kolona ide **u memoriji**, posle `ToList()`, a upit koji zbraja stoji u servisu i ima test nad **pravim SQLite fajlom**.
+
 ## [1.11.0] - 2026-08-03
 
 > **Faza 2.3** — obračuni van radnog odnosa: ugovor o delu, autorske naknade, privremeni i

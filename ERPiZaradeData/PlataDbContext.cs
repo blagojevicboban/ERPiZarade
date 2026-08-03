@@ -30,6 +30,7 @@ public class PlataDbContext : DbContext
     public DbSet<Korisnik> Korisnici => Set<Korisnik>();
     public DbSet<PppPdPrijava> PppPdPrijave => Set<PppPdPrijava>();
     public DbSet<ObracunAudit> ObracunAuditi => Set<ObracunAudit>();
+    public DbSet<ObracunVerzija> ObracunVerzije => Set<ObracunVerzija>();
     public DbSet<SlanjeListica> SlanjaListica => Set<SlanjeListica>();
     public DbSet<Praznik> Praznici => Set<Praznik>();
     public DbSet<VrstaPrimanja> VrstePrimanja => Set<VrstaPrimanja>();
@@ -106,6 +107,10 @@ public class PlataDbContext : DbContext
         // Revizioni trag se čita hronološki po periodu
         modelBuilder.Entity<ObracunAudit>()
             .HasIndex(a => new { a.Godina, a.Mesec, a.Vreme });
+
+        // Arhiva verzija se čita po periodu, pa po radniku unutar njega
+        modelBuilder.Entity<ObracunVerzija>()
+            .HasIndex(v => new { v.Godina, v.Mesec, v.BrojRadnika, v.Verzija });
 
         // Evidencija slanja se čita po periodu i po radniku („da li je dobio listić")
         modelBuilder.Entity<SlanjeListica>()

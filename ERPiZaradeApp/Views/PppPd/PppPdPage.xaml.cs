@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
@@ -46,7 +46,8 @@ public partial class PppPdPage : Page
                 vm.SelectedNajnizaOsnovica,
                 vm.SelectedTipIsplatioca,
                 vm.BrojKalendarskihDana,
-                mfpPoOlaksici: vm.MfpPoOlaksici
+                mfpPoOlaksici: vm.MfpPoOlaksici,
+                izmena: vm.Izmena
             );
 
             Clipboard.SetText(xml);
@@ -95,7 +96,9 @@ public partial class PppPdPage : Page
                     vm.SelectedOznakaZaKonacnu,
                     vm.SelectedNajnizaOsnovica,
                     vm.SelectedTipIsplatioca,
-                    mfpPoOlaksici: vm.MfpPoOlaksici
+                    vm.BrojKalendarskihDana,
+                    mfpPoOlaksici: vm.MfpPoOlaksici,
+                    izmena: vm.Izmena
                 );
 
                 System.IO.File.WriteAllText(sfd.FileName, xml, System.Text.Encoding.UTF8);
@@ -112,6 +115,49 @@ public partial class PppPdPage : Page
 }
 
 // ── VREDNOSNI KONVERTERI ZA PREGLED ───────────────────────────────────
+
+/// <summary>
+/// Naziv vrste izmene za padajuću listu. Brojevi su iz specifikacije Poreske uprave
+/// (pozicija 1.5) i stoje uz naziv, da se pri kontroli vidi šta je tačno poslato.
+/// </summary>
+public class VrstaIzmeneConverter : IValueConverter
+{
+    public static readonly VrstaIzmeneConverter Instance = new();
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        => value is VrstaIzmenePrijave v
+            ? v switch
+            {
+                VrstaIzmenePrijave.Izmena => "1 - Izmena",
+                VrstaIzmenePrijave.PoNalazuKontrole => "2 - Po nalazu kontrole",
+                VrstaIzmenePrijave.PoNaloguSuda => "3 - Po nalogu suda",
+                _ => "— Redovna prijava (bez izmene)"
+            }
+            : "";
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
+/// <summary>Naziv osnova podnošenja izmenjene prijave (pozicija 1.6a).</summary>
+public class OsnovIzmeneConverter : IValueConverter
+{
+    public static readonly OsnovIzmeneConverter Instance = new();
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        => value is OsnovIzmenePrijave o
+            ? o switch
+            {
+                OsnovIzmenePrijave.ZalbaPrviStepen => "1 - Žalba, prvi stepen",
+                OsnovIzmenePrijave.ZalbaDrugiStepen => "2 - Žalba, drugi stepen",
+                OsnovIzmenePrijave.PoNaloguSuda => "3 - Po nalogu suda",
+                _ => "— Bez osnova"
+            }
+            : "";
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
 
 public class BrutoConverter : IValueConverter
 {

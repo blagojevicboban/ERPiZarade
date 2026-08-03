@@ -3,6 +3,29 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ERPiZaradeData.Models;
 
+/// <summary>
+/// Vrsta izmene prijave — pozicija <b>1.5</b> na Obrascu PPP-PD, element <c>VrstaIzmene</c>.
+/// Ne meša se sa <see cref="PppPdPrijava.VrstaPrijave"/> (pozicija 1.1): vrsta prijave kaže
+/// po kom osnovu se prijava podnosi, a vrsta izmene da se njome menja ranije podneta prijava.
+/// </summary>
+public enum VrstaIzmenePrijave
+{
+    /// <summary>Prijava se ne menja — element se ne emituje.</summary>
+    Nema = 0,
+    Izmena = 1,
+    PoNalazuKontrole = 2,
+    PoNaloguSuda = 3
+}
+
+/// <summary>Osnov podnošenja izmenjene prijave — pozicija <b>1.6a</b>, element <c>Osnov</c>.</summary>
+public enum OsnovIzmenePrijave
+{
+    Nema = 0,
+    ZalbaPrviStepen = 1,
+    ZalbaDrugiStepen = 2,
+    PoNaloguSuda = 3
+}
+
 /// <summary>Status PPP-PD prijave kod Poreske uprave.</summary>
 public enum StatusPrijave
 {
@@ -51,6 +74,27 @@ public class PppPdPrijava
 
     public DateTime DatumPlacanja { get; set; }
 
+    // ── Izmenjena prijava (Faza 2.7) ─────────────────────────────────
+    /// <summary>
+    /// Vrsta izmene (PP 1.5). Kad nije <see cref="VrstaIzmenePrijave.Nema"/>, prijava menja
+    /// ranije podnetu i <see cref="JipdKojiSeMenja"/> postaje obavezan.
+    /// </summary>
+    public VrstaIzmenePrijave VrstaIzmene { get; set; } = VrstaIzmenePrijave.Nema;
+
+    /// <summary>
+    /// Jedinstveni identifikator poreske deklaracije <b>koja se ovom prijavom menja</b>
+    /// (PP 1.5a, element <c>JIPD</c>). Najviše 19 cifara.
+    /// </summary>
+    [MaxLength(20)]
+    public string JipdKojiSeMenja { get; set; } = "";
+
+    /// <summary>Broj rešenja kontrole ili suda na osnovu kog se prijava menja (PP 1.6).</summary>
+    [MaxLength(200)]
+    public string BrojResenja { get; set; } = "";
+
+    /// <summary>Osnov podnošenja izmenjene prijave (PP 1.6a).</summary>
+    public OsnovIzmenePrijave OsnovIzmene { get; set; } = OsnovIzmenePrijave.Nema;
+
     public int BrojZaposlenih { get; set; }
 
     [Column(TypeName = "decimal(14,2)")]
@@ -60,6 +104,15 @@ public class PppPdPrijava
     public decimal ZbirDoprinosa { get; set; }
 
     // ── Odgovor Poreske uprave ───────────────────────────────────────
+    /// <summary>
+    /// Jedinstveni identifikator poreske deklaracije koji Poreska uprava dodeli pri
+    /// prijemu. <b>Nije isto što i BOP</b>: JIPD identifikuje prijavu, BOP uplatu po njoj.
+    /// Bez JIPD-a se ova prijava kasnije ne može izmeniti, jer se izmenjena prijava
+    /// upravo na njega poziva.
+    /// </summary>
+    [MaxLength(20)]
+    public string Jipd { get; set; } = "";
+
     /// <summary>
     /// Broj odobrenja za plaćanje — poziv na broj (model 97) na nalogu za objedinjenu
     /// naplatu. Dobija se tek pošto PU prihvati prijavu, pa je prazan do tada.

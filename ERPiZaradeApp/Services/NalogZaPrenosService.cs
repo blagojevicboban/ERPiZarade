@@ -117,10 +117,12 @@ public class NalogZaPrenosService
         string platilacNaziv = firma?.Naziv ?? "";
         string platilacRacun = firma?.BankovniRacun ?? "";
 
+        // Stornirani obračun se ne isplaćuje — nalog po njemu bi poslao novac za platu
+        // koja je poništena.
         var obracuni = _db.ObracuniPlata
             .AsNoTracking()
             .Include(o => o.Radnik)
-            .Where(o => o.Godina == godina && o.Mesec == mesec)
+            .Where(o => o.Godina == godina && o.Mesec == mesec && !o.Storniran)
             .ToList();
 
         if (obracuni.Count == 0)

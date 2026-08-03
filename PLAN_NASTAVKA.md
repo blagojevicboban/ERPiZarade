@@ -4,7 +4,7 @@
 > [`ANALIZA_I_PREDLOZI_FUNKCIONALNOSTI.md`](ANALIZA_I_PREDLOZI_FUNKCIONALNOSTI.md) i beleži
 > šta je urađeno, šta je namerno odloženo i **na čemu se stalo zbog podataka koji nedostaju**.
 >
-> Stanje na dan **03.08.2026**, verzija **1.8.0**, 169 testova.
+> Stanje na dan **03.08.2026**, verzija **1.9.0**, 196 testova.
 
 ---
 
@@ -22,10 +22,10 @@
 | — | Prevod zatečenih obračuna na model stavki | ✅ | 1.6.0 |
 | **2.5** | Neoporeziva primanja kao parametar | ✅ | 1.7.0 |
 | **2.4** | Poreske olakšice kao šifarnik | ✅ | 1.8.0 |
+| **2.7** | Storniranje, rekalkulacija, izmenjena prijava | ✅ | 1.9.0 |
 | **2.2** | Entitet `Isplata` (više isplata u mesecu) | ⬜ | |
 | **2.3** | Ugovori o delu, autorski, PP poslovi, naknade odborima | ⬜ | |
 | **2.6** | Bolovanja preko 30 dana, RFZO obrasci (OZ-7, OZ-10) | ⬜ | |
-| **2.7** | Storniranje, rekalkulacija, izmenjena prijava | ⬜ | |
 | **3** | Integracija sa ERPi ekosistemom | ⬜ | |
 | **4** | Kadrovski modul | ⬜ | |
 | **5** | Web ESS | ⬜ preispitati | |
@@ -43,24 +43,13 @@ struktura je spremna i nedostaje samo zapisivač/čitač.
 | **ePorezi XML sa BOP-om** | Čitanje je tolerantno (traži polja po značenju naziva) i prijavljuje šta ne prepozna. | Jedan preuzet XML → zamenjuje se tačnim čitanjem u `EPoreziImportService`. |
 | **Obrazac PPD (zahtev za povraćaj)** | Podnosi se elektronski kao i PPP-PD, dakle XML-om, ali šema nije javno dostupna. Podaci već postoje u obračunu (`OlaksicaPorez`, `OlaksicaDoprinosi`). | Primer PPD XML-a ili specifikacija. |
 | **OL oznake olakšica** | Karton je nudio `01/02/03` za čl. 21v; po Pravilniku o Obrascu PPD važe **OL08/OL09/OL10**. Lista je izvađena iz koda u šifarnik, pa se ispravlja bez nove verzije. | Provera u važećem Katalogu vrste prihoda i ispravka u šifarniku „Poreske olakšice". |
+| **JIPD podnetih prijava** | Izmenjena prijava se poziva na JIPD prijave koju menja, a JIPD dodeljuje PU pri prijemu. Polje postoji uz prijavu, ali se ne popunjava samo — čitanje iz `EPoreziImportService` čeka isti XML kao i BOP. | Isti preuzet XML iz reda iznad. |
 
 ---
 
 ## 3. Sledeći koraci, po preporučenom redosledu
 
-### 3.1. Faza 2.7 — storniranje i izmenjena prijava *(preporučeno prvo)*
-
-Dešava se svakog meseca, a trenutno nema podržan put. Manje je od 2.2, a otklanja stvarnu
-mesečnu muku.
-
-- storniranje zaključanog obračuna uz trag ko je stornirao (`ObracunAudit` već ima
-  `AkcijaObracuna.Storniran`, samo se ne koristi);
-- rekalkulacija sa čuvanjem prethodne verzije;
-- izmenjena PPP-PD prijava — **pažnja**: šifre vrste prijave su `1` opšta, `2` po službenoj
-  dužnosti, `3` samoprijavljivanje, `4` po nalazu kontrole, `5` po odluci suda. Ranije je u
-  kodu stajalo pogrešno tumačenje.
-
-### 3.2. Faza 2.2 — entitet `Isplata`
+### 3.1. Faza 2.2 — entitet `Isplata` *(preporučeno prvo)*
 
 Strukturno najvažnije što je ostalo: akontacija + konačna isplata u istom mesecu, bonus,
 13. plata. `PppPdPrijava` već ima `RedniBroj` upravo zato — pripremljen je da razdvoji više
@@ -68,13 +57,13 @@ isplata bez izmene šeme.
 
 Dodiruje PPP-PD, naloge za prenos i storniranje odjednom, pa je veće od 2.7.
 
-### 3.3. Faza 2.3 — obračuni van radnog odnosa
+### 3.2. Faza 2.3 — obračuni van radnog odnosa
 
 Ugovori o delu, autorski, PP poslovi, naknade odborima. **Preduslov je 2.2** — ti obračuni se
 ne vezuju za obračunski mesec nego za isplatu. Šifarnik vrsta primanja iz 2.1 već nosi SVP,
 poreski tretman i konto, pa je osnova spremna.
 
-### 3.4. Faza 3.1 — automatsko knjiženje u ERPiFinansije
+### 3.3. Faza 3.1 — automatsko knjiženje u ERPiFinansije
 
 `VrstaPrimanja.Konto` i `Radnik.SifraMestaTroska` postoje od ranije i još se nigde ne koriste —
 uvedeni su baš za ovo.
@@ -106,6 +95,14 @@ Ovo su svesne odluke sa razlogom; nova sesija ih lako „popravi" u pogrešnom s
 6. **Fond sati se ne nasleđuje od prethodnog meseca** — računa se iz kalendara. Ranije
    nasleđivanje je menjalo platu svakom radniku.
 
+7. **Storno ne nulira iznose.** Stornirani obračun ostaje u bazi sa svim iznosima; menja se
+   samo to da ga isplate i prijave preskaču. Nuliranje bi izbrisalo dokaz šta je bilo
+   obračunato i prijavljeno, a upravo se to pri kontroli traži.
+
+8. **Rata kredita se vraća tačno jednom.** `KreditRateService` je jedini izvor te računice;
+   prekalkulacija i brisanje preskaču obračune kojima je rata već vraćena storniranjem. Ne
+   dodavati novo mesto koje samo skida ili vraća rate.
+
 ---
 
 ## 5. Način rada koji se pokazao dobrim
@@ -127,6 +124,9 @@ Ovo su svesne odluke sa razlogom; nova sesija ih lako „popravi" u pogrešnom s
 ## 6. Pre nego što korisnik testira
 
 - **Rezervna kopija baze** (Podešavanja → Rezervna kopija). Od 1.2.0 naovamo primenjuje se
-  devet migracija, od kojih jedna briše kolonu.
+  deset migracija, od kojih jedna briše kolonu.
 - Prevod zatečenih obračuna na stavke (Vrste primanja → 🔀) — **prvo proba**, koja ništa ne
   upisuje, pa tek onda potvrda.
+- Storniranje se proba na **jednom** obračunu (Obračun plate → 🚫), pa se proveri da tog
+  radnika više nema u nalozima za prenos, listićima i PPP-PD prijavi, a da mu je rata kredita
+  vraćena. Poništavanje storna (↩) vraća sve u pređašnje stanje.

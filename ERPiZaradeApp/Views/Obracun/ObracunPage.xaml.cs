@@ -513,6 +513,84 @@ public partial class ObracunPage : Page
         }).GeneratePdf(filePath);
     }
 
+    // ── Storniranje (Faza 2.7) ─────────────────────────────────────────
+    private void BtnStorniraj_Click(object sender, RoutedEventArgs e) => PrimeniStorno(storniraj: true);
+
+    private void BtnPonistiStorno_Click(object sender, RoutedEventArgs e) => PrimeniStorno(storniraj: false);
+
+    private void PrimeniStorno(bool storniraj)
+    {
+        if (DataContext is not ObracunViewModel vm || vm.SelectedObracun == null)
+        {
+            MessageBox.Show("Izaberite obračun u tabeli.", "Upozorenje", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var o = vm.SelectedObracun;
+        int brojRadnika = o.Radnik?.BrojRadnika ?? 0;
+        string imeRadnika = o.Radnik?.ImeIPrezime ?? $"radnik {brojRadnika}";
+
+        if (storniraj && o.Storniran)
+        {
+            MessageBox.Show($"Obračun za {imeRadnika} je već storniran.", "Informacija",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        if (!storniraj && !o.Storniran)
+        {
+            MessageBox.Show($"Obračun za {imeRadnika} nije storniran.", "Informacija",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        string pitanje = storniraj
+            ? $"Zašto se stornira obračun za {imeRadnika} ({o.Mesec:D2}/{o.Godina})?\n\n" +
+              "Obračun ostaje u istoriji sa svim iznosima, ali se izostavlja iz PPP-PD prijave, " +
+              "naloga za prenos, platnih listića i izveštaja. Rata kredita se vraća."
+            : $"Zašto se poništava storniranje obračuna za {imeRadnika} ({o.Mesec:D2}/{o.Godina})?\n\n" +
+              "Obračun se vraća među važeće, a rata kredita se ponovo skida.";
+
+        string? razlog = Services.RazlogPrompt.Trazi(Window.GetWindow(this),
+            storniraj ? "Storniranje obračuna" : "Poništavanje storniranja", pitanje);
+
+        if (razlog == null) return;
+
+        try
+        {
+            using var db = ERPiZaradeData.PlataDbContext.Create(ERPiZaradeApp.AppConfig.DbPath);
+            var servis = new Services.StornoService(db);
+
+            var rezultat = storniraj
+                ? servis.Storniraj(o.Godina, o.Mesec, brojRadnika, razlog)
+                : servis.PonistiStorniranje(o.Godina, o.Mesec, brojRadnika, razlog);
+
+            vm.StatusText = rezultat.Poruka;
+
+            MessageBox.Show(rezultat.Poruka,
+                rezultat.Uspesno ? "Gotovo" : "Radnja nije izvršena",
+                MessageBoxButton.OK,
+                rezultat.Uspesno ? MessageBoxImage.Information : MessageBoxImage.Warning);
+
+            if (rezultat.Uspesno) _ = vm.LoadObracuneAsync();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Radnja nije izvršena:\n\n{ex.Message}", "Greška",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void BtnRevizioniTrag_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not ObracunViewModel vm) return;
+
+        new Revizija.RevizioniTragWindow(vm.SelectedGodina, vm.SelectedMesec)
+        {
+            Owner = Window.GetWindow(this)
+        }.ShowDialog();
+    }
+
     private void BtnNoviObracun_Click(object sender, RoutedEventArgs e)
     {
         var window = new NoviObracunWindow

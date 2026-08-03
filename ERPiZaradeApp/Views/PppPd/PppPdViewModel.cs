@@ -44,6 +44,13 @@ public class PppPdViewModel : INotifyPropertyChanged
     private string _selectedTipIsplatioca = "1";
     private string _klijentskaOznaka = "";
     private int _brojKalendarskihDana = DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month);
+    private int _brojStorniranih;
+
+    // Izmenjena prijava (Faza 2.7) — pozicije 1.5–1.6a Obrasca PPP-PD
+    private VrstaIzmenePrijave _vrstaIzmene = VrstaIzmenePrijave.Nema;
+    private string _jipdKojiSeMenja = "";
+    private string _brojResenja = "";
+    private OsnovIzmenePrijave _osnovIzmene = OsnovIzmenePrijave.Nema;
 
     // Summaries (KPIs)
     private int _totalRadnika;
@@ -209,11 +216,16 @@ public class PppPdViewModel : INotifyPropertyChanged
             PrikaziUpozorenja = false;
             PodaciSuValidni = false;
 
-            var list = await _db.ObracuniPlata
+            // Stornirani obračun se ne prijavljuje. Ako je već bio u podnetoj prijavi,
+            // uklanja se izmenjenom prijavom — a izmenjena prijava je upravo ovo, bez njega.
+            var sviUPeriodu = await _db.ObracuniPlata
                 .Include(o => o.Radnik)
                 .Where(o => o.Godina == SelectedGodina && o.Mesec == SelectedMesec)
                 .OrderBy(o => o.Radnik.BrojRadnika)
                 .ToListAsync();
+
+            var list = sviUPeriodu.Where(o => !o.Storniran).ToList();
+            BrojStorniranih = sviUPeriodu.Count - list.Count;
 
             Obracuni = new ObservableCollection<ObracunPlate>(list);
             
@@ -227,8 +239,10 @@ public class PppPdViewModel : INotifyPropertyChanged
                 o.DoprinosPioRadnik + o.DoprinosZdravstvoRadnik + o.DoprinosNezaposlenostRadnik +
                 o.DoprinosPioPoslodavac + o.DoprinosZdravstvoPoslodavac + o.DoprinosNezaposlenostPoslodavac);
 
-            StatusText = $"Učitano {list.Count} obračuna za {SelectedMesec:D2}.{SelectedGodina}.";
-            
+            StatusText = BrojStorniranih > 0
+                ? $"Učitano {list.Count} obračuna za {SelectedMesec:D2}.{SelectedGodina}; storniranih izostavljeno: {BrojStorniranih}."
+                : $"Učitano {list.Count} obračuna za {SelectedMesec:D2}.{SelectedGodina}.";
+
             // Automatski pokreni tihu validaciju
             ValidateDataSilent();
         }
@@ -451,6 +465,79 @@ public class PppPdViewModel : INotifyPropertyChanged
         get => _brojKalendarskihDana;
         set { _brojKalendarskihDana = value; OnPropertyChanged(); }
     }
+
+    /// <summary>Koliko je obračuna iz perioda izostavljeno jer su stornirani.</summary>
+    public int BrojStorniranih
+    {
+        get => _brojStorniranih;
+        set
+        {
+            _brojStorniranih = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ImaStorniranih));
+        }
+    }
+
+    public bool ImaStorniranih => _brojStorniranih > 0;
+
+    // ── Izmenjena prijava ─────────────────────────────────
+    /// <summary>
+    /// Ponuđene vrste izmene za padajuću listu. Prazna vrednost znači redovnu prijavu —
+    /// tada se elementi izmene uopšte ne emituju.
+    /// </summary>
+    public IReadOnlyList<VrstaIzmenePrijave> VrsteIzmene { get; } =
+        [VrstaIzmenePrijave.Nema, VrstaIzmenePrijave.Izmena,
+         VrstaIzmenePrijave.PoNalazuKontrole, VrstaIzmenePrijave.PoNaloguSuda];
+
+    public IReadOnlyList<OsnovIzmenePrijave> OsnoviIzmene { get; } =
+        [OsnovIzmenePrijave.Nema, OsnovIzmenePrijave.ZalbaPrviStepen,
+         OsnovIzmenePrijave.ZalbaDrugiStepen, OsnovIzmenePrijave.PoNaloguSuda];
+
+    public VrstaIzmenePrijave VrstaIzmene
+    {
+        get => _vrstaIzmene;
+        set
+        {
+            _vrstaIzmene = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(JeIzmenjenaPrijava));
+        }
+    }
+
+    /// <summary>Da li se ovom prijavom menja ranije podneta — otključava polja 1.5a–1.6a.</summary>
+    public bool JeIzmenjenaPrijava => _vrstaIzmene != VrstaIzmenePrijave.Nema;
+
+    /// <summary>JIPD prijave koja se menja (PP 1.5a). Obavezan kad je izabrana vrsta izmene.</summary>
+    public string JipdKojiSeMenja
+    {
+        get => _jipdKojiSeMenja;
+        set { _jipdKojiSeMenja = value; OnPropertyChanged(); }
+    }
+
+    public string BrojResenja
+    {
+        get => _brojResenja;
+        set { _brojResenja = value; OnPropertyChanged(); }
+    }
+
+    public OsnovIzmenePrijave OsnovIzmene
+    {
+        get => _osnovIzmene;
+        set { _osnovIzmene = value; OnPropertyChanged(); }
+    }
+
+    /// <summary>
+    /// Podaci o izmeni onako kako ih traži generator; <c>null</c> za redovnu prijavu.
+    /// </summary>
+    public IzmenaPrijave? Izmena => JeIzmenjenaPrijava
+        ? new IzmenaPrijave
+        {
+            VrstaIzmene = VrstaIzmene,
+            Jipd = JipdKojiSeMenja,
+            BrojResenja = BrojResenja,
+            Osnov = OsnovIzmene
+        }
+        : null;
 
     public int TotalRadnika
     {

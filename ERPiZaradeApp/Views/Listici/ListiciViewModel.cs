@@ -169,9 +169,11 @@ public class ListiciViewModel : INotifyPropertyChanged
         try
         {
             StatusText = "Učitavanje obračuna...";
+            // Stornirani obračun nije isplaćen — listić po njemu bi radniku pokazao platu
+            // koju nije primio.
             var query = _db.ObracuniPlata
                 .Include(o => o.Radnik)
-                .Where(o => o.Godina == SelectedGodina && o.Mesec == SelectedMesec);
+                .Where(o => o.Godina == SelectedGodina && o.Mesec == SelectedMesec && !o.Storniran);
 
             if (!string.IsNullOrWhiteSpace(SearchText))
             {

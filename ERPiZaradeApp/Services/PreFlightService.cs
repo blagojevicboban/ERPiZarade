@@ -60,10 +60,12 @@ public class PreFlightService
 
     public RezultatProvere Proveri(int godina, int mesec)
     {
+        // Stornirani obračun se ne prijavljuje ni ne isplaćuje, pa nema svrhe da njegov
+        // nedostatak (npr. neuneta banka) zaustavlja zaključavanje ostalih.
         var obracuni = _db.ObracuniPlata
             .AsNoTracking()
             .Include(o => o.Radnik)
-            .Where(o => o.Godina == godina && o.Mesec == mesec)
+            .Where(o => o.Godina == godina && o.Mesec == mesec && !o.Storniran)
             .ToList();
 
         var nalazi = new List<NalazProvere>();

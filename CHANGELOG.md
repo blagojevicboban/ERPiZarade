@@ -6,6 +6,51 @@ Format je zasnovan na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) s
 
 ---
 
+## [1.9.0] - 2026-08-03
+
+> **Faza 2.7** — storniranje, rekalkulacija i izmenjena prijava. Iz razvojne mape: „dešava se
+> svakog meseca, a trenutno nema podržan put".
+
+### 🚫 Storniranje obračuna (novo)
+- Do sada je jedini put za grešku u **zaključanom** periodu bio otključavanje, čime se izmeni izlažu i svi ostali obračuni tog meseca. Sada se stornira **jedan obračun**, bez otključavanja perioda.
+- Stornirani obračun se **ne briše i ne nulira** — iznosi ostaju vidljivi, jer je to i dalje ono što je jednom obračunato i po pravilu već prijavljeno. Menja se samo to da ga isplate i prijave više ne obuhvataju: **nalozi za prenos, platni listići, PPP-PD, PPP-PO, spiskovi i rekapitulacije** ga preskaču.
+- **Razlog je obavezan.** Bez njega se posle mesecima ne zna zašto obračuna nema u prijavi, a upravo to je pitanje koje se pri kontroli postavlja. Razlog i korisnik idu u revizioni trag.
+- Storniranje se može poništiti — takođe uz razlog i uz zapis.
+
+### 💳 Rata kredita se vraća, i to tačno jednom
+- Stornirani obračun nije isplaćen, pa se rata obustave vraća; da ostane skinuta, radnikov dug bi se smanjio bez ijednog dinara koji je otišao poveriocu.
+- Ista računica je do sada stajala **prepisana na dva mesta** (prekalkulacija i brisanje perioda), pa bi storniranje bilo treće mesto na kom se mogla razići. Sada je u `KreditRateService`, jednom i sa testom. Prekalkulacija i brisanje preskaču obračune kojima je rata već vraćena storniranjem.
+
+### 🕓 Prethodne verzije obračuna se čuvaju
+- Prekalkulacija briše zatečeni rezultat i računa iznova. Do sada je time nepovratno nestajalo ono što je već isplaćeno i prijavljeno. Sada se **pre brisanja** pravi zapis: iznosi (bruto, porez, doprinosi, neto) kao kolone i **pun snimak obračuna** u JSON obliku — u tom trenutku se ne zna koje će polje kasnije biti sporno, a legacy kolone iz DBF-a ne prikazuje nijedan ekran, ali od njih zavisi ponovni obračun.
+- Isto važi i za brisanje perioda, koje je do sada bilo bez traga o sadržaju.
+- Obračun nosi **redni broj verzije**; zatečeni obračuni su verzija 1.
+
+### 📜 Revizioni trag se konačno može pogledati
+- Trag se upisuje od Faze 0, ali se **nigde nije prikazivao** — a zapis koji niko ne vidi ne odgovara ni na jedno pitanje koje se pri kontroli postavi. Novi prozor pokazuje ko je, kada i šta radio nad obračunima perioda, i koje su verzije zamenjene.
+- Otvara se sa ekrana obračuna i iz pregleda svih obračuna.
+
+### 🧾 Izmenjena PPP-PD prijava
+- Prijava sada može da se izjasni da **menja ranije podnetu**: `VrstaIzmene` (1.5), `JIPD` prijave koja se menja (1.5a), `BrojResenja` (1.6) i `Osnov` (1.6a) — po objavljenom opisu XML strukture Poreske uprave.
+- **JIPD nije isto što i BOP**: JIPD identifikuje prijavu, BOP uplatu po njoj. Oba se sada čuvaju uz prijavu; bez JIPD-a se prijava kasnije ne može izmeniti.
+- Izmena bez JIPD-a, ili sa JIPD-om koji nije do 19 cifara, odbija se **pri generisanju** — dok je ispravka još jeftina, umesto da padne kod Poreske uprave.
+
+### 🐛 Prazan `<DeklarisaniMFP>` je išao u svaku prijavu
+- Specifikacija izričito zabranjuje prazne tagove: „opcije `<tag></tag>` ili `<tag/>` nisu dozvoljene", a kad se `DeklarisaniMFP` navede mora da nosi bar jedno MFP polje. Do sada se emitovao uvek, i za obračune bez olakšice. Sada se izostavlja.
+
+### 🐛 Padajuća lista „Vrsta prijave" nosila je pogrešne oznake
+- Verzija 1.8.0 je ispravila pogrešno tumačenje šifara **u komentaru**, ali je ekran i dalje nudio „2 - Po nalazu kontrole" i „3 - Po odluci suda". Po specifikaciji je **1** opšta · **2** po službenoj dužnosti · **3** samoprijavljivanje · **4** po nalazu kontrole · **5** po odluci suda. Izbor „po nalazu kontrole" slao je šifru za prijavu po službenoj dužnosti.
+- Iz istog izvora ispravljen je i **tip isplatioca**: 2 je „pravno lice iz budžeta", a ne preduzetnik (preduzetnik je 4). Lista sada ima svih sedam vrednosti.
+
+### 🐛 Sačuvani XML se razlikovao od kopiranog
+- „Generiši XML" nije prosleđivao broj kalendarskih dana, pa je sačuvana datoteka mogla da nosi drugu vrednost od one koju „Kopiraj XML" stavi u privremenu memoriju.
+
+### 🧪 Testovi
+- 196 ukupno (27 novih): stornirani obračun izostaje iz naloga i godišnje potvrde a ostaje u bazi sa svim iznosima, storniranje zaključanog obračuna prolazi bez otključavanja, storniranje bez razloga se odbija, rata kredita se vraća tačno jednom i poništavanjem se vraća u prvobitno stanje, arhiva verzije sadrži i legacy kolone, redosled elemenata izmene odgovara XSD sekvenci, neispravan JIPD se odbija, i **bez ijednog storna svi zbirovi ostaju brojčano isti kao pre**.
+
+### ❗ Šta nedostaje
+- Storniranje ne generiše izmenjenu prijavu samo od sebe — prijava se i dalje priprema na ekranu PPP-PD, s tim što stornirani obračuni u nju više ne ulaze i ekran prikazuje koliko ih je izostavljeno.
+
 ## [1.8.0] - 2026-08-03
 
 > **Faza 2.4** — poreske olakšice. Analiza ih navodi kao „u praksi najčešći razlog za ručnu

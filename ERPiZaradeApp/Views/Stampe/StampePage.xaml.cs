@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -52,9 +52,11 @@ public partial class StampePage : Page
             vm.StatusText = "Učitavanje podataka iz baze...";
             using var db = PlataDbContext.Create(AppConfig.DbPath);
             
+            // Stornirani obračun nije isplaćen, pa ne ulazi ni u spisak ni u rekapitulaciju —
+            // inače bi zbir na papiru bio veći od onoga što je otišlo sa računa.
             var obracuni = db.ObracuniPlata
                 .Include(o => o.Radnik)
-                .Where(o => o.Godina == godina && o.Mesec == mesec)
+                .Where(o => o.Godina == godina && o.Mesec == mesec && !o.Storniran)
                 .ToList();
 
             if (targetRj.HasValue)
@@ -151,9 +153,11 @@ public partial class StampePage : Page
             vm.StatusText = "Učitavanje podataka za rekapitulaciju...";
             using var db = PlataDbContext.Create(AppConfig.DbPath);
             
+            // Stornirani obračun nije isplaćen, pa ne ulazi ni u spisak ni u rekapitulaciju —
+            // inače bi zbir na papiru bio veći od onoga što je otišlo sa računa.
             var obracuni = db.ObracuniPlata
                 .Include(o => o.Radnik)
-                .Where(o => o.Godina == godina && o.Mesec == mesec)
+                .Where(o => o.Godina == godina && o.Mesec == mesec && !o.Storniran)
                 .ToList();
 
             if (targetRj.HasValue)
@@ -264,9 +268,11 @@ public partial class StampePage : Page
             vm.StatusText = "Učitavanje podataka za izveštaj banaka...";
             using var db = PlataDbContext.Create(AppConfig.DbPath);
 
+            // Stornirani obračun nije isplaćen, pa ne ulazi ni u spisak ni u rekapitulaciju —
+            // inače bi zbir na papiru bio veći od onoga što je otišlo sa računa.
             var obracuni = db.ObracuniPlata
                 .Include(o => o.Radnik)
-                .Where(o => o.Godina == godina && o.Mesec == mesec)
+                .Where(o => o.Godina == godina && o.Mesec == mesec && !o.Storniran)
                 .ToList();
 
             if (targetRj.HasValue)

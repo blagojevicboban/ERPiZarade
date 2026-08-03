@@ -8,6 +8,24 @@ using ERPiZaradeData.Models;
 using System.Globalization;
 namespace ERPiZaradeApp.Services;
 
+/// <summary>
+/// Podaci kojima se prijava izjašnjava da menja ranije podnetu — pozicije 1.5–1.6a Obrasca
+/// PPP-PD. Odvojeni su od ostalih parametara zato što idu zajedno ili nikako: bez
+/// <see cref="Jipd"/> Poreska uprava ne zna koju prijavu menjamo.
+/// </summary>
+public sealed class IzmenaPrijave
+{
+    public VrstaIzmenePrijave VrstaIzmene { get; init; } = VrstaIzmenePrijave.Izmena;
+
+    /// <summary>JIPD prijave koja se menja. Najviše 19 cifara, bez razmaka i crtica.</summary>
+    public string Jipd { get; init; } = "";
+
+    /// <summary>Broj rešenja kontrole ili suda; prazno kad izmenu podnosi sam obveznik.</summary>
+    public string BrojResenja { get; init; } = "";
+
+    public OsnovIzmenePrijave Osnov { get; init; } = OsnovIzmenePrijave.Nema;
+}
+
 public class XmlExportService
 {
     private static readonly XNamespace tns = "http://pid.purs.gov.rs";
@@ -19,6 +37,51 @@ public class XmlExportService
     }
 
     /// <summary>
+    /// Elementi izmene prijave, po redosledu iz XSD-a: <c>VrstaIzmene</c> (1.5),
+    /// <c>JIPD</c> (1.5a), <c>BrojResenja</c> (1.6), <c>Osnov</c> (1.6a).
+    ///
+    /// Specifikacija izričito zabranjuje prazne tagove („opcije &lt;tag&gt;&lt;/tag&gt; ili
+    /// &lt;tag/&gt; nisu dozvoljene"), pa se neispunjena polja izostavljaju u celosti,
+    /// a za redovnu prijavu se ne emituje nijedno.
+    /// </summary>
+    private static IEnumerable<XElement> ElementiIzmene(IzmenaPrijave? izmena)
+    {
+        if (izmena == null || izmena.VrstaIzmene == VrstaIzmenePrijave.Nema)
+            yield break;
+
+        yield return new XElement(tns + "VrstaIzmene", ((int)izmena.VrstaIzmene).ToString(CultureInfo.InvariantCulture));
+        yield return new XElement(tns + "JIPD", izmena.Jipd.Trim());
+
+        if (!string.IsNullOrWhiteSpace(izmena.BrojResenja))
+            yield return new XElement(tns + "BrojResenja", izmena.BrojResenja.Trim());
+
+        if (izmena.Osnov != OsnovIzmenePrijave.Nema)
+            yield return new XElement(tns + "Osnov", ((int)izmena.Osnov).ToString(CultureInfo.InvariantCulture));
+    }
+
+    /// <summary>
+    /// Odbija izmenu koja bi prošla generisanje a pala kod Poreske uprave. JIPD je po
+    /// specifikaciji obavezan čim je popunjena vrsta izmene, i to kao broj do 19 cifara.
+    /// </summary>
+    private static void ProveriIzmenu(IzmenaPrijave? izmena)
+    {
+        if (izmena == null || izmena.VrstaIzmene == VrstaIzmenePrijave.Nema) return;
+
+        string jipd = izmena.Jipd?.Trim() ?? "";
+
+        if (jipd.Length == 0)
+            throw new ArgumentException(
+                "Izmenjena prijava mora da nosi JIPD prijave koja se menja (polje 1.5a). " +
+                "JIPD dodeljuje Poreska uprava pri prijemu prvobitne prijave.",
+                nameof(izmena));
+
+        if (jipd.Length > 19 || !jipd.All(char.IsDigit))
+            throw new ArgumentException(
+                $"JIPD „{jipd}\" nije ispravan — očekuje se do 19 cifara, bez razmaka i crtica.",
+                nameof(izmena));
+    }
+
+    /// <summary>
     /// Multifunkcionalno polje kroz koje se prijavljuje poreska olakšica.
     ///
     /// Struktura je po specifikaciji Poreske uprave: <c>MFP</c> se ponavlja onoliko puta
@@ -26,22 +89,26 @@ public class XmlExportService
     /// decimalni razdvajač <b>tačka</b>. Šta koje polje znači zavisi od SVP šifre, pa se
     /// mapiranje uzima iz šifarnika olakšica, a ne iz koda.
     ///
-    /// Bez olakšice element ostaje prazan, kako je i bio.
+    /// Bez olakšice se element ne emituje.
     /// </summary>
-    private static XElement DeklarisaniMfp(
+    private static XElement? DeklarisaniMfp(
         ObracunPlate obracun,
         decimal osnovicaPoreza,
         decimal osnovicaDoprinosa,
         IReadOnlyDictionary<string, IReadOnlyList<OlaksicaMfp>>? mfpPoOlaksici)
     {
-        var element = new XElement(tns + "DeklarisaniMFP");
-
+        // Bez olakšice se tag ne emituje uopšte. Prazan <DeklarisaniMFP/> je do sada išao u
+        // svaku prijavu, a specifikacija ga ne dozvoljava: opcioni tag koji se ne koristi
+        // isključuje se iz strukture, a kad se navede mora da nosi bar jedan MFP.
         if (mfpPoOlaksici == null
             || string.IsNullOrWhiteSpace(obracun.OlaksicaOznaka)
-            || !mfpPoOlaksici.TryGetValue(obracun.OlaksicaOznaka, out var deklaracije))
+            || !mfpPoOlaksici.TryGetValue(obracun.OlaksicaOznaka, out var deklaracije)
+            || deklaracije.Count == 0)
         {
-            return element;
+            return null;
         }
+
+        var element = new XElement(tns + "DeklarisaniMFP");
 
         foreach (var deklaracija in deklaracije)
         {
@@ -84,10 +151,13 @@ public class XmlExportService
         string najnizaOsnovica = "0",
         string tipIsplatioca = "1",
         int? brojKalendarskihDana = null,
-        IReadOnlyDictionary<string, IReadOnlyList<OlaksicaMfp>>? mfpPoOlaksici = null)
+        IReadOnlyDictionary<string, IReadOnlyList<OlaksicaMfp>>? mfpPoOlaksici = null,
+        IzmenaPrijave? izmena = null)
     {
         if (obracuni == null || obracuni.Count == 0)
             throw new ArgumentException("Lista obračuna ne može biti prazna.");
+
+        ProveriIzmenu(izmena);
 
         // Prijava sa praznim ili izmišljenim sedištem prolazi generisanje, a pada tek kod
         // Poreske uprave — zato se odbija ovde, dok je ispravka još jeftina.
@@ -119,6 +189,7 @@ public class XmlExportService
                 new XElement(tns + "ObracunskiPeriod", obracunskiPeriod),
                 new XElement(tns + "OznakaZaKonacnu", oznakaZaKonacnu),
                 new XElement(tns + "DatumPlacanja", datumPlacanja.ToString("yyyy-MM-dd")),
+                ElementiIzmene(izmena),
                 new XElement(tns + "NajnizaOsnovica", najnizaOsnovica)
             ),
 

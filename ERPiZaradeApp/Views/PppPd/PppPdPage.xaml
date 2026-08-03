@@ -1,9 +1,13 @@
-<Page x:Class="ERPiZaradeApp.Views.PppPd.PppPdPage"
+﻿<Page x:Class="ERPiZaradeApp.Views.PppPd.PppPdPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:local="clr-namespace:ERPiZaradeApp.Views.PppPd"
       Title="PPP-PD poreska deklaracija"
       Background="{StaticResource SurfaceBrush}">
+
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Page.Resources>
 
     <Page.DataContext>
         <local:PppPdViewModel/>
@@ -65,11 +69,13 @@
                         <TextBox Text="{Binding KlijentskaOznaka, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10"/>
 
                         <TextBlock Text="Vrsta prijave:" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="{StaticResource TextSecondaryBrush}"/>
-                        <ComboBox SelectedValue="{Binding SelectedVrstaPrijave}" SelectedValuePath="Tag" Margin="0,0,0,10" Padding="8,5">
+                        <ComboBox SelectedValue="{Binding SelectedVrstaPrijave}" SelectedValuePath="Tag" Margin="0,0,0,10" Padding="8,5"
+                                  ToolTip="Pozicija 1.1 Obrasca PPP-PD. Šifre su propisane specifikacijom Poreske uprave — ne meša se sa vrstom izmene (1.5).">
                             <ComboBoxItem Content="1 - Opšta prijava" Tag="1" IsSelected="True"/>
-                            <ComboBoxItem Content="2 - Po nalazu kontrole" Tag="2"/>
-                            <ComboBoxItem Content="3 - Po odluci suda" Tag="3"/>
-                            <ComboBoxItem Content="4 - Po samoprijavljivanju" Tag="4"/>
+                            <ComboBoxItem Content="2 - Po službenoj dužnosti" Tag="2"/>
+                            <ComboBoxItem Content="3 - Samoprijavljivanje" Tag="3"/>
+                            <ComboBoxItem Content="4 - Po nalazu kontrole" Tag="4"/>
+                            <ComboBoxItem Content="5 - Po odluci suda" Tag="5"/>
                         </ComboBox>
 
                         <Grid Margin="0,0,0,10">
@@ -94,11 +100,50 @@
                         </Grid>
 
                         <TextBlock Text="Tip isplatioca:" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="{StaticResource TextSecondaryBrush}"/>
-                        <ComboBox SelectedValue="{Binding SelectedTipIsplatioca}" SelectedValuePath="Tag" Margin="0,0,0,16" Padding="8,5">
-                            <ComboBoxItem Content="1 - Pravno lice" Tag="1" IsSelected="True"/>
-                            <ComboBoxItem Content="2 - Preduzetnik" Tag="2"/>
-                            <ComboBoxItem Content="3 - Fizičko lice" Tag="3"/>
+                        <ComboBox SelectedValue="{Binding SelectedTipIsplatioca}" SelectedValuePath="Tag" Margin="0,0,0,16" Padding="8,5"
+                                  ToolTip="Pozicija 2.1 Obrasca PPP-PD, po specifikaciji Poreske uprave.">
+                            <ComboBoxItem Content="1 - Pravno lice, nije iz budžeta" Tag="1" IsSelected="True"/>
+                            <ComboBoxItem Content="2 - Pravno lice iz budžeta" Tag="2"/>
+                            <ComboBoxItem Content="3 - Strano predstavništvo" Tag="3"/>
+                            <ComboBoxItem Content="4 - Preduzetnik" Tag="4"/>
+                            <ComboBoxItem Content="5 - Fizičko lice" Tag="5"/>
+                            <ComboBoxItem Content="6 - Vojska RS" Tag="6"/>
+                            <ComboBoxItem Content="7 - Poljoprivredno gazdinstvo" Tag="7"/>
                         </ComboBox>
+
+                        <Separator Margin="0,4,0,12"/>
+
+                        <TextBlock Text="IZMENJENA PRIJAVA" FontSize="12" FontWeight="Bold" Foreground="{StaticResource PrimaryLightBrush}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Popunjava se samo kada se menja ranije podneta prijava. Sva polja tada idu zajedno — bez JIPD-a Poreska uprava ne zna koja se prijava menja."
+                                   FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,10"/>
+
+                        <TextBlock Text="Vrsta izmene (1.5):" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="{StaticResource TextSecondaryBrush}"/>
+                        <ComboBox ItemsSource="{Binding VrsteIzmene}" SelectedItem="{Binding VrstaIzmene}" Margin="0,0,0,10" Padding="8,5">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Converter={x:Static local:VrstaIzmeneConverter.Instance}}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+
+                        <StackPanel Visibility="{Binding JeIzmenjenaPrijava, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="JIPD prijave koja se menja (1.5a):" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBox Text="{Binding JipdKojiSeMenja, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" Padding="8,5"
+                                     ToolTip="Do 19 cifara. Dodeljuje ga Poreska uprava pri prijemu prvobitne prijave — nije isto što i BOP."/>
+
+                            <TextBlock Text="Broj rešenja (1.6):" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBox Text="{Binding BrojResenja, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" Padding="8,5"
+                                     ToolTip="Broj rešenja kontrole ili suda; ostaje prazno kada izmenu podnosi sam poslodavac."/>
+
+                            <TextBlock Text="Osnov podnošenja (1.6a):" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <ComboBox ItemsSource="{Binding OsnoviIzmene}" SelectedItem="{Binding OsnovIzmene}" Margin="0,0,0,16" Padding="8,5">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Converter={x:Static local:OsnovIzmeneConverter.Instance}}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
 
                         <Separator Margin="0,4,0,12"/>
 
@@ -155,6 +200,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>  <!-- KPI Cards -->
                     <RowDefinition Height="*"/>     <!-- Data Grid -->
+                    <RowDefinition Height="Auto"/>  <!-- Napomena o storniranim obračunima -->
                     <RowDefinition Height="Auto"/>  <!-- Validation Alert Box -->
                     <RowDefinition Height="Auto"/>  <!-- Action Buttons -->
                 </Grid.RowDefinitions>
@@ -214,8 +260,19 @@
                     </DataGrid>
                 </Border>
 
+                <!-- Stornirani obračuni se ne prijavljuju, ali se izostavljanje mora videti -->
+                <Border Grid.Row="2" Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1.5" CornerRadius="6"
+                        Padding="14,10" Margin="0,0,0,12" VerticalAlignment="Top"
+                        Visibility="{Binding ImaStorniranih, Converter={StaticResource BoolToVis}}">
+                    <TextBlock FontSize="12" Foreground="#1E40AF" TextWrapping="Wrap">
+                        <Run Text="ℹ️ Storniranih obračuna izostavljeno iz prijave:"/>
+                        <Run Text="{Binding BrojStorniranih, Mode=OneWay}" FontWeight="Bold"/>
+                        <Run Text="— ako su već bili u podnetoj prijavi, ovo je sadržaj izmenjene prijave."/>
+                    </TextBlock>
+                </Border>
+
                 <!-- 3. VALIDATION ALERT BOXES -->
-                <Grid Grid.Row="2">
+                <Grid Grid.Row="3">
                     <!-- Warning Alerts Panel (Visible when validation failed and validation has been run) -->
                     <Border x:Name="WarningPanel" Background="#FFFBEB" BorderBrush="#FEF3C7" BorderThickness="1.5" CornerRadius="6" Padding="14,12" Margin="0,0,0,12">
                         <Border.Style>
@@ -269,7 +326,7 @@
                 </Grid>
 
                 <!-- 4. ACTION BUTTONS PANEL -->
-                <Grid Grid.Row="3">
+                <Grid Grid.Row="4">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>

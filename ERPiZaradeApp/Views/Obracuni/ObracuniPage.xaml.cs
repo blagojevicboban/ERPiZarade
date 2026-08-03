@@ -46,17 +46,20 @@ public partial class ObracuniPage : Page
                 conn.Open();
                 using (var cmd = conn.CreateCommand())
                 {
+                    // Stornirani obračuni se broje posebno, a iz zbirova se izostavljaju —
+                    // rekapitulacija treba da pokaže ono što je isplaćeno, ne i poništeno.
                     cmd.CommandText = @"
-                        SELECT 
-                            o.Godina, 
-                            o.Mesec, 
-                            COUNT(*) as BrojRadnika, 
-                            SUM(o.NetoIsplata) as UkupnoNeto, 
-                            SUM(o.BrutoZarada + o.BrutoBolovanje) as UkupnoBruto, 
-                            SUM(o.NetoIsplata + o.PorezNaDohodak + o.DoprinosPioRadnik + o.DoprinosZdravstvoRadnik + o.DoprinosNezaposlenostRadnik + o.KreditObustava + o.Samodoprinosi + o.DoprinosPioPoslodavac + o.DoprinosZdravstvoPoslodavac + o.DoprinosNezaposlenostPoslodavac) as UkupnoBruto2,
+                        SELECT
+                            o.Godina,
+                            o.Mesec,
+                            SUM(CASE WHEN o.Storniran = 1 THEN 0 ELSE 1 END) as BrojRadnika,
+                            SUM(CASE WHEN o.Storniran = 1 THEN 0 ELSE o.NetoIsplata END) as UkupnoNeto,
+                            SUM(CASE WHEN o.Storniran = 1 THEN 0 ELSE o.BrutoZarada + o.BrutoBolovanje END) as UkupnoBruto,
+                            SUM(CASE WHEN o.Storniran = 1 THEN 0 ELSE o.NetoIsplata + o.PorezNaDohodak + o.DoprinosPioRadnik + o.DoprinosZdravstvoRadnik + o.DoprinosNezaposlenostRadnik + o.KreditObustava + o.Samodoprinosi + o.DoprinosPioPoslodavac + o.DoprinosZdravstvoPoslodavac + o.DoprinosNezaposlenostPoslodavac END) as UkupnoBruto2,
                             MAX(o.DatumObracuna) as PoslednjiDatum,
                             COALESCE(MAX(p.VrBoda), 1860.34) as VrBoda,
-                            MAX(CAST(o.Zakljucan AS INTEGER)) as Zakljucan
+                            MAX(CAST(o.Zakljucan AS INTEGER)) as Zakljucan,
+                            SUM(CASE WHEN o.Storniran = 1 THEN 1 ELSE 0 END) as BrojStorniranih
                         FROM ObracuniPlata o
                         LEFT JOIN Porezi p ON o.Godina = p.Godina AND o.Mesec = p.Mesec
                         GROUP BY o.Godina, o.Mesec";
@@ -75,7 +78,8 @@ public partial class ObracuniPage : Page
                                 UkupnoBruto2 = reader.IsDBNull(5) ? 0 : reader.GetDecimal(5),
                                 PoslednjiDatum = reader.IsDBNull(6) ? DateTime.MinValue : reader.GetDateTime(6),
                                 VrednostBoda = reader.IsDBNull(7) ? 1860.34m : reader.GetDecimal(7),
-                                Zakljucan = reader.IsDBNull(8) ? false : (reader.GetInt32(8) == 1)
+                                Zakljucan = reader.IsDBNull(8) ? false : (reader.GetInt32(8) == 1),
+                                BrojStorniranih = reader.IsDBNull(9) ? 0 : reader.GetInt32(9)
                             });
                         }
                     }
@@ -266,28 +270,19 @@ public partial class ObracuniPage : Page
 
                 // Učitaj obračune za taj period
                 var obracuni = await _db.ObracuniPlata
+                    .Include(o => o.Radnik)
                     .Where(o => o.Godina == selected.Godina && o.Mesec == selected.Mesec)
                     .ToListAsync();
 
-                var targetDate = new DateTime(selected.Godina, selected.Mesec, 1);
+                // Brisanje je nepovratno, pa se obračuni pre nestanka arhiviraju kao verzija —
+                // isto kao kod prekalkulacije.
+                Services.VerzijeObracunaService.Arhiviraj(_db, obracuni,
+                    $"Brisanje perioda {selected.PeriodStr}");
 
-                // Vrati rate kredita
-                foreach (var o in obracuni)
+                // Vrati rate kredita. Storniranima je rata vraćena još pri storniranju.
+                foreach (var o in obracuni.Where(o => !o.Storniran))
                 {
-                    var radnikKrediti = await _db.Krediti
-                        .Where(k => k.RadnikId == o.RadnikId)
-                        .ToListAsync();
-
-                    foreach (var k in radnikKrediti)
-                    {
-                        if (k.DatumPocetka <= targetDate && targetDate <= k.DatumPocetka.AddMonths(k.PlateneRate - 1))
-                        {
-                            k.PlateneRate--;
-                            k.OstatakDuga = Math.Max(0, k.UkupanIznos - (k.PlateneRate * k.MesecnaRata));
-                            k.Aktivan = true;
-                            _db.Entry(k).State = EntityState.Modified;
-                        }
-                    }
+                    Services.KreditRateService.VratiRate(_db, o);
                 }
 
                 // Obriši obračune
@@ -358,6 +353,16 @@ public partial class ObracuniPage : Page
                 StatusMessage.Text = "Greška pri brisanju.";
             }
         }
+    }
+
+    private void BtnRevizioniTrag_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.DataContext is not ObracunPeriodSummary red) return;
+
+        new Revizija.RevizioniTragWindow(red.Godina, red.Mesec)
+        {
+            Owner = Window.GetWindow(this)
+        }.ShowDialog();
     }
 
     private void BtnNoviObracun_Click(object sender, RoutedEventArgs e)
@@ -634,6 +639,13 @@ public class ObracunPeriodSummary
     public decimal UkupnoBruto2 { get; set; }
     public DateTime PoslednjiDatum { get; set; }
     public bool Zakljucan { get; set; }
+
+    /// <summary>Koliko je obračuna u periodu stornirano; oni ne ulaze ni u jedan zbir iznad.</summary>
+    public int BrojStorniranih { get; set; }
+
+    public bool ImaStorniranih => BrojStorniranih > 0;
+
+    public string StornoStr => BrojStorniranih > 0 ? BrojStorniranih.ToString() : "—";
 
     public bool IsActive => AppConfig.ActiveGodina == Godina && AppConfig.ActiveMesec == Mesec;
 }

@@ -73,10 +73,11 @@ public class PppPoService
 
     public PppPoRezultat Pripremi(int godina, int? samoBrojRadnika = null)
     {
+        // Stornirani obračun nije isplaćen, pa ne ulazi u godišnju potvrdu o plaćenom porezu.
         var obracuni = _db.ObracuniPlata
             .AsNoTracking()
             .Include(o => o.Radnik)
-            .Where(o => o.Godina == godina)
+            .Where(o => o.Godina == godina && !o.Storniran)
             .ToList()
             .Where(o => o.Radnik != null)
             .ToList();

@@ -351,6 +351,7 @@ public partial class NoviObracunWindow : Window
 
             // Provera da li već postoje obračuni za ovaj period
             var postojeci = await _db.ObracuniPlata
+                .Include(o => o.Radnik)
                 .Where(o => o.Godina == godina && o.Mesec == mesec)
                 .ToListAsync();
 
@@ -360,33 +361,24 @@ public partial class NoviObracunWindow : Window
             if (postojeci.Count > 0)
             {
                 var rez = MessageBox.Show(
-                    $"Već postoje obračuni ({postojeci.Count}) za period {mesec}.{godina}. Da li želite da ih obrišete i pokrenete novi obračun?",
+                    $"Već postoje obračuni ({postojeci.Count}) za period {mesec}.{godina}. Da li želite da ih obrišete i pokrenete novi obračun?\n\n" +
+                    "Zatečeni rezultat se pre brisanja arhivira kao prethodna verzija, pa ostaje uvid u to šta je bilo obračunato.",
                     "Potvrda brisanja i ponovnog obračuna",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Question);
 
                 if (rez == MessageBoxResult.No) return;
 
-                // REVERT: Pre nego što obrišemo stare obračune, moramo da vratimo rate kredita
-                var targetDate = new DateTime(godina, mesec, 1);
-                foreach (var obracun in postojeci)
-                {
-                    var radnikKrediti = await _db.Krediti
-                        .Where(k => k.RadnikId == obracun.RadnikId)
-                        .ToListAsync();
+                // Snimak ide PRE brisanja i u istu izmenu sa njim — inače bi arhiva mogla
+                // da ostane bez obračuna ili obračun da nestane bez arhive.
+                Services.VerzijeObracunaService.Arhiviraj(_db, postojeci,
+                    $"Prekalkulacija perioda {mesec:D2}/{godina}");
 
-                    foreach (var k in radnikKrediti)
-                    {
-                        // Proveravamo da li je ovaj kredit bio otplaćivan u ovom mesecu
-                        // (tj. da li je mesec u opsegu [DatumPocetka, DatumPocetka + PlateneRate - 1])
-                        if (k.DatumPocetka <= targetDate && targetDate <= k.DatumPocetka.AddMonths(k.PlateneRate - 1))
-                        {
-                            k.PlateneRate--;
-                            k.OstatakDuga = Math.Max(0, k.UkupanIznos - (k.PlateneRate * k.MesecnaRata));
-                            k.Aktivan = true; // ponovo ga aktiviramo jer smo mu vratili ratu
-                            _db.Entry(k).State = EntityState.Modified;
-                        }
-                    }
+                // REVERT: Pre nego što obrišemo stare obračune, moramo da vratimo rate kredita.
+                // Storniranima je rata već vraćena pri storniranju, pa bi im se ovde vratila drugi put.
+                foreach (var obracun in postojeci.Where(o => !o.Storniran))
+                {
+                    Services.KreditRateService.VratiRate(_db, obracun);
                 }
 
                 // Obriši postojeće
@@ -442,6 +434,7 @@ public partial class NoviObracunWindow : Window
 
                 // Izračunaj platu
                 var obracun = _obracunService.Calculate(radnik, radniSati, godina, mesec, vrednostBoda, fondSati);
+                obracun.Verzija = Services.VerzijeObracunaService.SledecaVerzija(_db, godina, mesec, radnik.Id);
                 _db.ObracuniPlata.Add(obracun);
 
                 // DEDUCT: Smanji ostatak duga i uvećaj plaćene rate za aktivne kredite radnika u ovom mesecu

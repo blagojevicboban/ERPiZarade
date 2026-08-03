@@ -1,0 +1,63 @@
+<Window x:Class="ERPiZaradeApp.Views.Revizija.RevizioniTragWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Revizioni trag i prethodne verzije"
+        Height="620" Width="1000"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource SurfaceBrush}">
+
+    <Grid Margin="20,16,20,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <TextBlock x:Name="Naslov" Style="{StaticResource PageTitle}" Text="🕓 Revizioni trag"/>
+            <TextBlock Style="{StaticResource PageSubtitle}"
+                       Text="Ko je i kada radio šta nad obračunima ovog perioda, i koje su verzije obračuna zamenjene prekalkulacijom"/>
+        </StackPanel>
+
+        <TabControl Grid.Row="1">
+            <TabItem Header="Radnje nad obračunima">
+                <DataGrid x:Name="TragGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                          CanUserAddRows="False" BorderThickness="0" Margin="0,8,0,0">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Vreme" Binding="{Binding Vreme, StringFormat='dd.MM.yyyy HH:mm:ss'}" Width="140"/>
+                        <DataGridTextColumn Header="Radnja" Binding="{Binding AkcijaOpis}" Width="170"/>
+                        <DataGridTextColumn Header="Br." Binding="{Binding BrojRadnika}" Width="55"/>
+                        <DataGridTextColumn Header="Radnik" Binding="{Binding ImeRadnika}" Width="180"/>
+                        <DataGridTextColumn Header="Korisnik" Binding="{Binding KorisnickoIme}" Width="120"/>
+                        <DataGridTextColumn Header="Detalji" Binding="{Binding Detalji}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
+            <TabItem Header="Prethodne verzije obračuna">
+                <DataGrid x:Name="VerzijeGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                          CanUserAddRows="False" BorderThickness="0" Margin="0,8,0,0">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Vreme" Binding="{Binding Vreme, StringFormat='dd.MM.yyyy HH:mm:ss'}" Width="140"/>
+                        <DataGridTextColumn Header="Verz." Binding="{Binding Verzija}" Width="55"/>
+                        <DataGridTextColumn Header="Br." Binding="{Binding BrojRadnika}" Width="55"/>
+                        <DataGridTextColumn Header="Radnik" Binding="{Binding ImeRadnika}" Width="170"/>
+                        <DataGridTextColumn Header="Bruto" Binding="{Binding Bruto, StringFormat=N2}" Width="100"/>
+                        <DataGridTextColumn Header="Porez" Binding="{Binding PorezNaDohodak, StringFormat=N2}" Width="90"/>
+                        <DataGridTextColumn Header="Dopr. radnik" Binding="{Binding DoprinosiRadnik, StringFormat=N2}" Width="95"/>
+                        <DataGridTextColumn Header="Neto" Binding="{Binding NetoIsplata, StringFormat=N2}" Width="100"/>
+                        <DataGridTextColumn Header="Korisnik" Binding="{Binding KorisnickoIme}" Width="110"/>
+                        <DataGridTextColumn Header="Razlog" Binding="{Binding Razlog}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+        </TabControl>
+
+        <Grid Grid.Row="2" Margin="0,12,0,0">
+            <TextBlock x:Name="StatusText" FontSize="12" VerticalAlignment="Center"
+                       Foreground="{StaticResource TextSecondaryBrush}"/>
+            <Button Content="Zatvori" Style="{StaticResource SecondaryButton}" Width="100"
+                    HorizontalAlignment="Right" IsCancel="True" Click="BtnZatvori_Click"/>
+        </Grid>
+    </Grid>
+</Window>

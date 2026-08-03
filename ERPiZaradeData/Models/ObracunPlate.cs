@@ -27,6 +27,30 @@ public class ObracunPlate
     /// </summary>
     public ICollection<ObracunStavka> Stavke { get; set; } = [];
 
+    // ── Storniranje (Faza 2.7) ─────────────────────────────
+    /// <summary>
+    /// Obračun je poništen, ali ostaje u istoriji. Iznosi se <b>ne brišu i ne nuliraju</b> —
+    /// zna se šta je bilo obračunato — ali se stornirani obračun izostavlja svuda gde se
+    /// novac isplaćuje ili prijavljuje: PPP-PD, nalozi za prenos, platni listići, PPP-PO.
+    ///
+    /// Storniranje je jedina radnja dozvoljena nad <see cref="Zakljucan"/> obračunom.
+    /// Otključavanje perioda zbog jedne greške izlaže izmeni i sve ostale obračune.
+    /// </summary>
+    public bool Storniran { get; set; }
+
+    public DateTime? DatumStorniranja { get; set; }
+
+    /// <summary>Razlog se traži pri storniranju — bez njega se posle ne zna zašto obračuna nema.</summary>
+    [MaxLength(200)]
+    public string RazlogStorniranja { get; set; } = "";
+
+    /// <summary>
+    /// Redni broj verzije obračuna. Prekalkulacija briše zatečeni rezultat, pa se on pre
+    /// brisanja arhivira u <see cref="ObracunVerzija"/>, a novi obračun dobija sledeći broj.
+    /// Prva verzija je 1.
+    /// </summary>
+    public int Verzija { get; set; } = 1;
+
     // ── Poreska olakšica (Faza 2.4) ────────────────────────
     /// <summary>OL oznaka olakšice primenjene na ovaj obračun; prazno ako je nema.</summary>
     [MaxLength(2)]
@@ -296,6 +320,10 @@ public class ObracunPlate
 
 
     // ── NOT MAPPED HELPERS FOR UI BINDINGS ────────────────
+    /// <summary>Kratka oznaka storna za tabele; crtica kad obračun važi.</summary>
+    [NotMapped]
+    public string StornoStr => Storniran ? "STORNO" : "—";
+
     [NotMapped]
     public int UkupnoSati => RedovniSati + BolovanjeSati + PrekovremeneSati + GodisnjioOdmorSati + DrzavniPraznikSati + NocniSati + SmenskiSati + RadPraznikomSati + NocniRadPraznikomSati + PlacenoOdsustvoSati;
 

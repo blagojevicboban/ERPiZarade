@@ -129,7 +129,8 @@ public partial class PomocPage : Page
             Naslov = "📝 Ugovori van radnog odnosa",
             Sadrzaj =
                 "Meni '📝 Ugovori van radnog odnosa' vodi ugovor o delu, autorske naknade, privremene i povremene poslove i naknade članovima upravnog i nadzornog odbora.\n\n" +
-                "• Primalac se prvo unosi u 'Radnici' i označava poljem 'Van radnog odnosa'. Odatle se uzimaju JMBG, opština prebivališta i tekući račun; ekrani zarade ga posle toga ne nude za obračun plate, radne sate ni platni listić.\n" +
+                "• Primalac je karton radnika sa oznakom 'Van radnog odnosa'. Najbrže se unosi dugmetom '＋ novi' pored padajuće liste primalaca — otvara unos novog kartona ili označavanje postojećeg (penzioner, bivši zaposleni). Isto se može uraditi i u meniju 'Radnici', ali tek pošto se karton otvori dugmetom 'Izmeni': van režima izmene su polja onemogućena i čekboks ne reaguje.\n" +
+                "• Iz kartona se uzimaju JMBG, opština prebivališta i tekući račun; ekrani zarade označeno lice posle toga ne nude za obračun plate, radne sate ni platni listić. Već obračunate zarade ostaju netaknute.\n" +
                 "• Računica ima četiri koraka: osnovica = bruto − normirani troškovi, porez = osnovica × stopa, doprinosi = osnovica × stope, neto = bruto − porez − doprinosi na teret primaoca. Primer za ugovor o delu: bruto 50.000 → normirani troškovi 20% = 10.000 → osnovica 40.000 → porez 20% = 8.000 i PIO 24% = 9.600 → neto 32.400.\n" +
                 "• Ako je naknada ugovorena 'na ruke', čekirajte 'neto' — bruto se dobija preračunom, tačno u dinar.\n" +
                 "• Naknada se vezuje za ISPLATU, ne za mesec: ulazi u istu PPP-PD prijavu i isti paket naloga kao zarada te isplate, samo sa svojom šifrom vrste prihoda i bez sati. Naknada isplaćena drugog datuma ide u svoju isplatu, jer svaka isplata ima svoj datum plaćanja i svoj BOP.\n" +

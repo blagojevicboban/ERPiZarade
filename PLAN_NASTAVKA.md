@@ -186,6 +186,12 @@ Ovo su svesne odluke sa razlogom; nova sesija ih lako „popravi" u pogrešnom s
   specifikacije. Gde specifikacije nema, radi se tolerantno i **prijavljuje šta nije prepoznato**.
 - **Release build mora biti bez upozorenja** — CI ih tretira kao greške
   (`Directory.Build.props`), pa upozorenje u Debug-u obori objavu.
+- **InMemory provajder nije SQLite.** Testovi rade nad `UseInMemoryDatabase`, koji prihvata i
+  ono što SQLite odbija — najopasnije je `SUM` nad `decimal` kolonom, koje na strani baze pada
+  sa „cannot apply aggregate operator 'Sum' on expressions of type 'decimal'". Takva greška
+  prođe kroz ceo paket testova i pojavi se tek kod korisnika. Zato: zbrajanje decimalnih
+  kolona se radi **u memoriji**, posle `ToList()`, a upit koji zbraja stoji u servisu i ima
+  test nad **pravim SQLite fajlom** (`PlataDbContextMigrationTests`).
 - **Migracija se ne regeneriše bez provere zatečenih baza.** `ef migrations remove` + `add`
   daje nov vremenski žig uz isti naziv, pa baza koja je stigla da primeni staru verziju pada
   pri sledećem pokretanju. Od 1.10.0 to hvata `UskladiPreimenovaneMigracije`, ali razliku u
@@ -219,9 +225,12 @@ Ovo su svesne odluke sa razlogom; nova sesija ih lako „popravi" u pogrešnom s
 - **Ugovori (1.11.0) se prvo proveravaju na šifarniku.** Otvoriti „📄 Vrste ugovora" i
   potvrditi OVP oznake iz važećeg Kataloga vrste prihoda — naročito autorsku naknadu sa 34%,
   koja je namerno ostavljena prazna. Dok OVP nije unet, kontrolna provera javlja grešku.
-- Zatim primalac: „Radnici" → novi karton sa JMBG-om, opštinom prebivališta i tekućim računom,
-  označen poljem **„Van radnog odnosa"**. Proveriti da se posle toga **ne pojavljuje** u
-  „Obračun plate", „Radni sati" ni „Platni listići".
+- Zatim primalac: na ekranu ugovora **„＋ novi"** uz padajuću listu primalaca — otvara unos
+  novog kartona (ime, JMBG, adresa, opština, tekući račun) ili označavanje postojećeg kartona.
+  Isto se može uraditi i u „Radnici", ali tek pošto se karton otvori dugmetom **„Izmeni"** —
+  polja su van režima izmene onemogućena, pa čekboks tamo ne reaguje.
+- Proveriti da se označeno lice posle toga **ne pojavljuje** u „Obračun plate", „Radni sati"
+  ni „Platni listići", a da su mu zatečene zarade ostale netaknute.
 - Tek onda ugovor: „📝 Ugovori van radnog odnosa" → izabrati vrstu, primaoca, tip primaoca i
   iznos. Računica se vidi **pre** upisa — proveriti brojeve rukom na jednom primeru (bruto
   50.000 po ugovoru o delu daje neto 32.400 uz porez 8.000 i PIO 9.600), pa tek onda 🧮.

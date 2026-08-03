@@ -1,0 +1,75 @@
+<Page x:Class="ERPiZaradeApp.Views.VrsteUgovora.VrsteUgovoraPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Title="Vrste ugovora"
+      Background="{StaticResource SurfaceBrush}">
+
+    <Grid Margin="24,20,24,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource Card}" Padding="16,12" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" VerticalAlignment="Center" TextWrapping="Wrap" FontSize="12"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Text="Ugovor o delu, autorska naknada i privremeni poslovi razlikuju se samo brojevima — normiranim troškovima, stopom poreza i doprinosima. Zato stoje ovde kao redovi, a ne u programu: izmena propisa se unosi, ne čeka nova verzija. OVP je oznaka vrste prihoda iz Kataloga; cela devetocifrena šifra se sastavlja pri obračunu, jer zavisi i od statusa osiguranja primaoca."/>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="➕" Style="{StaticResource SecondaryButton}" Width="36" Padding="0" Margin="0,0,8,0"
+                            Click="BtnDodaj_Click" ToolTip="Dodaj vrstu ugovora"/>
+                    <Button Content="🗑" Style="{StaticResource SecondaryButton}" Width="36" Padding="0" Margin="0,0,8,0"
+                            Click="BtnObrisi_Click" ToolTip="Obriši izabranu vrstu"/>
+                    <Button Content="💾  Sačuvaj" Style="{StaticResource PrimaryButton}" Padding="16,6"
+                            Click="BtnSacuvaj_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" Style="{StaticResource Card}" Padding="0">
+            <DataGrid x:Name="GridVrste" AutoGenerateColumns="False" CanUserAddRows="False"
+                      HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12"
+                      SelectionChanged="GridVrste_SelectionChanged">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Šifra" Binding="{Binding Sifra, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
+                    <DataGridTextColumn Header="Naziv" Binding="{Binding Naziv, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
+                    <DataGridTextColumn Header="OVP" Binding="{Binding Ovp, UpdateSourceTrigger=PropertyChanged}" Width="55">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="ToolTip" Value="Oznaka vrste prihoda iz Kataloga — tri cifre"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Norm. tr. %" Binding="{Binding NormiraniTroskoviProcenat, StringFormat=N2, UpdateSourceTrigger=PropertyChanged}" Width="85"/>
+                    <DataGridTextColumn Header="Porez %" Binding="{Binding StopaPoreza, StringFormat=N2, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
+                    <DataGridTextColumn Header="PIO prim." Binding="{Binding StopaPioPrimalac, StringFormat=N2, UpdateSourceTrigger=PropertyChanged}" Width="75"/>
+                    <DataGridTextColumn Header="ZDR prim." Binding="{Binding StopaZdravstvoPrimalac, StringFormat=N2, UpdateSourceTrigger=PropertyChanged}" Width="75"/>
+                    <DataGridTextColumn Header="NEZ prim." Binding="{Binding StopaNezaposlenostPrimalac, StringFormat=N2, UpdateSourceTrigger=PropertyChanged}" Width="75"/>
+                    <DataGridTextColumn Header="PIO ispl." Binding="{Binding StopaPioIsplatilac, StringFormat=N2, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
+                    <DataGridTextColumn Header="ZDR ispl." Binding="{Binding StopaZdravstvoIsplatilac, StringFormat=N2, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
+                    <DataGridTextColumn Header="NEZ ispl." Binding="{Binding StopaNezaposlenostIsplatilac, StringFormat=N2, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
+                    <DataGridTextColumn Header="Konto" Binding="{Binding Konto, UpdateSourceTrigger=PropertyChanged}" Width="60"/>
+                    <DataGridTextColumn Header="Šif. plać." Binding="{Binding SifraPlacanja, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
+                    <DataGridCheckBoxColumn Header="Aktivna" Binding="{Binding Aktivna, UpdateSourceTrigger=PropertyChanged}" Width="65"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <Border Grid.Row="2" Margin="0,12,0,0" Background="White" CornerRadius="6" Padding="12,6"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+            <StackPanel>
+                <TextBlock x:Name="StatusMessage" Text="Spreman" FontSize="12"
+                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                <TextBlock x:Name="NapomenaVrste" Text="" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"
+                           Foreground="{StaticResource TextSecondaryBrush}"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Page>

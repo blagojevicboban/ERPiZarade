@@ -416,6 +416,11 @@ namespace ERPiZaradeData.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("FunkcijaZastupnika")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Grad")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -456,9 +461,51 @@ namespace ERPiZaradeData.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Zastupnik")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.ToTable("Firme");
+                });
+
+            modelBuilder.Entity("ERPiZaradeData.Models.Isplata", b =>
+                {
+                    b.Property<int>("IsplataId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("DatumIsplate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DatumKreiranja")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Godina")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Mesec")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Opis")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RedniBroj")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Vrsta")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("IsplataId");
+
+                    b.HasIndex("Godina", "Mesec", "RedniBroj")
+                        .IsUnique();
+
+                    b.ToTable("Isplate");
                 });
 
             modelBuilder.Entity("ERPiZaradeData.Models.Kategorija", b =>
@@ -759,6 +806,9 @@ namespace ERPiZaradeData.Migrations
                     b.Property<int>("GodisnjioOdmorSati")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("IsplataId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Kategorija")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -884,6 +934,9 @@ namespace ERPiZaradeData.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal?>("OsnovicaDoprinosa")
+                        .HasColumnType("decimal(14,2)");
+
                     b.Property<decimal>("OstaliOdbici")
                         .HasColumnType("decimal(14,2)");
 
@@ -951,6 +1004,9 @@ namespace ERPiZaradeData.Migrations
                     b.Property<decimal>("TopliObrokIznos")
                         .HasColumnType("decimal(14,2)");
 
+                    b.Property<int?>("UgovorId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<decimal>("UkupnoRadnihSatiLegacy")
                         .HasColumnType("decimal(14,2)");
 
@@ -964,6 +1020,10 @@ namespace ERPiZaradeData.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("IsplataId");
+
+                    b.HasIndex("UgovorId");
 
                     b.HasIndex("RadnikId", "Godina", "Mesec");
 
@@ -1032,6 +1092,9 @@ namespace ERPiZaradeData.Migrations
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("IsplataId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("KorisnickoIme")
                         .HasMaxLength(100)
@@ -1789,6 +1852,9 @@ namespace ERPiZaradeData.Migrations
                     b.Property<decimal>("StopaZdravstvo")
                         .HasColumnType("decimal(6,4)");
 
+                    b.Property<bool>("VanRadnogOdnosa")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("BrojRadnika");
@@ -1801,6 +1867,53 @@ namespace ERPiZaradeData.Migrations
                         .IsUnique();
 
                     b.ToTable("Radnici");
+                });
+
+            modelBuilder.Entity("ERPiZaradeData.Models.SablonUgovora", b =>
+                {
+                    b.Property<int>("SablonUgovoraId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Aktivan")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("JeSistemski")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Napomena")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Naziv")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Redosled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Sifra")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Tekst")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("VrstaUgovoraId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("SablonUgovoraId");
+
+                    b.HasIndex("Sifra")
+                        .IsUnique();
+
+                    b.HasIndex("VrstaUgovoraId");
+
+                    b.ToTable("SabloniUgovora");
                 });
 
             modelBuilder.Entity("ERPiZaradeData.Models.Samodoprinosi", b =>
@@ -1883,6 +1996,73 @@ namespace ERPiZaradeData.Migrations
                     b.HasIndex("Godina", "Mesec", "BrojRadnika");
 
                     b.ToTable("SlanjaListica");
+                });
+
+            modelBuilder.Entity("ERPiZaradeData.Models.Ugovor", b =>
+                {
+                    b.Property<int>("UgovorId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Aktivan")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Broj")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("BrojRadnika")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("DatumDo")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DatumOd")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DatumTeksta")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DatumUnosa")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DatumZakljucenja")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IznosJeNeto")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Napomena")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Predmet")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Tekst")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TipPrimaoca")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("UgovorenIznos")
+                        .HasColumnType("decimal(14,2)");
+
+                    b.Property<int>("VrstaUgovoraId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("UgovorId");
+
+                    b.HasIndex("BrojRadnika");
+
+                    b.HasIndex("VrstaUgovoraId");
+
+                    b.ToTable("Ugovori");
                 });
 
             modelBuilder.Entity("ERPiZaradeData.Models.UnetoPrimanje", b =>
@@ -1973,6 +2153,80 @@ namespace ERPiZaradeData.Migrations
                     b.ToTable("VrstePrimanja");
                 });
 
+            modelBuilder.Entity("ERPiZaradeData.Models.VrstaUgovora", b =>
+                {
+                    b.Property<int>("VrstaUgovoraId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Aktivna")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Konto")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Napomena")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Naziv")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("NormiraniTroskoviProcenat")
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<string>("Ovp")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Redosled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Sifra")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SifraPlacanja")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("StopaNezaposlenostIsplatilac")
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<decimal>("StopaNezaposlenostPrimalac")
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<decimal>("StopaPioIsplatilac")
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<decimal>("StopaPioPrimalac")
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<decimal>("StopaPoreza")
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<decimal>("StopaZdravstvoIsplatilac")
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<decimal>("StopaZdravstvoPrimalac")
+                        .HasColumnType("decimal(6,2)");
+
+                    b.HasKey("VrstaUgovoraId");
+
+                    b.HasIndex("Sifra")
+                        .IsUnique();
+
+                    b.ToTable("VrsteUgovora");
+                });
+
             modelBuilder.Entity("ERPiZaradeData.Models.DoprinosiPoslodavca", b =>
                 {
                     b.HasOne("ERPiZaradeData.Models.Radnik", "Radnik")
@@ -1997,13 +2251,27 @@ namespace ERPiZaradeData.Migrations
 
             modelBuilder.Entity("ERPiZaradeData.Models.ObracunPlate", b =>
                 {
+                    b.HasOne("ERPiZaradeData.Models.Isplata", "Isplata")
+                        .WithMany("Obracuni")
+                        .HasForeignKey("IsplataId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ERPiZaradeData.Models.Radnik", "Radnik")
                         .WithMany("Obracuni")
                         .HasForeignKey("RadnikId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ERPiZaradeData.Models.Ugovor", "Ugovor")
+                        .WithMany("Obracuni")
+                        .HasForeignKey("UgovorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Isplata");
+
                     b.Navigation("Radnik");
+
+                    b.Navigation("Ugovor");
                 });
 
             modelBuilder.Entity("ERPiZaradeData.Models.ObracunStavka", b =>
@@ -2047,6 +2315,16 @@ namespace ERPiZaradeData.Migrations
                     b.Navigation("Radnik");
                 });
 
+            modelBuilder.Entity("ERPiZaradeData.Models.SablonUgovora", b =>
+                {
+                    b.HasOne("ERPiZaradeData.Models.VrstaUgovora", "VrstaUgovora")
+                        .WithMany()
+                        .HasForeignKey("VrstaUgovoraId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("VrstaUgovora");
+                });
+
             modelBuilder.Entity("ERPiZaradeData.Models.Samodoprinosi", b =>
                 {
                     b.HasOne("ERPiZaradeData.Models.Radnik", "Radnik")
@@ -2056,6 +2334,17 @@ namespace ERPiZaradeData.Migrations
                         .IsRequired();
 
                     b.Navigation("Radnik");
+                });
+
+            modelBuilder.Entity("ERPiZaradeData.Models.Ugovor", b =>
+                {
+                    b.HasOne("ERPiZaradeData.Models.VrstaUgovora", "VrstaUgovora")
+                        .WithMany("Ugovori")
+                        .HasForeignKey("VrstaUgovoraId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("VrstaUgovora");
                 });
 
             modelBuilder.Entity("ERPiZaradeData.Models.UnetoPrimanje", b =>
@@ -2077,6 +2366,11 @@ namespace ERPiZaradeData.Migrations
                     b.Navigation("VrstaPrimanja");
                 });
 
+            modelBuilder.Entity("ERPiZaradeData.Models.Isplata", b =>
+                {
+                    b.Navigation("Obracuni");
+                });
+
             modelBuilder.Entity("ERPiZaradeData.Models.ObracunPlate", b =>
                 {
                     b.Navigation("Stavke");
@@ -2096,9 +2390,19 @@ namespace ERPiZaradeData.Migrations
                     b.Navigation("RadniSati");
                 });
 
+            modelBuilder.Entity("ERPiZaradeData.Models.Ugovor", b =>
+                {
+                    b.Navigation("Obracuni");
+                });
+
             modelBuilder.Entity("ERPiZaradeData.Models.VrstaPrimanja", b =>
                 {
                     b.Navigation("Stavke");
+                });
+
+            modelBuilder.Entity("ERPiZaradeData.Models.VrstaUgovora", b =>
+                {
+                    b.Navigation("Ugovori");
                 });
 #pragma warning restore 612, 618
         }

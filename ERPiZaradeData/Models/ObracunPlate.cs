@@ -18,7 +18,39 @@ public class ObracunPlate
     public int Godina { get; set; }
     public int Mesec { get; set; }
 
+    /// <summary>
+    /// Isplata kojoj obračun pripada (Faza 2.2). <c>null</c> znači <b>prvu isplatu svog
+    /// perioda</b> — tako svi zatečeni obračuni, nastali pre nego što je isplata uopšte
+    /// postojala, ostaju obuhvaćeni bez ijedne izmene u njima. Pravilo se primenjuje na
+    /// jednom mestu, u <c>IsplataService.ZaIsplatu</c>, da se ne bi razišlo po upitima.
+    /// </summary>
+    public int? IsplataId { get; set; }
+
+    public Isplata? Isplata { get; set; }
+
     public bool Zakljucan { get; set; }
+
+    /// <summary>
+    /// Ugovor van radnog odnosa po kome je obračun nastao (Faza 2.3). <c>null</c> je zarada
+    /// iz radnog odnosa — dakle sve što je postojalo do sada, pa se time nijedan zatečeni
+    /// obračun ne menja.
+    ///
+    /// Obračun po ugovoru koristi ista polja kao zarada (bruto, porez, doprinosi, neto), pa
+    /// prijave, nalozi i godišnja potvrda rade nad njim bez ijedne izmene. Razlikuje ga samo
+    /// ono što se iz iznosa ne vidi: šifra vrste prihoda i to što se ne meri satima.
+    /// </summary>
+    public int? UgovorId { get; set; }
+
+    public Ugovor? Ugovor { get; set; }
+
+    /// <summary>
+    /// Osnovica na koju su obračunati doprinosi. <c>null</c> znači „izvedi je kao i do sada" —
+    /// iz zbira PIO doprinosa i ukupne stope — i takvi su svi obračuni zarade. Upisuje se samo
+    /// tamo gde se izvesti ne može: kod prihoda van radnog odnosa osnovica je bruto umanjen za
+    /// normirane troškove, pa bi izvođenje po stopi zarade dalo pogrešan broj u prijavi.
+    /// </summary>
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal? OsnovicaDoprinosa { get; set; }
 
     /// <summary>
     /// Razloženi sastav bruto iznosa po vrstama primanja (Faza 2.1). Zbir stavki jednak je
@@ -323,6 +355,17 @@ public class ObracunPlate
     /// <summary>Kratka oznaka storna za tabele; crtica kad obračun važi.</summary>
     [NotMapped]
     public string StornoStr => Storniran ? "STORNO" : "—";
+
+    /// <summary>
+    /// Isplata za tabele. Prazno je za obračun koji pripada prvoj i jedinoj isplati meseca —
+    /// tako kolona ostaje neupadljiva dok se ne pojavi druga isplata.
+    /// </summary>
+    [NotMapped]
+    public string IsplataStr => Isplata == null || Isplata.JePrva ? "" : Isplata.Naziv;
+
+    /// <summary>Obračun je naknada po ugovoru van radnog odnosa, a ne zarada.</summary>
+    [NotMapped]
+    public bool JeVanRadnogOdnosa => UgovorId.HasValue;
 
     [NotMapped]
     public int UkupnoSati => RedovniSati + BolovanjeSati + PrekovremeneSati + GodisnjioOdmorSati + DrzavniPraznikSati + NocniSati + SmenskiSati + RadPraznikomSati + NocniRadPraznikomSati + PlacenoOdsustvoSati;

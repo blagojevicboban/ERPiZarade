@@ -11,7 +11,13 @@ public enum AkcijaObracuna
     Otkljucan = 3,
     Obrisan = 4,
     Storniran = 5,
-    PppPdGenerisan = 6
+    PppPdGenerisan = 6,
+
+    /// <summary>Dodata isplata u mesecu (Faza 2.2).</summary>
+    IsplataDodata = 7,
+
+    /// <summary>Obrisana isplata u mesecu; obračune nije nosila.</summary>
+    IsplataObrisana = 8
 }
 
 /// <summary>

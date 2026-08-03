@@ -561,9 +561,16 @@ public partial class ObracunPage : Page
             using var db = ERPiZaradeData.PlataDbContext.Create(ERPiZaradeApp.AppConfig.DbPath);
             var servis = new Services.StornoService(db);
 
+            // Radnik u mesecu sa više isplata ima više obračuna. Bez obuhvata po isplati bi
+            // storniranje jednog oborilo i onaj drugi — a on je već isplaćen i prijavljen.
+            // Obračun bez upisane isplate pripada prvoj, po istom pravilu kao svuda.
+            var isplata = o.IsplataId.HasValue
+                ? db.Isplate.FirstOrDefault(i => i.IsplataId == o.IsplataId.Value)
+                : new Services.IsplataService(db).Isplate(o.Godina, o.Mesec).FirstOrDefault();
+
             var rezultat = storniraj
-                ? servis.Storniraj(o.Godina, o.Mesec, brojRadnika, razlog)
-                : servis.PonistiStorniranje(o.Godina, o.Mesec, brojRadnika, razlog);
+                ? servis.Storniraj(o.Godina, o.Mesec, brojRadnika, razlog, isplata)
+                : servis.PonistiStorniranje(o.Godina, o.Mesec, brojRadnika, razlog, isplata);
 
             vm.StatusText = rezultat.Poruka;
 

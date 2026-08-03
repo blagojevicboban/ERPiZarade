@@ -4,7 +4,7 @@
 > [`ANALIZA_I_PREDLOZI_FUNKCIONALNOSTI.md`](ANALIZA_I_PREDLOZI_FUNKCIONALNOSTI.md) i beleži
 > šta je urađeno, šta je namerno odloženo i **na čemu se stalo zbog podataka koji nedostaju**.
 >
-> Stanje na dan **03.08.2026**, verzija **1.9.0**, 196 testova.
+> Stanje na dan **03.08.2026**, verzija **1.11.0**, 272 testa.
 
 ---
 
@@ -23,8 +23,9 @@
 | **2.5** | Neoporeziva primanja kao parametar | ✅ | 1.7.0 |
 | **2.4** | Poreske olakšice kao šifarnik | ✅ | 1.8.0 |
 | **2.7** | Storniranje, rekalkulacija, izmenjena prijava | ✅ | 1.9.0 |
-| **2.2** | Entitet `Isplata` (više isplata u mesecu) | ⬜ | |
-| **2.3** | Ugovori o delu, autorski, PP poslovi, naknade odborima | ⬜ | |
+| **2.2** | Entitet `Isplata` (više isplata u mesecu) | ✅ | 1.10.0 |
+| **2.3** | Ugovori o delu, autorski, PP poslovi, naknade odborima | ✅ | 1.11.0 |
+| — | Generator ugovora: šabloni, editor teksta, PDF | ✅ | 1.11.0 |
 | **2.6** | Bolovanja preko 30 dana, RFZO obrasci (OZ-7, OZ-10) | ⬜ | |
 | **3** | Integracija sa ERPi ekosistemom | ⬜ | |
 | **4** | Kadrovski modul | ⬜ | |
@@ -44,29 +45,43 @@ struktura je spremna i nedostaje samo zapisivač/čitač.
 | **Obrazac PPD (zahtev za povraćaj)** | Podnosi se elektronski kao i PPP-PD, dakle XML-om, ali šema nije javno dostupna. Podaci već postoje u obračunu (`OlaksicaPorez`, `OlaksicaDoprinosi`). | Primer PPD XML-a ili specifikacija. |
 | **OL oznake olakšica** | Karton je nudio `01/02/03` za čl. 21v; po Pravilniku o Obrascu PPD važe **OL08/OL09/OL10**. Lista je izvađena iz koda u šifarnik, pa se ispravlja bez nove verzije. | Provera u važećem Katalogu vrste prihoda i ispravka u šifarniku „Poreske olakšice". |
 | **JIPD podnetih prijava** | Izmenjena prijava se poziva na JIPD prijave koju menja, a JIPD dodeljuje PU pri prijemu. Polje postoji uz prijavu, ali se ne popunjava samo — čitanje iz `EPoreziImportService` čeka isti XML kao i BOP. | Isti preuzet XML iz reda iznad. |
+| **OVP oznake za deo vrsta ugovora** | Potvrđeno je 601/602/603 (ugovor o delu i naknade odborima), 301/302/303 (autorske naknade 50% i 43%) i 150/151 (PP poslovi). Za autorsku naknadu sa **34%** normiranih troškova OVP nije potvrđen i ostavljen je **prazan** — obračun prolazi, ali kontrolna provera javlja grešku. Ostaje i da se potvrdi koji tip primaoca ide uz PP poslove. | Provera u važećem Katalogu vrste prihoda i unos u šifarnik „Vrste ugovora". Bez nove verzije. |
 
 ---
 
 ## 3. Sledeći koraci, po preporučenom redosledu
 
-### 3.1. Faza 2.2 — entitet `Isplata` *(preporučeno prvo)*
+### 3.1. Radni sati po isplati *(preporučeno prvo)*
 
-Strukturno najvažnije što je ostalo: akontacija + konačna isplata u istom mesecu, bonus,
-13. plata. `PppPdPrijava` već ima `RedniBroj` upravo zato — pripremljen je da razdvoji više
-isplata bez izmene šeme.
+Jedina stavka koju je 2.3 ostavila iza sebe, i jedina koja i dalje traži izmenu šeme.
+`RadniSat` je jedinstven po (radnik, godina, mesec), pa obračun druge isplate prepisuje taj
+red. **Iznosi već napravljenih obračuna ostaju netaknuti** — svaki obračun nosi svoje sate u
+svojim kolonama — ali ekran radnih sati pokazuje poslednji unos.
 
-Dodiruje PPP-PD, naloge za prenos i storniranje odjednom, pa je veće od 2.7.
+Razdvajanje je dodavanje `RadniSat.IsplataId` uz izmenu jedinstvenog indeksa, po istom pravilu
+kao `ObracunPlate.IsplataId`: `null` znači prvu isplatu perioda, pa se zatečeni redovi ne diraju
+(vidi odluku 9). Dodiruje `RadniSatiPage`, `UvozSatiService` i `NoviObracunWindow`.
 
-### 3.2. Faza 2.3 — obračuni van radnog odnosa
+### 3.2. Faza 3.1 — automatsko knjiženje u ERPiFinansije
 
-Ugovori o delu, autorski, PP poslovi, naknade odborima. **Preduslov je 2.2** — ti obračuni se
-ne vezuju za obračunski mesec nego za isplatu. Šifarnik vrsta primanja iz 2.1 već nosi SVP,
-poreski tretman i konto, pa je osnova spremna.
+`VrstaPrimanja.Konto`, `VrstaUgovora.Konto` i `Radnik.SifraMestaTroska` postoje od ranije i još
+se nigde ne koriste — uvedeni su baš za ovo.
 
-### 3.3. Faza 3.1 — automatsko knjiženje u ERPiFinansije
+### 3.3. Faza 2.6 — bolovanja preko 30 dana i RFZO obrasci
 
-`VrstaPrimanja.Konto` i `Radnik.SifraMestaTroska` postoje od ranije i još se nigde ne koriste —
-uvedeni su baš za ovo.
+OZ-7 i OZ-10. Vrsta primanja `B60` postoji u šifarniku od 2.1 i obračun je puni, pa je osnova
+spremna; nedostaje obrazac za refundaciju.
+
+### 3.4. Namerno odloženo
+
+| Šta | Zašto je odloženo |
+| :--- | :--- |
+| **Brisanje perioda** | I dalje briše sve isplate meseca odjednom, sada i naknade po ugovoru. Brisanje pojedinačne isplate ide preko ekrana isplata, gde je i zaštićeno. |
+| **Zaključavanje po isplati** | Zaključavanje ostaje na periodu. Isplata je **obuhvat, ne stanje** — drugo mesto koje kaže „ovo je zaključano" bilo bi isti duplikat kao nekadašnji `Zakljucan`/`Zakljucen`. |
+| **Obrazac M-UN i M-4** | **Ne treba ih ni raditi.** Ukinuti su od 01.01.2019. (čl. 30 Zakona o izmenama i dopunama ZPIO briše čl. 144); Fond PIO podatke preuzima elektronski iz PPP-PD, najkasnije do kraja februara za prethodnu godinu. Stari obrasci važe samo za period zaključno sa 31.12.2018. Ako se u nekoj sesiji „primeti da nedostaju" — ne dodavati ih. |
+| **Prijava na osiguranje (obrazac M)** | Podnosi se preko **portala CROSO**, jedinstvenom prijavom za PIO, RFZO i nezaposlenost — dakle van ovog programa, i pre isplate. Za privremene i povremene poslove najkasnije dan pre početka rada. Program to ne može da zameni; zabeleženo je u pomoći kao korak koji se ne sme preskočiti. |
+| **Obračunski listić za naknadu** | Primalac po ugovoru ne dobija platni listić — on prikazuje sate, fond i obustave, kojih ovde nema. Zaseban „obračun naknade" bi bio nova štampa, ne izmena postojeće. Generator ugovora (1.11.0) pokriva sam ugovor, ne i obračunski listić uz isplatu. |
+| **Bogat format teksta ugovora** | Tekst je običan tekst; podebljava se samo naslov i red koji počinje sa „Član". RTF ili HTML bi značio da se ono što korisnik vidi u editoru više ne poklapa pouzdano sa PDF-om, a i da se dokument ne može uporediti prostim poređenjem teksta. |
 
 ---
 
@@ -103,6 +118,64 @@ Ovo su svesne odluke sa razlogom; nova sesija ih lako „popravi" u pogrešnom s
    prekalkulacija i brisanje preskaču obračune kojima je rata već vraćena storniranjem. Ne
    dodavati novo mesto koje samo skida ili vraća rate.
 
+9. **`ObracunPlate.IsplataId == null` znači prvu isplatu perioda.** To je ono što drži da se
+   ništa ne menja dok mesec ima jednu isplatu — svi zatečeni obračuni i svi koje naprave
+   ekrani radnih sati, poreza i doprinosa ostaju obuhvaćeni bez ijedne izmene. Pravilo je
+   napisano **jednom**, u `IsplataService.Obuhvat`; ne prepisivati ga u upite. Ne praviti
+   kolonu obaveznom — to bi zahtevalo da svaki od tih ekrana zna za isplate.
+
+10. **Isplata se za PPP-PD prijavu vezuje rednim brojem.** `PppPdPrijava.RedniBroj` postoji od
+    Faze 1.1 baš za to. Ne dodavati `PppPdPrijava.IsplataId` — bio bi duplikat, a redni broj
+    je već ključ jedinstvenog indeksa (Godina, Mesec, RedniBroj).
+
+11. **Obustave nosi samo konačna zarada.** Rate kredita i samodoprinos se skidaju isključivo na
+    isplati vrste `KonacnaZarada`; akontacija, bonus i 13. plata idu bez njih. To je jedini
+    razlog zašto mesec sme imati **samo jednu** konačnu zaradu — bez tog ograničenja bi se
+    ista rata skinula dvaput. Ne dozvoljavati drugu, i ne skidati obustave na ostalim vrstama.
+
+12. **Brisanje isplate iz sredine se ne dozvoljava.** Redni brojevi vezuju isplate za podnete
+    prijave; pomeranje bi ostavilo prijavu uz pogrešnu isplatu. Briše se samo poslednja, i
+    samo dok nema ni obračuna ni prijave.
+
+13. **Naknada van radnog odnosa je `ObracunPlate`, ne novi entitet.** Nosi ista polja kao
+    zarada (bruto, porez, doprinosi, neto), pa PPP-PD prijava, nalozi i godišnja potvrda rade
+    nad njom bez ijedne izmene. Razlikuje je samo `UgovorId`. Zaseban entitet bi značio drugi
+    tok kroz svaki od tih izvoza — a prijava se ionako podnosi **jedna po isplati**, sa svim
+    prihodima tog dana.
+
+14. **Šifra vrste prihoda za ugovore se sastavlja, ne upisuje.** Struktura `V-PP-OVP-OL-B` je
+    propisana i stabilna; menja se sadržaj. U šifarniku stoji samo `VrstaUgovora.Ovp` (tri
+    cifre), tip primaoca se bira uz ugovor, a `SvpService.Sastavi` ih spaja. Ne dodavati polje
+    sa celom devetocifrenom šifrom — svaka kombinacija posla i statusa osiguranja bi tražila
+    svoj red u šifarniku.
+
+15. **Bez potvrđenog OVP-a šifra ostaje prazna.** Izmišljena šifra prolazi generisanje i pada
+    tek kod Poreske uprave, kada je novac već isplaćen. Prazna se hvata kontrolnom proverom,
+    dok je ispravka još jeftina. Isto pravilo kao kod neoporezivog limita koji nije unet.
+
+16. **Osnovica doprinosa se upisuje samo kad se ne može izvesti.** `ObracunPlate.OsnovicaDoprinosa`
+    je `null` za svaku zaradu — tamo se i dalje izvodi iz zbira PIO doprinosa, pa se nijedna
+    zatečena prijava ne menja. Popunjava se samo za naknade van radnog odnosa, gde je osnovica
+    bruto umanjen za normirane troškove. Ne praviti kolonu obaveznom.
+
+17. **Prekalkulacija zarada ne dira naknade po ugovoru.** One ne nastaju iz sati i koeficijenata
+    koji se ponovo računaju, nego zasebnom radnjom nad ugovorom. Bez uslova `UgovorId == null`
+    u prekalkulaciji bi ih obračun zarade tiho obrisao.
+
+18. **Tekst ugovora se čuva uz ugovor, ne uz šablon.** `Ugovor.Tekst` je snimak dokumenta
+    kakav je potpisan; šablon je samo polazna tačka koja se s vremenom menja. Ne izvoditi tekst
+    iz šablona pri svakom prikazu — izmena formulacije bi tada naknadno menjala već zaključene
+    ugovore.
+
+19. **Iznosi se iz teksta ugovora ne čitaju.** Obračun ide isključivo iz polja `Ugovor` i
+    `VrstaUgovora`. Tekst je dokument, a ne izvor podataka; da je obrnuto, ispravka slovne
+    greške bi menjala isplatu.
+
+20. **Zamena polja u šablonu nema uslova ni petlji.** Traži se `{Polje}` i menja vrednošću —
+    ništa više. Šablon sa granama bio bi program koji niko ne testira, a piše ga knjigovođa.
+    Polje koje se ne prepozna ili nije popunjeno **ostaje vidljivo** i prijavljuje se; ne
+    brisati ga tiho, jer se praznina na mestu iznosa primeti tek posle potpisa.
+
 ---
 
 ## 5. Način rada koji se pokazao dobrim
@@ -113,6 +186,12 @@ Ovo su svesne odluke sa razlogom; nova sesija ih lako „popravi" u pogrešnom s
   specifikacije. Gde specifikacije nema, radi se tolerantno i **prijavljuje šta nije prepoznato**.
 - **Release build mora biti bez upozorenja** — CI ih tretira kao greške
   (`Directory.Build.props`), pa upozorenje u Debug-u obori objavu.
+- **Migracija se ne regeneriše bez provere zatečenih baza.** `ef migrations remove` + `add`
+  daje nov vremenski žig uz isti naziv, pa baza koja je stigla da primeni staru verziju pada
+  pri sledećem pokretanju. Od 1.10.0 to hvata `UskladiPreimenovaneMigracije`, ali razliku u
+  sadržaju dve verzije i dalje mora neko da namiri — u
+  `DopuniKoloneIzRegenerisanihMigracija`. Bolje je dopisati novu migraciju nego prepravljati
+  postojeću.
 - **PDF specifikacije koje WebFetch ne pročita** otvaraju se lokalno PyMuPDF-om; tako su dobijeni
   i Halcom format i struktura MFP-a.
 - Redosled objave: izmene → `dotnet build -c Release` → `dotnet test` → CHANGELOG → `version.txt`
@@ -124,9 +203,36 @@ Ovo su svesne odluke sa razlogom; nova sesija ih lako „popravi" u pogrešnom s
 ## 6. Pre nego što korisnik testira
 
 - **Rezervna kopija baze** (Podešavanja → Rezervna kopija). Od 1.2.0 naovamo primenjuje se
-  deset migracija, od kojih jedna briše kolonu.
+  dvanaest migracija, od kojih jedna briše kolonu.
 - Prevod zatečenih obračuna na stavke (Vrste primanja → 🔀) — **prvo proba**, koja ništa ne
   upisuje, pa tek onda potvrda.
 - Storniranje se proba na **jednom** obračunu (Obračun plate → 🚫), pa se proveri da tog
   radnika više nema u nalozima za prenos, listićima i PPP-PD prijavi, a da mu je rata kredita
   vraćena. Poništavanje storna (↩) vraća sve u pređašnje stanje.
+- **Isplate (1.10.0) se prvo proveravaju „na prazno".** Otvoriti „💸 Isplate u mesecu" za
+  zatečeni mesec i potvrditi da postoji **jedna** isplata („1. Konačna zarada") sa tačnim
+  brojem obračuna i netom — sve dok je isplata jedna, prijave, nalozi i listići moraju dati
+  isti rezultat kao u 1.9.0.
+- Tek onda probati drugu isplatu: dodati akontaciju (➕), obračunati je u „Obračun plate"
+  biranjem te isplate, pa proveriti da **prvoj isplati nije ništa promenjeno** i da akontacija
+  nije skinula ratu kredita.
+- **Ugovori (1.11.0) se prvo proveravaju na šifarniku.** Otvoriti „📄 Vrste ugovora" i
+  potvrditi OVP oznake iz važećeg Kataloga vrste prihoda — naročito autorsku naknadu sa 34%,
+  koja je namerno ostavljena prazna. Dok OVP nije unet, kontrolna provera javlja grešku.
+- Zatim primalac: „Radnici" → novi karton sa JMBG-om, opštinom prebivališta i tekućim računom,
+  označen poljem **„Van radnog odnosa"**. Proveriti da se posle toga **ne pojavljuje** u
+  „Obračun plate", „Radni sati" ni „Platni listići".
+- Tek onda ugovor: „📝 Ugovori van radnog odnosa" → izabrati vrstu, primaoca, tip primaoca i
+  iznos. Računica se vidi **pre** upisa — proveriti brojeve rukom na jednom primeru (bruto
+  50.000 po ugovoru o delu daje neto 32.400 uz porez 8.000 i PIO 9.600), pa tek onda 🧮.
+- Posle obračuna naknade proveriti da se u PPP-PD prijavi te isplate pojavio **novi red** sa
+  svojom SVP šifrom i nulama u satima, a da je **red zarade ostao brojčano isti**, i da je u
+  nalozima za prenos naknada dobila svrhu po predmetu ugovora.
+- **Za generator ugovora prvo popuniti zastupnika** u kartonu firme (Firme → Zastupnik i
+  Funkcija zastupnika). Bez toga generisani dokument prijavljuje `{FirmaZastupnik}` kao
+  nepopunjeno polje i ostavlja ga vidljivim u tekstu — što je namerno.
+- Zatim 📄 na izabranom ugovoru → „Generiši iz šablona" → pročitati ceo tekst i uporediti sa
+  onim što firma inače potpisuje. Formulacije se menjaju u „🖋️ Šabloni ugovora"; izmena
+  šablona **ne dira** tekstove već zaključenih ugovora.
+- Proveriti **iznos slovima** na jednom primeru pre nego što dokument ode na potpis — razlika
+  brojke i slova tumači se u korist slova.

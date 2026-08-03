@@ -27,6 +27,13 @@ public class ObracunVerzija
 
     public int RadnikId { get; set; }
 
+    /// <summary>
+    /// Isplata kojoj je arhivirani obračun pripadao (Faza 2.2). Verzije se broje po isplati,
+    /// pa bi bez ovoga prekalkulacija akontacije podigla redni broj i konačnoj isplati.
+    /// Bez stranog ključa, iz istog razloga kao i ostatak zapisa; <c>null</c> je prva isplata.
+    /// </summary>
+    public int? IsplataId { get; set; }
+
     public int BrojRadnika { get; set; }
 
     [MaxLength(60)]

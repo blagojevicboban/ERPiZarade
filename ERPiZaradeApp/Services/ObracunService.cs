@@ -31,7 +31,13 @@ public class ObracunService
         _db = db;
     }
 
-    public ObracunPlate Calculate(Radnik radnik, RadniSat sati, int godina, int mesec, decimal vrednostBoda, int fondCasova)
+    /// <param name="saObustavama">
+    /// Da li se od neta odbijaju rate kredita i samodoprinos (Faza 2.2). Netačno je samo za
+    /// isplate koje nisu konačna zarada — akontaciju, bonus i 13. platu — jer bi radnik inače
+    /// istu ratu platio više puta u istom mesecu. Podrazumevano je tačno, pa se obračun
+    /// meseca sa jednom isplatom ne menja.
+    /// </param>
+    public ObracunPlate Calculate(Radnik radnik, RadniSat sati, int godina, int mesec, decimal vrednostBoda, int fondCasova, bool saObustavama = true)
     {
         // 1. Calculate tenure (minuli rad)
         int yearsOfTenure = 0;
@@ -369,24 +375,27 @@ public class ObracunService
         decimal dopNezPoslodavac = brutoOsn * bossNez;
 
         // 7. Fetch active credits and deductions
+        // Obustave su mesečne, pa ih nosi samo konačna isplata; vidi `saObustavama`.
         decimal kreditiObustava = 0m;
-        var targetDate = new DateTime(godina, mesec, 1);
-        var activeKrediti = _db.Krediti.Where(k => k.RadnikId == radnik.Id && k.Aktivan && k.DatumPocetka <= targetDate).ToList();
-        foreach (var k in activeKrediti)
-        {
-            decimal rata = Math.Min(k.MesecnaRata, k.OstatakDuga);
-            kreditiObustava += rata;
-        }
-
-        // Fetch samodoprinosi details
         decimal samodoprinosiIznos = 0m;
-        
-        var activeSamodoprinosi = _db.Samodoprinosi
-            .Where(s => s.RadnikId == radnik.Id && s.Godina == godina && s.Mesec == mesec)
-            .ToList();
-        foreach (var s in activeSamodoprinosi)
+
+        if (saObustavama)
         {
-            samodoprinosiIznos += s.Iznos;
+            var targetDate = new DateTime(godina, mesec, 1);
+            var activeKrediti = _db.Krediti.Where(k => k.RadnikId == radnik.Id && k.Aktivan && k.DatumPocetka <= targetDate).ToList();
+            foreach (var k in activeKrediti)
+            {
+                decimal rata = Math.Min(k.MesecnaRata, k.OstatakDuga);
+                kreditiObustava += rata;
+            }
+
+            var activeSamodoprinosi = _db.Samodoprinosi
+                .Where(s => s.RadnikId == radnik.Id && s.Godina == godina && s.Mesec == mesec)
+                .ToList();
+            foreach (var s in activeSamodoprinosi)
+            {
+                samodoprinosiIznos += s.Iznos;
+            }
         }
 
         // 8. Topli obrok i regres su već uključeni u totalBruto

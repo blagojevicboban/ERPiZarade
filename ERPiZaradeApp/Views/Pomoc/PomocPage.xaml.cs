@@ -113,6 +113,66 @@ public partial class PomocPage : Page
         },
         new PomocTema
         {
+            Naslov = "💸 Isplate u mesecu",
+            Sadrzaj =
+                "Meni '💸 Isplate u mesecu' postoji zbog meseca u kom se zarada isplaćuje u više navrata: akontacija pa konačna isplata, bonus, 13. plata.\n\n" +
+                "• Dok mesec ima JEDNU isplatu, sve radi kao i do sada — selektori isplate se ni ne prikazuju.\n" +
+                "• Svaka isplata je zaseban obračun, zasebna PPP-PD prijava sa svojim BOP-om i zaseban paket naloga za prenos. BOP jedne isplate na nalogu druge šalje novac na pogrešnu deklaraciju, pa program to zaustavlja.\n" +
+                "• Prekalkulacija i storniranje diraju samo obračune izabrane isplate — akontacija koja je već isplaćena ostaje netaknuta.\n" +
+                "• OBUSTAVE (rate kredita i samodoprinos) skidaju se SAMO na konačnoj zaradi. Akontacija, bonus i 13. plata idu bez njih, jer bi radnik inače istu ratu platio više puta u mesecu. Zato mesec sme imati samo jednu isplatu vrste 'Konačna zarada'.\n" +
+                "• Akontacija se u PPP-PD prijavi označava sa 'A' (nije konačna isplata prihoda), ostale isplate sa 'K'.\n" +
+                "• Dugme '🔗' upisuje isplatu obračunima koji je nemaju — nijedan iznos se pri tome ne menja.",
+            Kljuc = "Isplate"
+        },
+        new PomocTema
+        {
+            Naslov = "📝 Ugovori van radnog odnosa",
+            Sadrzaj =
+                "Meni '📝 Ugovori van radnog odnosa' vodi ugovor o delu, autorske naknade, privremene i povremene poslove i naknade članovima upravnog i nadzornog odbora.\n\n" +
+                "• Primalac se prvo unosi u 'Radnici' i označava poljem 'Van radnog odnosa'. Odatle se uzimaju JMBG, opština prebivališta i tekući račun; ekrani zarade ga posle toga ne nude za obračun plate, radne sate ni platni listić.\n" +
+                "• Računica ima četiri koraka: osnovica = bruto − normirani troškovi, porez = osnovica × stopa, doprinosi = osnovica × stope, neto = bruto − porez − doprinosi na teret primaoca. Primer za ugovor o delu: bruto 50.000 → normirani troškovi 20% = 10.000 → osnovica 40.000 → porez 20% = 8.000 i PIO 24% = 9.600 → neto 32.400.\n" +
+                "• Ako je naknada ugovorena 'na ruke', čekirajte 'neto' — bruto se dobija preračunom, tačno u dinar.\n" +
+                "• Naknada se vezuje za ISPLATU, ne za mesec: ulazi u istu PPP-PD prijavu i isti paket naloga kao zarada te isplate, samo sa svojom šifrom vrste prihoda i bez sati. Naknada isplaćena drugog datuma ide u svoju isplatu, jer svaka isplata ima svoj datum plaćanja i svoj BOP.\n" +
+                "• Isti ugovor može biti isplaćen u ratama — po jedna u svakoj isplati. Dva obračuna po istom ugovoru u ISTOJ isplati nisu dozvoljena, jer bi dala dva reda za isto lice u jednoj prijavi.\n" +
+                "• Prekalkulacija zarada ne dira obračunate naknade — one nastaju zasebnom radnjom nad ugovorom.\n" +
+                "• Platni listić se za naknadu ne pravi: on prikazuje sate, fond i obustave, kojih ovde nema.\n\n" +
+                "ŠTA IDE VAN PROGRAMA:\n" +
+                "• PRIJAVA NA OSIGURANJE (obrazac M) podnosi se preko portala CROSO — jedinstvenom prijavom za PIO, RFZO i nezaposlenost. Za privremene i povremene poslove najkasnije DAN PRE početka rada. Program to ne može da zameni.\n" +
+                "• Obrasci M-UN, M-UN/K i M-4 se VIŠE NE PODNOSE — ukinuti su od 01.01.2019. Fond PIO podatke o stažu i osnovicama preuzima elektronski iz PPP-PD prijave, najkasnije do kraja februara za prethodnu godinu. Stari obrasci važe samo za period zaključno sa 31.12.2018.\n" +
+                "• Staž i uplaćene doprinose primalac proverava na e-Šalteru Fonda PIO i na portalu eUprava; od 2026. pristup ide isključivo preko eID-a (kvalifikovani elektronski sertifikat ili ConsentID).",
+            Kljuc = "Ugovori"
+        },
+        new PomocTema
+        {
+            Naslov = "📄 Šifarnik vrsta ugovora",
+            Sadrzaj =
+                "Meni '📄 Vrste ugovora' drži sve što o naknadi van radnog odnosa propisuje zakon: normirane troškove, stopu poreza i stope doprinosa, podeljene na teret primaoca i na teret isplatioca.\n\n" +
+                "• Izmena propisa se unosi ovde — ne čeka se nova verzija programa.\n" +
+                "• OVP je oznaka vrste prihoda iz Kataloga vrste prihoda, tri cifre (601 ugovor o delu, 301–323 autorske naknade, 150–152 privremeni i povremeni poslovi).\n" +
+                "• Cela devetocifrena šifra vrste prihoda se SASTAVLJA pri obračunu, po strukturi V-PP-OVP-OL-B: verzija kataloga (1), tip primaoca prihoda (2 cifre, bira se uz ugovor), OVP (3), oznaka olakšice (2) i beneficirani staž (1). Za prihode van radnog odnosa poslednja tri mesta su nule.\n" +
+                "• Vrsta bez unetog OVP-a prolazi obračun, ali je kontrolne provere prijavljuju kao grešku — prijava bez šifre vrste prihoda biva odbijena.\n" +
+                "• Šifra plaćanja za nalog se takođe unosi ovde; propisuje je NBS, pa program ne pretpostavlja koja je.\n" +
+                "• Vrsta upotrebljena u zaključenom ugovoru se ne briše — isključite je poljem 'Aktivna'.",
+            Kljuc = "VrsteUgovora"
+        },
+        new PomocTema
+        {
+            Naslov = "🖋️ Šabloni ugovora i generator dokumenta",
+            Sadrzaj =
+                "Uz svaki zaključen ugovor može se generisati tekst dokumenta i urediti pre potpisa. Dugme '📄' na ekranu ugovora otvara editor.\n\n" +
+                "• Isporučena su četiri šablona: ugovor o delu (član 199. Zakona o radu), ugovor o autorskom delu, ugovor o privremenim i povremenim poslovima (član 197, uz konstataciju da poslovi ne traju duže od 120 radnih dana u kalendarskoj godini) i ugovor o naknadi članu organa upravljanja.\n" +
+                "• Tekstovi su pisani prema OBAVEZNIM ELEMENTIMA iz propisa; formulacije birate vi i menjate ih u meniju '🖋️ Šabloni ugovora'. Zato i postoje kao šifarnik — izmena zakona ili prakse ne traži novu verziju programa.\n" +
+                "• Polja se pišu u vitičastim zagradama: {PrimalacIme}, {Iznos}, {IznosSlovima}, {DatumOd}… Spisak sa značenjem stoji desno od editora; dvoklik ubacuje polje na mesto kursora.\n" +
+                "• Polje koje nije popunjeno OSTAJE VIDLJIVO u tekstu i prijavljuje se posle generisanja. Tako se rupa na mestu iznosa ili roka primeti pre potpisa, a ne posle.\n" +
+                "• Iznos slovima se ispisuje sam, sa ispravnim rodom i padežem. Razlika brojke i slova tumači se u korist slova, pa se ne prepisuje rukom.\n" +
+                "• Popunite 'Zastupnik' i 'Funkcija zastupnika' u kartonu firme — ugovor se zaključuje 'koga zastupa…', pa bi bez toga svaki dokument imao istu prazninu.\n" +
+                "• TEKST SE ČUVA UZ UGOVOR, ne uz šablon: kasnija izmena šablona ne dira već zaključene ugovore. Ponovno generisanje briše ručne izmene i zato pita pre toga.\n" +
+                "• Iznosi se iz teksta NE ČITAJU — obračun ide iz polja ugovora. Ispravka slovne greške u dokumentu ne može da promeni isplatu.\n" +
+                "• '📄 PDF' snima dokument spreman za štampu i potpis.",
+            Kljuc = "SabloniUgovora"
+        },
+        new PomocTema
+        {
             Naslov = "⚖️ Porezi i opšti parametri",
             Sadrzaj =
                 "Meni '⚖️ Porezi i parametri' definiše poreske parametre po periodu (godini i mesecu):\n\n" +

@@ -44,6 +44,18 @@ public class Firma
     [MaxLength(100)]
     public string Email { get; set; } = "";
 
+    /// <summary>
+    /// Lice koje firmu zastupa pri potpisivanju. Ugovor van radnog odnosa se zaključuje
+    /// „koga zastupa…", pa bez ovog polja generisani dokument ostaje sa prazninom koju
+    /// korisnik popunjava rukom u svakom ugovoru.
+    /// </summary>
+    [MaxLength(60)]
+    public string Zastupnik { get; set; } = "";
+
+    /// <summary>Funkcija zastupnika („direktor", „zakonski zastupnik").</summary>
+    [MaxLength(40)]
+    public string FunkcijaZastupnika { get; set; } = "";
+
     [MaxLength(500)]
     public string Napomena { get; set; } = "";
 }

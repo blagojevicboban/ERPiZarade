@@ -74,9 +74,12 @@ public class PppPoService
     public PppPoRezultat Pripremi(int godina, int? samoBrojRadnika = null)
     {
         // Stornirani obračun nije isplaćen, pa ne ulazi u godišnju potvrdu o plaćenom porezu.
+        // Naknade van radnog odnosa ulaze u potvrdu kao i zarada, ali sa svojom šifrom vrste
+        // prihoda — a nju nosi vrsta ugovora, pa se učitava zajedno sa obračunom.
         var obracuni = _db.ObracuniPlata
             .AsNoTracking()
             .Include(o => o.Radnik)
+            .Include(o => o.Ugovor!).ThenInclude(u => u.VrstaUgovora)
             .Where(o => o.Godina == godina && !o.Storniran)
             .ToList()
             .Where(o => o.Radnik != null)

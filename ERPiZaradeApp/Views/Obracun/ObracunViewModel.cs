@@ -243,9 +243,12 @@ public class ObracunViewModel : INotifyPropertyChanged
         try
         {
             StatusText = "Učitavanje obračuna...";
+            // Isplata se učitava uz obračun jer mesec od Faze 2.2 može imati više isplata,
+            // pa isti radnik ima više obračuna — bez oznake isplate se ne bi razlikovali.
             var query = _db.ObracuniPlata
                 .AsNoTracking()
                 .Include(o => o.Radnik)
+                .Include(o => o.Isplata)
                 .Where(o => o.Godina == SelectedGodina && o.Mesec == SelectedMesec);
 
             if (!string.IsNullOrWhiteSpace(SearchText))
@@ -254,7 +257,11 @@ public class ObracunViewModel : INotifyPropertyChanged
                 query = query.Where(o => o.Radnik.ImeIPrezime.ToLower().Contains(lowerSearch));
             }
 
-            var list = await query.OrderBy(o => o.Radnik.BrojRadnika).ToListAsync();
+            var list = await query
+                .OrderBy(o => o.Isplata == null ? 1 : o.Isplata.RedniBroj)
+                .ThenBy(o => o.Radnik.BrojRadnika)
+                .ToListAsync();
+
             Obracuni = new ObservableCollection<ObracunPlate>(list);
             StatusText = $"Pronađeno: {list.Count} obračuna za {SelectedMesec}.{SelectedGodina}.";
         }

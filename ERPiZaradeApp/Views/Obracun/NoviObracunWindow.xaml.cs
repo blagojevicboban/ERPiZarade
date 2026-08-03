@@ -16,6 +16,7 @@ public partial class NoviObracunWindow : Window
     private readonly PlataDbContext _db;
     private readonly ObracunService _obracunService;
     private readonly ObracunPeriodSummary? _preselectedPeriod;
+    private readonly IsplataService _isplataService;
     private ObservableCollection<RadnikSatiInput> _radniciSati = [];
 
     public NoviObracunWindow(ObracunPeriodSummary? preselectedPeriod = null)
@@ -27,6 +28,7 @@ public partial class NoviObracunWindow : Window
         _preselectedPeriod = preselectedPeriod;
         _db = PlataDbContext.Create(AppConfig.DbPath);
         _obracunService = new ObracunService(_db);
+        _isplataService = new IsplataService(_db);
 
         // Učitaj sve postojeće periode za prenos podataka
         UcitajPeriodeZaPrenos();
@@ -60,10 +62,53 @@ public partial class NoviObracunWindow : Window
             PostaviPoslednjiPeriodZaPrenos();
         }
 
+        UcitajIsplate();
         LoadAktivneRadnike();
 
         ComboGodina.SelectionChanged += ComboPeriod_SelectionChanged;
         ComboMesec.SelectionChanged += ComboPeriod_SelectionChanged;
+    }
+
+    /// <summary>
+    /// Isplate izabranog meseca (Faza 2.2). Prva se pravi sama, pa je lista nikad prazna i
+    /// mesec sa jednom isplatom izgleda i radi kao pre.
+    /// </summary>
+    private void UcitajIsplate()
+    {
+        if (ComboGodina.SelectedItem is not int godina || ComboMesec.SelectedItem is not int mesec)
+        {
+            ComboIsplata.ItemsSource = null;
+            return;
+        }
+
+        try
+        {
+            _isplataService.Obezbedi(godina, mesec);
+            var isplate = _isplataService.Isplate(godina, mesec);
+
+            ComboIsplata.ItemsSource = isplate;
+            ComboIsplata.SelectedItem = isplate.FirstOrDefault();
+            ComboIsplata.IsEnabled = isplate.Count > 1;
+        }
+        catch (Exception ex)
+        {
+            // Baza starije verzije nema tabelu isplata — obračun radi nad celim periodom,
+            // kao pre Faze 2.2.
+            ComboIsplata.ItemsSource = null;
+            ComboIsplata.IsEnabled = false;
+            Serilog.Log.Warning(ex, "Isplate se ne mogu učitati za {Godina}/{Mesec}", godina, mesec);
+        }
+    }
+
+    private Isplata? IzabranaIsplata => ComboIsplata.SelectedItem as Isplata;
+
+    private void ComboIsplata_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (IzabranaIsplata is { } isplata && !isplata.JePrva)
+        {
+            TxtObavestenje.Text =
+                $"Obračun se pravi u okviru isplate „{isplata.Naziv}“. Prekalkulacija dira samo njene obračune.";
+        }
     }
 
     private void UcitajPeriodeZaPrenos()
@@ -113,6 +158,7 @@ public partial class NoviObracunWindow : Window
 
     private void ComboPeriod_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
+        UcitajIsplate();
         LoadAktivneRadnike();
     }
 
@@ -172,8 +218,10 @@ public partial class NoviObracunWindow : Window
                 }
             }
 
+            // Lica van radnog odnosa se ne obračunavaju ovde: nemaju koeficijent, sate ni
+            // fond, a naknada im se obračunava po ugovoru (Faza 2.3).
             var aktivniRadnici = _db.Radnici
-                .Where(r => r.Aktivan && r.Godina == godina && r.Mesec == mesec)
+                .Where(r => r.Aktivan && !r.VanRadnogOdnosa && r.Godina == godina && r.Mesec == mesec)
                 .ToList();
 
             var postojeciSati = _db.RadniSati
@@ -186,7 +234,7 @@ public partial class NoviObracunWindow : Window
             if (radnikIdsSaSacuvanim.Count > 0)
             {
                 var dodatniRadnici = _db.Radnici
-                    .Where(r => !r.Aktivan && r.Godina == godina && r.Mesec == mesec && radnikIdsSaSacuvanim.Contains(r.Id))
+                    .Where(r => !r.Aktivan && !r.VanRadnogOdnosa && r.Godina == godina && r.Mesec == mesec && radnikIdsSaSacuvanim.Contains(r.Id))
                     .ToList();
 
                 sviRelevantniRadnici = aktivniRadnici.Concat(dodatniRadnici)
@@ -349,10 +397,21 @@ public partial class NoviObracunWindow : Window
             // Osiguraj poreske, doprinosne i bankovne parametre za ciljni mesec (bilo prenosom ili automatskim fallback kloniranjem)
             await OsigurajParametreZaCiljniMesecAsync(godina, mesec, vrednostBoda, fondSati);
 
-            // Provera da li već postoje obračuni za ovaj period
-            var postojeci = await _db.ObracuniPlata
-                .Include(o => o.Radnik)
-                .Where(o => o.Godina == godina && o.Mesec == mesec)
+            // Isplata određuje obuhvat prekalkulacije. Bez nje bi obračun konačne isplate
+            // obrisao i akontaciju istog meseca — a ona je već isplaćena i prijavljena.
+            var isplata = IzabranaIsplata;
+
+            // Obustave nosi samo konačna zarada. Kad se obračunava akontacija ili bonus,
+            // rate kredita i samodoprinos se ne skidaju — skinuti su, ili će biti, na
+            // konačnoj isplati istog meseca.
+            bool saObustavama = isplata?.NosiObustave ?? true;
+
+            // Naknade van radnog odnosa se prekalkulacijom zarada ne diraju: nastale su
+            // zasebnom radnjom nad ugovorom, a ne iz sati i koeficijenata koji se ovde
+            // ponovo računaju. Bez ovog uslova bi ih obračun zarade tiho obrisao.
+            var postojeci = await IsplataService
+                .Obuhvat(_db.ObracuniPlata.Include(o => o.Radnik), godina, mesec, isplata)
+                .Where(o => o.UgovorId == null)
                 .ToListAsync();
 
             bool jePrekalkulacija = postojeci.Count > 0;
@@ -360,8 +419,12 @@ public partial class NoviObracunWindow : Window
 
             if (postojeci.Count > 0)
             {
+                string obuhvat = isplata == null || isplata.JePrva
+                    ? $"period {mesec}.{godina}"
+                    : $"isplatu „{isplata.Naziv}“ u {mesec:D2}.{godina}";
+
                 var rez = MessageBox.Show(
-                    $"Već postoje obračuni ({postojeci.Count}) za period {mesec}.{godina}. Da li želite da ih obrišete i pokrenete novi obračun?\n\n" +
+                    $"Već postoje obračuni ({postojeci.Count}) za {obuhvat}. Da li želite da ih obrišete i pokrenete novi obračun?\n\n" +
                     "Zatečeni rezultat se pre brisanja arhivira kao prethodna verzija, pa ostaje uvid u to šta je bilo obračunato.",
                     "Potvrda brisanja i ponovnog obračuna",
                     MessageBoxButton.YesNo,
@@ -433,14 +496,19 @@ public partial class NoviObracunWindow : Window
                 _db.RadniSati.Add(radniSati);
 
                 // Izračunaj platu
-                var obracun = _obracunService.Calculate(radnik, radniSati, godina, mesec, vrednostBoda, fondSati);
-                obracun.Verzija = Services.VerzijeObracunaService.SledecaVerzija(_db, godina, mesec, radnik.Id);
+                var obracun = _obracunService.Calculate(radnik, radniSati, godina, mesec, vrednostBoda, fondSati, saObustavama);
+                obracun.IsplataId = isplata?.IsplataId;
+                obracun.Verzija = Services.VerzijeObracunaService.SledecaVerzija(
+                    _db, godina, mesec, radnik.Id, isplata);
                 _db.ObracuniPlata.Add(obracun);
 
-                // DEDUCT: Smanji ostatak duga i uvećaj plaćene rate za aktivne kredite radnika u ovom mesecu
-                var activeKrediti = await _db.Krediti
-                    .Where(k => k.RadnikId == radnik.Id && k.Aktivan && k.DatumPocetka <= targetDateNew)
-                    .ToListAsync();
+                // DEDUCT: Smanji ostatak duga i uvećaj plaćene rate za aktivne kredite radnika u ovom mesecu.
+                // Isplata koja ne nosi obustave ih ni ne skida — inače bi ista rata otišla dvaput u mesecu.
+                var activeKrediti = saObustavama
+                    ? await _db.Krediti
+                        .Where(k => k.RadnikId == radnik.Id && k.Aktivan && k.DatumPocetka <= targetDateNew)
+                        .ToListAsync()
+                    : [];
 
                 foreach (var k in activeKrediti)
                 {
@@ -464,11 +532,13 @@ public partial class NoviObracunWindow : Window
 
             // Prekalkulacija i prvi obračun se u tragu razlikuju — kod prekalkulacije se
             // beleži i koliko je obračuna zamenjeno, jer to znači brisanje ranijeg rezultata.
+            string tragIsplate = isplata == null || isplata.JePrva ? "" : $"Isplata: {isplata.Naziv}. ";
+
             AuditService.Zabelezi(_db, godina, mesec,
                 jePrekalkulacija ? AkcijaObracuna.Prekalkulisan : AkcijaObracuna.Kreiran,
                 jePrekalkulacija
-                    ? $"{calculatedCount} obračuna; zamenjeno prethodnih {brojZamenjenih}"
-                    : $"{calculatedCount} obračuna, fond {fondSati} sati");
+                    ? $"{tragIsplate}{calculatedCount} obračuna; zamenjeno prethodnih {brojZamenjenih}"
+                    : $"{tragIsplate}{calculatedCount} obračuna, fond {fondSati} sati");
 
             // Aktivirati novi mesec
             AppConfig.ActiveGodina = godina;
@@ -510,7 +580,7 @@ public partial class NoviObracunWindow : Window
                 fondSati = 176;
                 
             var aktivniRadnici = _db.Radnici
-                .Where(r => r.Aktivan)
+                .Where(r => r.Aktivan && !r.VanRadnogOdnosa)
                 .OrderBy(r => r.BrojRadnika)
                 .ToList();
                 
@@ -822,7 +892,7 @@ public partial class NoviObracunWindow : Window
         if (imaTarget) return;
 
         var sourceRadnici = _db.Radnici
-            .Where(r => r.Godina == sourceGodina && r.Mesec == sourceMesec && r.Aktivan)
+            .Where(r => r.Godina == sourceGodina && r.Mesec == sourceMesec && r.Aktivan && !r.VanRadnogOdnosa)
             .ToList();
 
         foreach (var sr in sourceRadnici)
@@ -855,6 +925,7 @@ public partial class NoviObracunWindow : Window
                 BankovniRacun = sr.BankovniRacun,
                 NazivBanke = sr.NazivBanke,
                 Aktivan = sr.Aktivan,
+                VanRadnogOdnosa = sr.VanRadnogOdnosa,
                 LicnoOslobodjenje = sr.LicnoOslobodjenje,
                 Operativni = sr.Operativni
             };

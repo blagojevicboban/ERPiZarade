@@ -32,7 +32,10 @@ public class ObracunSelektivni : INotifyPropertyChanged
 public class ListiciViewModel : INotifyPropertyChanged
 {
     private readonly PlataDbContext _db;
+    private readonly ERPiZaradeApp.Services.IsplataService _isplataService;
     private ObservableCollection<ObracunSelektivni> _obracuni = [];
+    private ObservableCollection<Isplata> _isplate = [];
+    private Isplata? _izabranaIsplata;
     private ObservableCollection<int> _godine = [];
     private ObservableCollection<int> _meseci = [];
     private int _selectedGodina;
@@ -44,6 +47,7 @@ public class ListiciViewModel : INotifyPropertyChanged
     public ListiciViewModel()
     {
         _db = PlataDbContext.Create(AppConfig.DbPath);
+        _isplataService = new ERPiZaradeApp.Services.IsplataService(_db);
 
         LoadCommand = new RelayCommand(async _ => await LoadObracuneAsync());
         ClearFilterCommand = new RelayCommand(async _ => 
@@ -169,11 +173,19 @@ public class ListiciViewModel : INotifyPropertyChanged
         try
         {
             StatusText = "Učitavanje obračuna...";
+
+            UcitajIsplate();
+
             // Stornirani obračun nije isplaćen — listić po njemu bi radniku pokazao platu
-            // koju nije primio.
-            var query = _db.ObracuniPlata
-                .Include(o => o.Radnik)
-                .Where(o => o.Godina == SelectedGodina && o.Mesec == SelectedMesec && !o.Storniran);
+            // koju nije primio. Isto važi i za obračun druge isplate u mesecu: listić se
+            // pravi za jednu isplatu, jer je to ono što je radnik jednom i dobio.
+            //
+            // Naknada van radnog odnosa se izostavlja: platni listić prikazuje sate, fond i
+            // obustave, a naknada po ugovoru nema nijedno od toga. Primaocu se izdaje
+            // obračun naknade, ne platni listić.
+            var query = ERPiZaradeApp.Services.IsplataService
+                .Obuhvat(_db.ObracuniPlata.Include(o => o.Radnik), SelectedGodina, SelectedMesec, _izabranaIsplata)
+                .Where(o => !o.Storniran && o.UgovorId == null);
 
             if (!string.IsNullOrWhiteSpace(SearchText))
             {
@@ -190,12 +202,76 @@ public class ListiciViewModel : INotifyPropertyChanged
             }).ToList();
 
             Obracuni = new ObservableCollection<ObracunSelektivni>(list);
-            StatusText = $"Pronađeno: {list.Count} obračuna za {SelectedMesec}.{SelectedGodina}.";
+
+            StatusText = _izabranaIsplata == null || _izabranaIsplata.JePrva
+                ? $"Pronađeno: {list.Count} obračuna za {SelectedMesec}.{SelectedGodina}."
+                : $"Pronađeno: {list.Count} obračuna za {SelectedMesec}.{SelectedGodina} — {_izabranaIsplata.Naziv}.";
         }
         catch (Exception ex)
         {
             StatusText = $"Greška: {ex.Message}";
         }
+    }
+
+    // ── Isplate u mesecu (Faza 2.2) ───────────────────────────────────
+    public ObservableCollection<Isplata> Isplate
+    {
+        get => _isplate;
+        private set { _isplate = value; OnPropertyChanged(); }
+    }
+
+    /// <summary>Isplata čiji se listići prave; prva je podrazumevana i jedina kad ih je jedna.</summary>
+    public Isplata? IzabranaIsplata
+    {
+        get => _izabranaIsplata;
+        set
+        {
+            if (ReferenceEquals(_izabranaIsplata, value)) return;
+
+            _izabranaIsplata = value;
+            OnPropertyChanged();
+            _ = LoadObracuneAsync();
+        }
+    }
+
+    /// <summary>Selektor isplate ima smisla tek kad ih mesec ima više od jedne.</summary>
+    public bool ImaViseIsplata => _isplate.Count > 1;
+
+    private void UcitajIsplate()
+    {
+        List<Isplata> isplate;
+
+        // Period se popunjava u dva koraka, pa se prvo učitavanje dešava pre nego što je
+        // godina poznata. Tada nema šta da se obezbedi.
+        if (SelectedGodina <= 0 || SelectedMesec is < 1 or > 12)
+        {
+            Isplate = [];
+            OnPropertyChanged(nameof(ImaViseIsplata));
+            return;
+        }
+
+        try
+        {
+            _isplataService.Obezbedi(SelectedGodina, SelectedMesec);
+            isplate = _isplataService.Isplate(SelectedGodina, SelectedMesec).ToList();
+        }
+        catch (Exception ex)
+        {
+            // Baza starije verzije nema tabelu isplata — listići se prave nad celim periodom.
+            Serilog.Log.Warning(ex, "Isplate se ne mogu učitati za {Godina}/{Mesec}", SelectedGodina, SelectedMesec);
+            isplate = [];
+        }
+
+        if (_izabranaIsplata == null
+            || _izabranaIsplata.Godina != SelectedGodina
+            || _izabranaIsplata.Mesec != SelectedMesec)
+        {
+            _izabranaIsplata = isplate.FirstOrDefault();
+            OnPropertyChanged(nameof(IzabranaIsplata));
+        }
+
+        Isplate = new ObservableCollection<Isplata>(isplate);
+        OnPropertyChanged(nameof(ImaViseIsplata));
     }
 
     private void ToggleSelectAll()

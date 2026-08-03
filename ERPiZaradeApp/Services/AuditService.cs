@@ -87,6 +87,8 @@ public static class AuditService
         AkcijaObracuna.Obrisan => "Obrisan obračun",
         AkcijaObracuna.Storniran => "Storniran obračun",
         AkcijaObracuna.PppPdGenerisan => "Generisana PPP-PD prijava",
+        AkcijaObracuna.IsplataDodata => "Dodata isplata u mesecu",
+        AkcijaObracuna.IsplataObrisana => "Obrisana isplata u mesecu",
         _ => akcija.ToString()
     };
 }

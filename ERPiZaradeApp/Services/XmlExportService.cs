@@ -234,10 +234,12 @@ public class XmlExportService
                     decimal totalZdr = zdrRadnik + zdrPoslodavac;
                     decimal totalNez = nezRadnik + nezPoslodavac;
 
-                    // Basic verification of contribution base
-                    decimal osnovicaDoprinosa = bruto;
+                    // Osnovica doprinosa: obračun je nosi upisanu tamo gde se izvesti ne može —
+                    // kod naknada van radnog odnosa ona je bruto umanjen za normirane troškove,
+                    // pa bi izvođenje po stopi zarade dalo pogrešan broj.
+                    decimal osnovicaDoprinosa = obracun.OsnovicaDoprinosa ?? bruto;
                     // Standard minimum base rule: total PIO rate is 24% (14% employee + 10% employer)
-                    if (totalPio > 0 && bruto > 0)
+                    if (obracun.OsnovicaDoprinosa == null && totalPio > 0 && bruto > 0)
                     {
                         osnovicaDoprinosa = Math.Round(totalPio / 0.24m, 2);
                     }
@@ -245,8 +247,12 @@ public class XmlExportService
                     // Šifra vrste prihoda (SVP) — jedna logika za prijavu, ekran i godišnju potvrdu.
                     string svp = SvpService.Odredi(obracun);
 
-                    int efektivniSati = obracun.UkupnoSati;
-                    int fondSati = obracun.UkupnoSati;
+                    // Naknada van radnog odnosa se ne meri satima ni kalendarskim danima —
+                    // ta polja se za takve prihode ne popunjavaju.
+                    bool vanRadnogOdnosa = obracun.JeVanRadnogOdnosa;
+                    int danaZaPrihod = vanRadnogOdnosa ? 0 : danaUMesecu;
+                    int efektivniSati = vanRadnogOdnosa ? 0 : obracun.UkupnoSati;
+                    int fondSati = efektivniSati;
 
                     return new XElement(tns + "PodaciOPrihodima",
                         new XElement(tns + "RedniBroj", (index + 1).ToString()),
@@ -259,7 +265,7 @@ public class XmlExportService
                                 ? obracun.Radnik.SifraOpstine 
                                 : sedisteFirme),
                         new XElement(tns + "SVP", svp),
-                        new XElement(tns + "BrojKalendarskihDana", danaUMesecu.ToString()),
+                        new XElement(tns + "BrojKalendarskihDana", danaZaPrihod.ToString(CultureInfo.InvariantCulture)),
                         new XElement(tns + "BrojEfektivnihSati", efektivniSati.ToString()),
                         new XElement(tns + "MesecniFondSati", fondSati.ToString()),
                         new XElement(tns + "Bruto", bruto.ToString("F2", CultureInfo.InvariantCulture)),

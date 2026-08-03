@@ -26,6 +26,11 @@ public class PppPdViewModel : INotifyPropertyChanged
     
     // Employee calculations list
     private ObservableCollection<ObracunPlate> _obracuni = [];
+
+    // Isplate u mesecu (Faza 2.2) — prijava se podnosi za jednu isplatu, ne za period
+    private readonly IsplataService _isplataService;
+    private ObservableCollection<Isplata> _isplate = [];
+    private Isplata? _izabranaIsplata;
     
     // Company / Payer info
     private string _pib = "";
@@ -67,7 +72,8 @@ public class PppPdViewModel : INotifyPropertyChanged
     public PppPdViewModel()
     {
         _db = PlataDbContext.Create(AppConfig.DbPath);
-        
+        _isplataService = new IsplataService(_db);
+
         LoadCommand = new RelayCommand(async _ => await LoadObracuneAsync());
         ValidateCommand = new RelayCommand(_ => ValidateData());
         
@@ -216,11 +222,20 @@ public class PppPdViewModel : INotifyPropertyChanged
             PrikaziUpozorenja = false;
             PodaciSuValidni = false;
 
+            UcitajIsplate();
+
             // Stornirani obračun se ne prijavljuje. Ako je već bio u podnetoj prijavi,
             // uklanja se izmenjenom prijavom — a izmenjena prijava je upravo ovo, bez njega.
-            var sviUPeriodu = await _db.ObracuniPlata
-                .Include(o => o.Radnik)
-                .Where(o => o.Godina == SelectedGodina && o.Mesec == SelectedMesec)
+            //
+            // Prijava se podnosi za jednu isplatu (Faza 2.2): akontacija i konačna isplata
+            // istog meseca su dve prijave, svaka sa svojim datumom plaćanja i svojim BOP-om.
+            var sviUPeriodu = await IsplataService
+                .Obuhvat(
+                    _db.ObracuniPlata
+                        .Include(o => o.Radnik)
+                        // Bez vrste ugovora naknada van radnog odnosa dobija šifru zarade.
+                        .Include(o => o.Ugovor!).ThenInclude(u => u.VrstaUgovora),
+                    SelectedGodina, SelectedMesec, _izabranaIsplata)
                 .OrderBy(o => o.Radnik.BrojRadnika)
                 .ToListAsync();
 
@@ -239,9 +254,13 @@ public class PppPdViewModel : INotifyPropertyChanged
                 o.DoprinosPioRadnik + o.DoprinosZdravstvoRadnik + o.DoprinosNezaposlenostRadnik +
                 o.DoprinosPioPoslodavac + o.DoprinosZdravstvoPoslodavac + o.DoprinosNezaposlenostPoslodavac);
 
+            string obuhvat = _izabranaIsplata == null || _izabranaIsplata.JePrva
+                ? $"{SelectedMesec:D2}.{SelectedGodina}"
+                : $"{SelectedMesec:D2}.{SelectedGodina} — {_izabranaIsplata.Naziv}";
+
             StatusText = BrojStorniranih > 0
-                ? $"Učitano {list.Count} obračuna za {SelectedMesec:D2}.{SelectedGodina}; storniranih izostavljeno: {BrojStorniranih}."
-                : $"Učitano {list.Count} obračuna za {SelectedMesec:D2}.{SelectedGodina}.";
+                ? $"Učitano {list.Count} obračuna za {obuhvat}; storniranih izostavljeno: {BrojStorniranih}."
+                : $"Učitano {list.Count} obračuna za {obuhvat}.";
 
             // Automatski pokreni tihu validaciju
             ValidateDataSilent();
@@ -374,6 +393,83 @@ public class PppPdViewModel : INotifyPropertyChanged
     {
         get => _obracuni;
         set { _obracuni = value; OnPropertyChanged(); }
+    }
+
+    // ── Isplate u mesecu (Faza 2.2) ───────────────────────
+    public ObservableCollection<Isplata> Isplate
+    {
+        get => _isplate;
+        private set { _isplate = value; OnPropertyChanged(); }
+    }
+
+    /// <summary>
+    /// Isplata za koju se prijava podnosi. Menja i obuhvat obračuna i oznaku za konačnu
+    /// isplatu (PP 1.4) — akontacija se prijavljuje sa „N", jer posle nje sledi konačan
+    /// obračun istog prihoda.
+    /// </summary>
+    public Isplata? IzabranaIsplata
+    {
+        get => _izabranaIsplata;
+        set
+        {
+            if (ReferenceEquals(_izabranaIsplata, value)) return;
+
+            _izabranaIsplata = value;
+            OnPropertyChanged();
+
+            if (value != null)
+            {
+                if (value.DatumIsplate != default) DatumPlacanja = value.DatumIsplate;
+
+                // Zapamćena postavka važi za mesec sa jednom isplatom, kakav je i bio pre
+                // Faze 2.2. Za dodatnu isplatu je merodavna njena vrsta — korisnik oznaku i
+                // dalje može promeniti u padajućoj listi.
+                if (!value.JePrva) SelectedOznakaZaKonacnu = value.OznakaZaKonacnuIsplatu;
+            }
+
+            _ = LoadObracuneAsync();
+        }
+    }
+
+    /// <summary>Selektor isplate ima smisla tek kad ih mesec ima više od jedne.</summary>
+    public bool ImaViseIsplata => _isplate.Count > 1;
+
+    private void UcitajIsplate()
+    {
+        List<Isplata> isplate;
+
+        // Period se popunjava u dva koraka, pa se prvo učitavanje dešava pre nego što je
+        // godina poznata. Tada nema šta da se obezbedi.
+        if (SelectedGodina <= 0 || SelectedMesec is < 1 or > 12)
+        {
+            Isplate = [];
+            OnPropertyChanged(nameof(ImaViseIsplata));
+            return;
+        }
+
+        try
+        {
+            _isplataService.Obezbedi(SelectedGodina, SelectedMesec);
+            isplate = _isplataService.Isplate(SelectedGodina, SelectedMesec).ToList();
+        }
+        catch (Exception ex)
+        {
+            // Baza starije verzije nema tabelu isplata — prijava se pravi nad celim periodom.
+            Serilog.Log.Warning(ex, "Isplate se ne mogu učitati za {Godina}/{Mesec}", SelectedGodina, SelectedMesec);
+            isplate = [];
+        }
+
+        // Isplata izabrana za drugi mesec ne važi za ovaj; bira se prva, kao i do sada.
+        if (_izabranaIsplata == null
+            || _izabranaIsplata.Godina != SelectedGodina
+            || _izabranaIsplata.Mesec != SelectedMesec)
+        {
+            _izabranaIsplata = isplate.FirstOrDefault();
+            OnPropertyChanged(nameof(IzabranaIsplata));
+        }
+
+        Isplate = new ObservableCollection<Isplata>(isplate);
+        OnPropertyChanged(nameof(ImaViseIsplata));
     }
 
     public string Pib

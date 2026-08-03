@@ -288,6 +288,18 @@ public partial class MainWindow : Window
     private void BtnNalozi_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnNalozi, "🏦 Nalozi za prenos", new Views.Nalozi.NaloziPage(), "Priprema naloga za isplatu neto zarada i jedinstvene uplate poreza i doprinosa po BOP-u iz prihvaćene PPP-PD prijave", helpAnchor: "Nalozi");
 
+    private void BtnIsplate_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnIsplate, "💸 Isplate u mesecu", new Views.Isplate.IsplatePage(), "Akontacija, konačna isplata, bonus i 13. plata kao zasebne isplate istog meseca — svaka sa svojom PPP-PD prijavom i svojim nalozima", helpAnchor: "Isplate");
+
+    private void BtnUgovori_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnUgovori, "📝 Ugovori van radnog odnosa", new Views.Ugovori.UgovoriPage(), "Ugovor o delu, autorska naknada, privremeni i povremeni poslovi i naknade odborima — obračun naknade koja ulazi u istu PPP-PD prijavu kao zarada", helpAnchor: "Ugovori");
+
+    private void BtnVrsteUgovora_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnVrsteUgovora, "📄 Šifarnik vrsta ugovora", new Views.VrsteUgovora.VrsteUgovoraPage(), "Normirani troškovi, stopa poreza i doprinosi po vrsti ugovora van radnog odnosa", helpAnchor: "VrsteUgovora");
+
+    private void BtnSabloniUgovora_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnSabloniUgovora, "🖋️ Šabloni ugovora", new Views.SabloniUgovora.SabloniUgovoraPage(), "Tekstovi ugovora van radnog odnosa sa poljima koja se popunjavaju podacima pri generisanju", helpAnchor: "SabloniUgovora");
+
     private void BtnKrediti_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnKrediti, "💳 Krediti i obustave", new Views.Krediti.KreditiPage(), "Evidencija bankovnih kredita i administrativnih obustava zaposlenih", helpAnchor: "Krediti");
 

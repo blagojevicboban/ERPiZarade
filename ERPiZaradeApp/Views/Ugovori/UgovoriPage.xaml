@@ -1,0 +1,245 @@
+<Page x:Class="ERPiZaradeApp.Views.Ugovori.UgovoriPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Title="Ugovori van radnog odnosa"
+      Background="{StaticResource SurfaceBrush}">
+
+    <Grid Margin="24,20,24,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ── PERIOD I ISPLATA ───────────────────────────────────────── -->
+        <Border Grid.Row="0" Style="{StaticResource Card}" Padding="16,12" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <TextBlock Text="Godina" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"
+                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,8,0"/>
+                    <ComboBox x:Name="ComboGodina" Width="90" Height="30" VerticalContentAlignment="Center"
+                              SelectionChanged="ComboPeriod_SelectionChanged" Margin="0,0,16,0"/>
+
+                    <TextBlock Text="Mesec" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"
+                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,8,0"/>
+                    <ComboBox x:Name="ComboMesec" Width="70" Height="30" VerticalContentAlignment="Center"
+                              SelectionChanged="ComboPeriod_SelectionChanged" Margin="0,0,16,0"/>
+
+                    <TextBlock Text="Isplata" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"
+                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,8,0"/>
+                    <ComboBox x:Name="ComboIsplata" Width="220" Height="30" VerticalContentAlignment="Center"
+                              DisplayMemberPath="Naziv" SelectionChanged="ComboIsplata_SelectionChanged"
+                              ToolTip="Isplata kojoj naknada pripada. Svaka isplata ima svoju PPP-PD prijavu i svoj datum plaćanja, pa naknada isplaćena drugog dana ide u svoju isplatu."/>
+                </StackPanel>
+
+                <TextBlock Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap" FontSize="12"
+                           Margin="24,0,16,0" Foreground="{StaticResource TextSecondaryBrush}"
+                           Text="Naknada po ugovoru ulazi u istu PPP-PD prijavu i isti paket naloga kao zarada te isplate — samo sa svojom šifrom vrste prihoda i bez sati."/>
+
+                <Button Grid.Column="2" Content="💾  Sačuvaj" Style="{StaticResource PrimaryButton}" Padding="16,6"
+                        Click="BtnSacuvaj_Click"/>
+            </Grid>
+        </Border>
+
+        <!-- ── UNOS UGOVORA ───────────────────────────────────────────── -->
+        <Border Grid.Row="1" Style="{StaticResource Card}" Padding="16,10" Margin="0,0,0,12">
+            <Border.Resources>
+                <!-- Natpis iznad polja: bez njega se u redu od šest kontrola ne zna šta je šta. -->
+                <Style x:Key="NatpisPolja" TargetType="TextBlock">
+                    <Setter Property="FontSize" Value="11"/>
+                    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+                    <Setter Property="Margin" Value="0,0,0,3"/>
+                </Style>
+            </Border.Resources>
+
+            <StackPanel>
+                <TextBlock Text="NOVI UGOVOR" FontSize="12" FontWeight="Bold" Margin="0,0,0,8"
+                           Foreground="{StaticResource PrimaryLightBrush}"/>
+
+                <StackPanel Orientation="Horizontal">
+                    <StackPanel Margin="0,0,10,0">
+                        <TextBlock Text="Vrsta ugovora" Style="{StaticResource NatpisPolja}"/>
+                        <ComboBox x:Name="ComboVrsta" Width="230" Height="30" VerticalContentAlignment="Center"
+                                  DisplayMemberPath="Naziv"
+                                  ToolTip="Vrsta ugovora iz šifarnika — određuje normirane troškove, stopu poreza i doprinose"/>
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,10,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Primalac naknade" Style="{StaticResource NatpisPolja}"/>
+                            <Button Content="＋ novi" Click="BtnNoviPrimalac_Click" Cursor="Hand"
+                                    Background="Transparent" BorderThickness="0" Padding="6,0,0,0"
+                                    FontSize="11" Foreground="{StaticResource PrimaryLightBrush}"
+                                    ToolTip="Unesi novog primaoca ili označi postojeći karton kao lice van radnog odnosa"/>
+                        </StackPanel>
+                        <Grid>
+                            <ComboBox x:Name="ComboPrimalac" Width="220" Height="30" VerticalContentAlignment="Center"
+                                      DisplayMemberPath="Naziv"
+                                      ToolTip="Lice kome se naknada isplaćuje. U listi su samo kartoni označeni poljem „Van radnog odnosa“ u meniju „Radnici“ — odatle se uzimaju JMBG, opština prebivališta i tekući račun."/>
+
+                            <!-- Prazna lista bez objašnjenja ostavlja korisnika bez sledećeg koraka. -->
+                            <TextBlock Text="nema označenih primalaca" IsHitTestVisible="False" FontSize="11"
+                                       FontStyle="Italic" VerticalAlignment="Center" Margin="9,0,26,0"
+                                       Foreground="{StaticResource TextSecondaryBrush}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasItems, ElementName=ComboPrimalac}" Value="False">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,10,0">
+                        <TextBlock Text="Status osiguranja primaoca" Style="{StaticResource NatpisPolja}"/>
+                        <ComboBox x:Name="ComboTipPrimaoca" Width="230" Height="30" VerticalContentAlignment="Center"
+                                  DisplayMemberPath="Naziv"
+                                  ToolTip="Bira se po licu, a ne po poslu: isti ugovor nosi drugu šifru vrste prihoda kad ga potpiše zaposleno lice, a drugu kad ga potpiše lice bez osiguranja."/>
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,10,0">
+                        <TextBlock Text="Predmet ugovora" Style="{StaticResource NatpisPolja}"/>
+                        <TextBox x:Name="TxtPredmet" Width="200" Height="30" VerticalContentAlignment="Center"
+                                 Padding="8,0" MaxLength="200"
+                                 ToolTip="Ide u svrhu plaćanja na nalogu za prenos — po tome primalac na izvodu prepoznaje isplatu"/>
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,10,0">
+                        <TextBlock Text="Ugovoreni iznos" Style="{StaticResource NatpisPolja}"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox x:Name="TxtIznos" Width="110" Height="30" VerticalContentAlignment="Center"
+                                     Padding="8,0" Margin="0,0,6,0"
+                                     ToolTip="Podrazumevani predlog pri obračunu naknade"/>
+                            <CheckBox x:Name="ChkNeto" Content="neto" VerticalAlignment="Center"
+                                      ToolTip="Iznos je ugovoren „na ruke“; bruto se dobija preračunom"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel VerticalAlignment="Bottom" Orientation="Horizontal" Margin="6,0,0,0">
+                        <Button Content="➕" Style="{StaticResource SecondaryButton}" Width="36" Height="30" Padding="0"
+                                Margin="0,0,8,0" Click="BtnDodaj_Click" ToolTip="Dodaj ugovor"/>
+                        <Button Content="🗑" Style="{StaticResource SecondaryButton}" Width="36" Height="30" Padding="0"
+                                Margin="0,0,8,0" Click="BtnObrisi_Click"
+                                ToolTip="Obriši izabrani ugovor — moguće samo dok po njemu nema obračuna"/>
+                        <Button Content="📄" Style="{StaticResource SecondaryButton}" Width="36" Height="30" Padding="0"
+                                Click="BtnDokument_Click"
+                                ToolTip="Tekst ugovora — generisanje iz šablona, uređivanje i izvoz u PDF"/>
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- ── SADRŽAJ ────────────────────────────────────────────────── -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="330"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource Card}" Padding="0" Margin="0,0,16,12">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="ZAKLJUČENI UGOVORI" FontSize="12" FontWeight="Bold"
+                               Foreground="{StaticResource PrimaryLightBrush}" Margin="12,8,12,4"/>
+                    <DataGrid x:Name="GridUgovori" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
+                              HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12"
+                              SelectionChanged="GridUgovori_SelectionChanged">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Br." Binding="{Binding Broj}" Width="60"/>
+                            <DataGridTextColumn Header="Vrsta" Binding="{Binding VrstaNaziv}" Width="190"/>
+                            <DataGridTextColumn Header="Primalac" Binding="{Binding Primalac}" Width="170"/>
+                            <DataGridTextColumn Header="Predmet" Binding="{Binding Predmet}" Width="*"/>
+                            <DataGridTextColumn Header="Iznos" Binding="{Binding UgovorenIznos, StringFormat=N2}" Width="100"/>
+                            <DataGridTextColumn Header="" Binding="{Binding VrstaIznosa}" Width="45"/>
+                            <DataGridTextColumn Header="SVP" Binding="{Binding Svp}" Width="90"/>
+                            <DataGridTextColumn Header="Isplata" Binding="{Binding BrojIsplata}" Width="55"/>
+                            <DataGridTextColumn Header="Isplaćeno bruto" Binding="{Binding IsplaceniBruto, StringFormat=N2}" Width="110"/>
+                            <DataGridTextColumn Header="Dokument" Binding="{Binding DokumentStr}" Width="85"/>
+                            <DataGridTextColumn Header="Aktivan" Binding="{Binding AktivanStr}" Width="60"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource Card}" Padding="0" Margin="0,0,16,0">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" x:Name="NaslovNaknada" Text="OBRAČUNATE NAKNADE"
+                               FontSize="12" FontWeight="Bold"
+                               Foreground="{StaticResource PrimaryLightBrush}" Margin="12,8,12,4"/>
+                    <DataGrid x:Name="GridNaknade" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
+                              HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Primalac" Binding="{Binding Primalac}" Width="180"/>
+                            <DataGridTextColumn Header="Vrsta" Binding="{Binding Vrsta}" Width="*"/>
+                            <DataGridTextColumn Header="SVP" Binding="{Binding Svp}" Width="90"/>
+                            <DataGridTextColumn Header="Bruto" Binding="{Binding Bruto, StringFormat=N2}" Width="100"/>
+                            <DataGridTextColumn Header="Osnovica" Binding="{Binding Osnovica, StringFormat=N2}" Width="100"/>
+                            <DataGridTextColumn Header="Porez" Binding="{Binding Porez, StringFormat=N2}" Width="90"/>
+                            <DataGridTextColumn Header="Doprinosi" Binding="{Binding Doprinosi, StringFormat=N2}" Width="95"/>
+                            <DataGridTextColumn Header="Neto" Binding="{Binding Neto, StringFormat=N2}" Width="100"/>
+                            <DataGridTextColumn Header="Status" Binding="{Binding StatusStr}" Width="80"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </Border>
+
+            <!-- ── OBRAČUN NAKNADE ────────────────────────────────────── -->
+            <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Style="{StaticResource Card}" Padding="12">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="OBRAČUN NAKNADE" FontSize="12" FontWeight="Bold"
+                               Foreground="{StaticResource PrimaryLightBrush}" Margin="0,0,0,8"/>
+
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                        <StackPanel Margin="0,0,10,0">
+                            <TextBlock Text="Iznos za isplatu" FontSize="11" Margin="0,0,0,3"
+                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox x:Name="TxtIznosObracuna" Width="110" Height="30" VerticalContentAlignment="Center"
+                                         Padding="8,0" Margin="0,0,6,0" TextChanged="IznosObracuna_TextChanged"
+                                         ToolTip="Iznos koji se isplaćuje po izabranom ugovoru; može se razlikovati od ugovorenog kad se isplaćuje u ratama"/>
+                                <CheckBox x:Name="ChkNetoObracun" Content="neto" VerticalAlignment="Center"
+                                          Click="ChkNetoObracun_Click"
+                                          ToolTip="Iznos je „na ruke“; bruto se dobija preračunom"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <StackPanel VerticalAlignment="Bottom" Orientation="Horizontal">
+                            <Button Content="🧮" Style="{StaticResource SecondaryButton}" Width="36" Height="30" Padding="0"
+                                    Click="BtnObracunaj_Click" ToolTip="Obračunaj naknadu i uvrsti je u izabranu isplatu"/>
+                            <Button Content="🗑" Style="{StaticResource SecondaryButton}" Width="36" Height="30" Padding="0"
+                                    Margin="8,0,0,0" Click="BtnObrisiNaknadu_Click"
+                                    ToolTip="Obriši izabranu obračunatu naknadu — moguće samo dok nije zaključana"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <TextBox x:Name="TxtRacunica" DockPanel.Dock="Top" IsReadOnly="True" AcceptsReturn="True"
+                             BorderThickness="0" Background="Transparent" FontFamily="Consolas" FontSize="12"
+                             TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto"
+                             Text="Izaberite ugovor da bi se videla računica."/>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <!-- ── STATUS ─────────────────────────────────────────────────── -->
+        <Border Grid.Row="3" Margin="0,12,0,0" Background="White" CornerRadius="6" Padding="12,6"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+            <TextBlock x:Name="StatusMessage" Text="Spreman" FontSize="12"
+                       Foreground="{StaticResource TextSecondaryBrush}"/>
+        </Border>
+    </Grid>
+</Page>

@@ -65,8 +65,15 @@ public class PreFlightService
         var obracuni = _db.ObracuniPlata
             .AsNoTracking()
             .Include(o => o.Radnik)
+            .Include(o => o.Isplata)
             .Where(o => o.Godina == godina && o.Mesec == mesec && !o.Storniran)
             .ToList();
+
+        // Naknade van radnog odnosa prolaze kroz iste prijave i naloge, ali ne kroz iste
+        // provere: nemaju sate, fond, olakšicu ni najnižu osnovicu doprinosa. Njihove provere
+        // stoje u UgovorObracunService i dodaju se zasebno.
+        var ugovorne = obracuni.Where(o => o.JeVanRadnogOdnosa).ToList();
+        var zarade = obracuni.Where(o => !o.JeVanRadnogOdnosa).ToList();
 
         var nalazi = new List<NalazProvere>();
 
@@ -88,14 +95,20 @@ public class PreFlightService
             .Select(d => d.NajnizaOsnovica)
             .FirstOrDefault();
 
-        foreach (var o in obracuni)
+        foreach (var o in zarade)
         {
             nalazi.AddRange(ProveriObracun(o, najnizaOsnovica));
         }
 
+        foreach (var o in ugovorne)
+        {
+            nalazi.AddRange(ProveriNaknaduVanRadnogOdnosa(o));
+        }
+
         ProveriDuplikate(obracuni, nalazi);
         ProveriNeoporezivePrimanja(godina, mesec, nalazi);
-        ProveriOlaksice(obracuni, nalazi);
+        ProveriOlaksice(zarade, nalazi);
+        nalazi.AddRange(new UgovorObracunService(_db).Proveri(godina, mesec));
 
         return new RezultatProvere
         {
@@ -187,6 +200,55 @@ public class PreFlightService
                 yield return Nalaz(TezinaNalaza.Greska, "Istekla poreska olakšica",
                     $"Olakšica je važila do {radnik.OlaksicaVaziDo.Value:dd.MM.yyyy}, a i dalje se primenjuje.");
             }
+        }
+    }
+
+    /// <summary>
+    /// Provere koje naknada van radnog odnosa deli sa zaradom: bez JMBG-a ispada iz prijave,
+    /// bez tekućeg računa se ne može isplatiti. Sve ostalo — sati, fond, najniža osnovica,
+    /// olakšice, e-mail za listić — na nju se ne odnosi.
+    /// </summary>
+    private static IEnumerable<NalazProvere> ProveriNaknaduVanRadnogOdnosa(ObracunPlate o)
+    {
+        var radnik = o.Radnik;
+        string ime = radnik?.ImeIPrezime ?? $"(primalac #{o.RadnikId})";
+
+        NalazProvere Nalaz(TezinaNalaza tezina, string provera, string opis) => new()
+        {
+            Tezina = tezina,
+            BrojRadnika = radnik?.BrojRadnika,
+            Radnik = ime,
+            Provera = provera,
+            Opis = opis
+        };
+
+        if (o.NetoIsplata < 0)
+        {
+            yield return Nalaz(TezinaNalaza.Greska, "Negativna naknada",
+                $"Neto naknada je {o.NetoIsplata:N2}. Proverite stope u šifarniku vrsta ugovora.");
+        }
+
+        if (radnik == null)
+        {
+            yield return Nalaz(TezinaNalaza.Greska, "Primalac ne postoji",
+                "Obračun po ugovoru nije vezan ni za jedan karton primaoca.");
+            yield break;
+        }
+
+        if (string.IsNullOrWhiteSpace(radnik.Jmbg))
+        {
+            yield return Nalaz(TezinaNalaza.Greska, "Nedostaje JMBG",
+                "Primalac bez JMBG-a se izostavlja iz PPP-PD prijave.");
+        }
+        else if (!JmbgValidator.Validate(radnik.Jmbg, out string jmbgGreska))
+        {
+            yield return Nalaz(TezinaNalaza.Greska, "Neispravan JMBG", jmbgGreska);
+        }
+
+        if (string.IsNullOrWhiteSpace(radnik.BankovniRacun))
+        {
+            yield return Nalaz(TezinaNalaza.Greska, "Nedostaje tekući račun",
+                "Primalac nema tekući račun, pa se naknada ne može uvrstiti u nalog za prenos.");
         }
     }
 
@@ -291,26 +353,34 @@ public class PreFlightService
     }
 
     /// <summary>
-    /// Dva obračuna za isti JMBG u istom periodu daju dva reda u PPP-PD prijavi za isto lice —
-    /// Poreska uprava to odbija.
+    /// Dva obračuna za isti JMBG u istoj <b>isplati</b> daju dva reda u PPP-PD prijavi za isto
+    /// lice — Poreska uprava to odbija.
+    ///
+    /// Grupiše se po isplati, a ne po periodu: od Faze 2.2 mesec može imati akontaciju i
+    /// konačnu isplatu, i tada radnik ima po jedan obračun u svakoj. To su dve prijave, svaka
+    /// sa po jednim redom za njega, pa duplikata nema.
     /// </summary>
     private static void ProveriDuplikate(List<ObracunPlate> obracuni, List<NalazProvere> nalazi)
     {
         var duplikati = obracuni
             .Where(o => o.Radnik != null && !string.IsNullOrWhiteSpace(o.Radnik.Jmbg))
-            .GroupBy(o => o.Radnik!.Jmbg)
+            .GroupBy(o => new { o.IsplataId, o.Radnik!.Jmbg })
             .Where(g => g.Count() > 1);
 
         foreach (var grupa in duplikati)
         {
             var prvi = grupa.First();
+            string obuhvat = prvi.Isplata == null || prvi.Isplata.JePrva
+                ? "u istom periodu"
+                : $"u isplati „{prvi.Isplata.Naziv}“";
+
             nalazi.Add(new NalazProvere
             {
                 Tezina = TezinaNalaza.Greska,
                 BrojRadnika = prvi.Radnik!.BrojRadnika,
                 Radnik = prvi.Radnik.ImeIPrezime,
                 Provera = "Dupli obračun",
-                Opis = $"Za JMBG {grupa.Key} postoji {grupa.Count()} obračuna u istom periodu."
+                Opis = $"Za JMBG {grupa.Key.Jmbg} postoji {grupa.Count()} obračuna {obuhvat}."
             });
         }
     }

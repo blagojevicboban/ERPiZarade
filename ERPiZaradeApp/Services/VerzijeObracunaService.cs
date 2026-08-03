@@ -48,6 +48,7 @@ public static class VerzijeObracunaService
                 Godina = o.Godina,
                 Mesec = o.Mesec,
                 RadnikId = o.RadnikId,
+                IsplataId = o.IsplataId,
                 BrojRadnika = o.Radnik?.BrojRadnika ?? 0,
                 ImeRadnika = Skrati(o.Radnik?.ImeIPrezime ?? "", 60),
                 Verzija = o.Verzija <= 0 ? 1 : o.Verzija,
@@ -71,15 +72,33 @@ public static class VerzijeObracunaService
     }
 
     /// <summary>
-    /// Redni broj koji nova verzija obračuna treba da nosi za dati period i radnika:
+    /// Redni broj koji nova verzija obračuna treba da nosi za datu isplatu i radnika:
     /// za jedan veći od najveće do sada arhivirane, odnosno 1 kad arhive nema.
     /// </summary>
-    public static int SledecaVerzija(PlataDbContext db, int godina, int mesec, int radnikId)
+    /// <param name="isplata">
+    /// Isplata za koju se računa (Faza 2.2). Verzije se broje po isplati, jer prekalkulacija
+    /// akontacije ne menja konačnu isplatu istog meseca. <c>null</c> je ceo period, kao pre
+    /// uvođenja isplata.
+    /// </param>
+    public static int SledecaVerzija(
+        PlataDbContext db, int godina, int mesec, int radnikId, Isplata? isplata = null)
     {
-        var arhivirane = db.ObracunVerzije
-            .Where(v => v.Godina == godina && v.Mesec == mesec && v.RadnikId == radnikId)
-            .Select(v => (int?)v.Verzija)
-            .ToList();
+        var upit = db.ObracunVerzije
+            .Where(v => v.Godina == godina && v.Mesec == mesec && v.RadnikId == radnikId);
+
+        if (isplata != null)
+        {
+            int id = isplata.IsplataId;
+
+            // Prva isplata obuhvata i arhivu bez upisane isplate — nastalu pre Faze 2.2 —
+            // po istom pravilu po kom je obuhvata i među obračunima. Bez toga bi prvi
+            // obračun posle nadogradnje ponovo dobio verziju 1, koja je već potrošena.
+            upit = isplata.JePrva
+                ? upit.Where(v => v.IsplataId == null || v.IsplataId == id)
+                : upit.Where(v => v.IsplataId == id);
+        }
+
+        var arhivirane = upit.Select(v => (int?)v.Verzija).ToList();
 
         int najveca = arhivirane.Count == 0 ? 0 : arhivirane.Max(v => v ?? 0);
         return najveca + 1;

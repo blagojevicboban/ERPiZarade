@@ -23,11 +23,13 @@ public class NaloziViewModel : INotifyPropertyChanged
 {
     private readonly PlataDbContext _db;
     private readonly NalogZaPrenosService _nalogService;
+    private readonly IsplataService _isplataService;
 
     private int _godina;
     private int _mesec;
     private DateTime _datumValute = DateTime.Today;
     private PppPdPrijava? _prijava;
+    private Isplata? _izabranaIsplata;
     private PaketNaloga? _paket;
     private string _statusTekst = "";
 
@@ -35,6 +37,7 @@ public class NaloziViewModel : INotifyPropertyChanged
     {
         _db = PlataDbContext.Create(AppConfig.DbPath);
         _nalogService = new NalogZaPrenosService(_db);
+        _isplataService = new IsplataService(_db);
 
         _godina = AppConfig.ActiveGodina ?? DateTime.Now.Year;
         _mesec = AppConfig.ActiveMesec ?? DateTime.Now.Month;
@@ -44,6 +47,7 @@ public class NaloziViewModel : INotifyPropertyChanged
         IzvoziHalcomCommand = new RelayCommand(_ => Izvezi(FormatIzvoza.Halcom), _ => SmeSePoslatiUBanku);
         IzvoziTrezorCommand = new RelayCommand(_ => Izvezi(FormatIzvoza.Trezor), _ => SmeSePoslatiUBanku);
 
+        UcitajIsplate();
         UcitajPrijavu();
         Pripremi();
     }
@@ -51,6 +55,66 @@ public class NaloziViewModel : INotifyPropertyChanged
     // ── Stanje ───────────────────────────────────────────────────────
     public ObservableCollection<NalogZaPrenos> Nalozi { get; } = [];
     public ObservableCollection<NalazProvere> Nalazi { get; } = [];
+    public ObservableCollection<Isplata> Isplate { get; } = [];
+
+    /// <summary>
+    /// Isplata za koju se paket pravi (Faza 2.2). Menja i prijavu iz koje se uzima BOP —
+    /// svaka isplata ima svoju, pa BOP druge isplate na nalogu prve šalje novac na tuđu
+    /// deklaraciju.
+    /// </summary>
+    public Isplata? IzabranaIsplata
+    {
+        get => _izabranaIsplata;
+        set
+        {
+            if (ReferenceEquals(_izabranaIsplata, value)) return;
+
+            _izabranaIsplata = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ImaViseIsplata));
+
+            if (value != null && value.DatumIsplate != default)
+            {
+                _datumValute = value.DatumIsplate;
+                OnPropertyChanged(nameof(DatumValute));
+            }
+
+            UcitajPrijavu();
+            OsveziPodatkePrijave();
+            Pripremi();
+        }
+    }
+
+    /// <summary>Selektor isplate ima smisla tek kad ih je više od jedne.</summary>
+    public bool ImaViseIsplata => Isplate.Count > 1;
+
+    private void UcitajIsplate()
+    {
+        Isplate.Clear();
+
+        if (Godina <= 0 || Mesec is < 1 or > 12)
+        {
+            OnPropertyChanged(nameof(ImaViseIsplata));
+            return;
+        }
+
+        try
+        {
+            _isplataService.Obezbedi(Godina, Mesec);
+            foreach (var i in _isplataService.Isplate(Godina, Mesec)) Isplate.Add(i);
+        }
+        catch (Exception ex)
+        {
+            // Baza starije verzije nema tabelu isplata — nalozi se prave nad celim periodom.
+            Serilog.Log.Warning(ex, "Isplate se ne mogu učitati za {Godina}/{Mesec}", Godina, Mesec);
+        }
+
+        _izabranaIsplata = Isplate.FirstOrDefault();
+        OnPropertyChanged(nameof(IzabranaIsplata));
+        OnPropertyChanged(nameof(ImaViseIsplata));
+
+        if (_izabranaIsplata is { DatumIsplate: var d } && d != default) _datumValute = d;
+    }
 
     public int Godina
     {
@@ -100,6 +164,10 @@ public class NaloziViewModel : INotifyPropertyChanged
 
     private enum FormatIzvoza { Halcom, Trezor }
 
+    /// <summary>Dodatak imenu fajla kad mesec ima više isplata; prazan kad je isplata jedna.</summary>
+    private string SufiksIsplate
+        => _izabranaIsplata == null || _izabranaIsplata.JePrva ? "" : $"_isplata{_izabranaIsplata.RedniBroj}";
+
     /// <summary>
     /// Zapisuje naloge u fajl za bankarsku aplikaciju. Ako zapisivač prijavi nalaz koji bi
     /// doveo do odbijanja fajla, fajl se <b>ne snima</b> — bolje nego da se otkrije tek
@@ -138,9 +206,10 @@ public class NaloziViewModel : INotifyPropertyChanged
         var sfd = new Microsoft.Win32.SaveFileDialog
         {
             Filter = jeHalcom ? "Tekstualni fajl (*.txt)|*.txt" : "JSON fajl (*.json)|*.json",
+            // Kad mesec ima više isplata, dva fajla istog imena bi se lako pomešala u banci.
             FileName = jeHalcom
-                ? $"Nalozi_{Godina}_{Mesec:D2}.txt"
-                : $"Nalozi_{Godina}_{Mesec:D2}.json",
+                ? $"Nalozi_{Godina}_{Mesec:D2}{SufiksIsplate}.txt"
+                : $"Nalozi_{Godina}_{Mesec:D2}{SufiksIsplate}.json",
             Title = jeHalcom ? "Sačuvaj naloge za Hal E-Bank" : "Sačuvaj naloge za trezorski ePP"
         };
 
@@ -148,18 +217,23 @@ public class NaloziViewModel : INotifyPropertyChanged
 
         System.IO.File.WriteAllBytes(sfd.FileName, sadrzaj);
 
+        string tragIsplate = _izabranaIsplata == null || _izabranaIsplata.JePrva
+            ? ""
+            : $"Isplata: {_izabranaIsplata.Naziv}. ";
+
         AuditService.Zabelezi(_db, Godina, Mesec, AkcijaObracuna.PppPdGenerisan,
-            $"Izvezeno {_paket.Nalozi.Count} naloga u {(jeHalcom ? "Hal E-Bank TXT" : "trezorski ePP JSON")}, ukupno {_paket.Ukupno:N2}");
+            $"{tragIsplate}Izvezeno {_paket.Nalozi.Count} naloga u {(jeHalcom ? "Hal E-Bank TXT" : "trezorski ePP JSON")}, ukupno {_paket.Ukupno:N2}");
 
         StatusTekst = $"Snimljeno {_paket.Nalozi.Count} naloga u {sfd.FileName}.";
     }
 
+    /// <summary>Redni broj prijave koja pripada izabranoj isplati; 1 kad isplata nije poznata.</summary>
+    private int RedniBrojPrijave => _izabranaIsplata?.RedniBroj ?? 1;
+
     private void UcitajPrijavu()
     {
         _prijava = _db.PppPdPrijave
-            .Where(p => p.Godina == Godina && p.Mesec == Mesec)
-            .OrderBy(p => p.RedniBroj)
-            .FirstOrDefault();
+            .FirstOrDefault(p => p.Godina == Godina && p.Mesec == Mesec && p.RedniBroj == RedniBrojPrijave);
     }
 
     /// <summary>
@@ -235,11 +309,13 @@ public class NaloziViewModel : INotifyPropertyChanged
 
     private void SacuvajPrijavu(PodaciZaUplatu podaci)
     {
+        int redniBroj = RedniBrojPrijave;
+
         var prijava = _db.PppPdPrijave
-            .FirstOrDefault(p => p.Godina == Godina && p.Mesec == Mesec && p.RedniBroj == 1);
+            .FirstOrDefault(p => p.Godina == Godina && p.Mesec == Mesec && p.RedniBroj == redniBroj);
 
         bool nova = prijava == null;
-        prijava ??= new PppPdPrijava { Godina = Godina, Mesec = Mesec, RedniBroj = 1 };
+        prijava ??= new PppPdPrijava { Godina = Godina, Mesec = Mesec, RedniBroj = redniBroj };
 
         prijava.Bop = podaci.Bop;
         prijava.IznosZaUplatu = podaci.Iznos;
@@ -261,7 +337,7 @@ public class NaloziViewModel : INotifyPropertyChanged
 
     private void Pripremi()
     {
-        _paket = _nalogService.Pripremi(Godina, Mesec, _prijava, DatumValute);
+        _paket = _nalogService.Pripremi(Godina, Mesec, _prijava, DatumValute, _izabranaIsplata);
 
         Nalozi.Clear();
         foreach (var n in _paket.Nalozi) Nalozi.Add(n);

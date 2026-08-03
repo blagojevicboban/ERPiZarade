@@ -6,6 +6,106 @@ Format je zasnovan na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) s
 
 ---
 
+## [1.11.0] - 2026-08-03
+
+> **Faza 2.3** — obračuni van radnog odnosa: ugovor o delu, autorske naknade, privremeni i
+> povremeni poslovi, naknade članovima upravnog i nadzornog odbora. Preduslov je bila Faza 2.2:
+> te naknade se ne vezuju za obračunski mesec nego za **isplatu**, jer se isplaćuju kad se
+> isplate, a ne krajem meseca.
+
+### 📝 Ugovori van radnog odnosa (novi ekran)
+- Ugovor se zaključuje sa licem koje je u kartonu radnika označeno kao **„Van radnog odnosa"**. Odatle se uzimaju JMBG, opština prebivališta i tekući račun — zaseban registar primalaca bi bio drugo mesto za iste podatke.
+- **Primalac se unosi sa istog ekrana** („＋ novi" uz padajuću listu): otvori se nov karton sa JMBG-om, opštinom i tekućim računom, ili se oznaka doda postojećem kartonu (penzioner, bivši zaposleni). Označavanje postojećeg lica postavlja oznaku na **sve njegove periode** — to da neko nije u radnom odnosu nije svojstvo meseca, pa bi oznaka na jednom mesecu ostavila da ga ekrani zarade i dalje nude u ostalima.
+- Naknada se obračunava po ugovoru i **upisuje kao obračun vezan za izabranu isplatu**. Zbog toga PPP-PD prijava, nalozi za prenos i godišnja potvrda rade nad njom bez ijedne izmene: sve što je razlikuje od zarade je šifra vrste prihoda i to što se ne meri satima.
+- Računica se **vidi pre upisa** — bruto, normirani troškovi, osnovica, porez, doprinosi po stopama, neto, trošak isplatioca. Isti razlog kao proba pri prevođenju obračuna na stavke: reč je o novcu koji ide fizičkom licu i prijavljuje se Poreskoj upravi.
+- Naknada ugovorena **„na ruke"** se preračunava na bruto tačno u dinar: preračun je inverzan obračunu, uz doterivanje po pari koje pokriva zaokrugljivanje pojedinačnih stavki.
+- Isti ugovor može biti isplaćen **u ratama** — po jedna u svakoj isplati, svaka sa svojom prijavom i svojim BOP-om. Dva obračuna po istom ugovoru u **istoj** isplati se odbijaju: dala bi dva reda za isto lice u jednoj prijavi.
+
+### 📄 Šifarnik vrsta ugovora (novi šifarnik)
+- Normirani troškovi, stopa poreza i stope doprinosa — podeljene **na teret primaoca i na teret isplatioca** — stoje kao redovi u šifarniku. Izmena propisa se unosi; nova verzija programa se ne čeka. Isto pravilo po kome su uvedene vrste primanja i poreske olakšice.
+- Podrazumevani sadržaj prati stanje propisa u 2026: ugovor o delu i naknade odborima (normirani troškovi 20%, porez 20%, PIO 24%, zdravstveno 10,30% za neosigurano lice), autorske naknade sa 50%, 43% i 34% normiranih troškova, i privremeni i povremeni poslovi koji se oporezuju **kao zarada** (porez 10%, doprinosi podeljeni na primaoca i isplatioca).
+- **Šifra vrste prihoda se sastavlja, ne prepisuje.** Struktura je propisana: `V-PP-OVP-OL-B` — verzija kataloga, tip primaoca prihoda, oznaka vrste prihoda, olakšica i beneficirani staž. U šifarniku stoji samo OVP (tri cifre), a tip primaoca se bira uz ugovor, jer isti posao nosi drugu šifru kad ga radi zaposleno lice a drugu kad ga radi lice bez osiguranja. Bez toga bi svaka kombinacija posla i statusa tražila svoj red.
+- Vrsta bez potvrđenog OVP-a **ne dobija izmišljenu šifru** — ostaje prazna, a kontrolne provere je prijavljuju kao grešku. Izmišljena šifra prolazi generisanje i pada tek kod Poreske uprave, kada je novac već isplaćen.
+- Šifra plaćanja za nalog za prenos se takođe unosi ovde; propisuje je NBS.
+
+### 🖋️ Generator ugovora sa editorom (novi ekran + šifarnik)
+- Uz svaki zaključen ugovor se **generiše tekst dokumenta** iz šablona, popunjen podacima ugovora, primaoca i firme, i **uređuje se u editoru** — dopisivanje klauzula, brisanje članova, sve što je potrebno pre potpisa.
+- Tekst se čuva **uz ugovor, ne uz šablon**: šablon se s vremenom menja, a potpisan ugovor mora ostati onakav kakav je potpisan. Ponovno generisanje briše ručne izmene, pa traži izričitu potvrdu.
+- **Iznosi se iz teksta ne čitaju.** Obračun ide iz polja ugovora; tekst je dokument, a ne izvor podataka. Da je obrnuto, ispravka slovne greške bi menjala isplatu.
+- Izvoz u **PDF**, spreman za štampu i potpis.
+- **Šabloni su šifarnik** („🖋️ Šabloni ugovora"): isporučena su četiri — ugovor o delu (čl. 199 Zakona o radu), ugovor o autorskom delu (Zakon o autorskom i srodnim pravima), ugovor o privremenim i povremenim poslovima (čl. 197, uz konstataciju o 120 radnih dana) i ugovor o naknadi članu organa upravljanja. Tekstovi su pisani prema **obaveznim elementima iz propisa**, a formulacije se menjaju iz programa — nacrt novog Zakona o autorskom i srodnim pravima je u javnoj raspravi od marta 2026, pa se odredbe o ustupanju prava mogu menjati bez nove verzije.
+- Polja se pišu kao `{PrimalacIme}`, `{Iznos}`, `{DatumOd}`… Zamena je namerno **glupa** — nema uslova ni petlji, jer bi šablon time postao program koji niko ne testira, a piše ga knjigovođa.
+- **Nepopunjeno polje ostaje vidljivo u tekstu** i prijavljuje se posle generisanja. Tiho brisanje bi dalo ugovor sa prazninom na mestu iznosa ili roka, a to se primeti tek kad je potpisan.
+- **Iznos slovima** se ispisuje sam, sa ispravnim rodom i padežem („dvadesetjedan dinar", ali „dvadesetdva dinara"; „dvehiljade", ne „dvahiljada"). Razlika brojke i slova tumači se u korist slova, pa se to ne prepisuje rukom.
+- Karton firme dobija **zastupnika i njegovu funkciju** — ugovor se zaključuje „koga zastupa…", a bez tog polja bi svaki generisani dokument imao istu prazninu.
+
+### 🧾 Prijava, nalozi i ostali ekrani
+- **Osnovica doprinosa se sada može upisati.** Do sada se izvodila iz zbira PIO doprinosa po stopi zarade (24%); kod naknade van radnog odnosa ona je bruto umanjen za normirane troškove, pa bi izvođenje dalo pogrešan broj u prijavi. Za zaradu se ništa ne menja — kolona ostaje prazna i izvođenje radi kao pre.
+- Naknada u prijavi ide sa **nulom u broju kalendarskih dana, efektivnih sati i mesečnog fonda** — ne meri se satima.
+- Nalog za prenos nosi **predmet ugovora** u svrsi plaćanja, da se na izvodu vidi šta je isplaćeno, i šifru plaćanja iz šifarnika.
+- Ekrani zarade — obračun plate, radni sati, uvoz sati, platni listići — lica van radnog odnosa **ne nude**: nemaju koeficijent, sate ni fond, a listić prikazuje upravo to.
+- **Prekalkulacija zarada ne dira obračunate naknade.** Nastale su zasebnom radnjom nad ugovorom, a ne iz sati i koeficijenata koji se ponovo računaju; bez tog uslova bi ih obračun zarade tiho obrisao.
+- Pre-flight provere zarade se na naknadu ne primenjuju (najniža osnovica, sati veći od fonda, olakšice, e-mail za listić), a dobija svoje: vrsta ugovora bez OVP oznake je greška, primalac bez tekućeg računa ili sa neispravnim JMBG-om takođe.
+
+### 🧪 Testovi
+- 272 ukupno (50 novih). Zbir isplaćenog po ugovorima se proverava nad **pravim SQLite fajlom**, ne nad InMemory provajderom: SQLite ne ume `SUM` nad `decimal` kolonom, pa grupisanje na strani baze pada sa „cannot apply aggregate operator 'Sum'" — a InMemory to prihvata i greška prođe kroz sve ostale testove.
+- Za generator ugovora: polja se zamenjuju tačnim podacima, a nepopunjeno i nepoznato polje **ostaju vidljivi** u tekstu i prijavljuju se; sačuvan tekst preživljava izmenu šablona; ručna izmena teksta ne dira iznos; podrazumevani šabloni koriste samo polja koja generator poznaje i pozivaju se na propis; iznos slovima je tačan za jedninu, 2–4, 11–14 i za pare.
+- Za obračun: računica pogađa objavljeni primer iz prakse (bruto 50.000 → neto 32.400 uz porez 8.000 i PIO 9.600); preračun neta u bruto je inverzan obračunu do pare, za sve tri vrste; izmena stope u šifarniku menja rezultat bez izmene koda; šifra vrste prihoda se sastavlja po strukturi a bez OVP-a ostaje prazna; ugovor nadjačava radno mesto pri određivanju SVP-a; naknada ulazi u prijavu sa svojom osnovicom doprinosa i nulama u satima, a **zarada u istoj prijavi ostaje brojčano nepromenjena**; nalog nosi predmet ugovora i šifru plaćanja iz šifarnika; naknada ne podleže proverama zarade; nadogradnja zatečene baze donosi šifarnik bez diranja obračuna.
+
+### 📮 Šta se uz isplatu i dalje radi van programa
+- **PPP-PD je jedina prijava koja se za ovu isplatu podnosi.** Obrasci **M-UN/M-UN/K** (PIO, uz ugovorenu naknadu) i **M-4** ukinuti su od **01.01.2019.** — član 30. Zakona o izmenama i dopunama Zakona o PIO briše član 144, a Fond PIO od tada podatke o stažu i osnovicama preuzima elektronski od nadležnih organa, najkasnije do kraja februara za prethodnu godinu. Stari obrasci važe samo za period osiguranja zaključno sa 31.12.2018.
+- **Prijava na obavezno socijalno osiguranje (obrazac M) ide preko portala CROSO**, ne kroz ovaj program — jedinstvenom prijavom se pokrivaju PIO, RFZO i nezaposlenost. Za privremene i povremene poslove podnosi se najkasnije **dan pre početka rada**.
+- Provera staža i osnovica je na **e-Šalteru Fonda PIO** i portalu eUprava; od 2026. je pristup isključivo preko eID-a (kvalifikovani sertifikat ili ConsentID) — stari pristup preko JMBG-a i PIN-a više ne radi.
+
+### ❗ Šta nedostaje
+- **OVP oznake za autorsku naknadu sa 34% normiranih troškova nisu potvrđene** iz Kataloga vrste prihoda i ostavljene su prazne uz napomenu. Isto važi za tip primaoca uz privremene i povremene poslove. Popunjavaju se u šifarniku, bez nove verzije.
+- **Radni sati su i dalje mesečni** — razdvajanje po isplati traži izmenu šeme i nije obuhvaćeno ovom fazom.
+
+## [1.10.0] - 2026-08-03
+
+> **Faza 2.2** — entitet `Isplata`. Iz plana nastavka: „strukturno najvažnije što je ostalo".
+> Do sada je sve bilo vezano za par (godina, mesec), pa je mesec mogao imati **tačno jednu**
+> isplatu — a akontacija pa konačna isplata, bonus i 13. plata su zasebne isplate istog meseca.
+
+### 💸 Isplate u mesecu (novi ekran)
+- Mesec sada može imati više isplata, svaku sa svojom **vrstom, opisom i datumom isplate**. Redni broj isplate je isti onaj koji `PppPdPrijava` nosi od Faze 1.1 — polje je tada uvedeno upravo za ovo, pa nove veze u šemi nije trebalo dodavati.
+- **Dok mesec ima jednu isplatu, ništa se ne menja**: selektori isplate se ni ne prikazuju, a obračuni bez upisane isplate pripadaju prvoj. To pravilo stoji na **jednom mestu** (`IsplataService.Obuhvat`), da se ne bi razišlo po upitima.
+- Ekran pokazuje po isplati: broj obračuna, neto, oznaku za konačnu isplatu, da li nosi obustave, BOP i status prijave. Uz to idu kontrolne provere koje se pokreću tek kad isplata ima više od jedne.
+
+### 🧾 Svaka isplata je svoja PPP-PD prijava i svoj paket naloga
+- PPP-PD prijava, nalozi za prenos i platni listići se prave **za jednu isplatu**, ne za ceo period.
+- **BOP tuđe prijave se odbija.** BOP jedne isplate na nalogu druge šalje novac na pogrešnu deklaraciju — tamo višak, ovde manjak, i obe uplate neraspoređene. Paket se zaustavlja pre izvoza.
+- Akontacija se prijavljuje sa oznakom **„A"** (nije konačna isplata prihoda), ostale isplate sa „K". Za mesec sa jednom isplatom važi zapamćena postavka, kao i do sada.
+- Svrha na virmanu i ime izvezenog fajla nose oznaku isplate, da se dva paketa istog meseca ne bi pomešala u banci.
+
+### 💳 Rata kredita se i dalje skida tačno jednom
+- **Obustave (rate kredita i samodoprinos) nosi samo konačna zarada.** Akontacija, bonus i 13. plata se isplaćuju bez njih — inače bi radnik u istom mesecu platio istu ratu dva ili tri puta.
+- Zato mesec sme imati samo **jednu** isplatu vrste „konačna zarada"; druga se odbija.
+- Storniranje isplate koja nije nosila obustave **ne vraća** ratu: vraćanje neskinute rate bi radnikov dug smanjilo bez ijednog dinara koji je otišao poveriocu. Pravilo je u `KreditRateService`, jedinom izvoru te računice.
+
+### 🚫 Prekalkulacija i storniranje diraju samo svoju isplatu
+- Prekalkulacija je do sada brisala **sve** obračune perioda. Sada briše samo obračune izabrane isplate — akontacija koja je već isplaćena i prijavljena ostaje netaknuta.
+- Isto važi za storniranje: radnik u mesecu sa više isplata ima više obračuna, i stornira se onaj koji je izabran.
+- **Verzije obračuna se broje po isplati.** Prekalkulacija akontacije ne podiže redni broj verzije konačnoj isplati — to su zasebni tokovi. Arhiva nastala pre 1.10.0 pripada prvoj isplati, pa se potrošeni brojevi ne dodeljuju ponovo.
+- **Kontrolna provera „dupli obračun" više ne javlja lažnu grešku.** Radnik u mesecu sa dve isplate ima dva obračuna, ali u dve različite prijave — po jedan red u svakoj. Provera sada grupiše po isplati; dva obračuna u **istoj** isplati su i dalje greška.
+- Tabela obračuna dobija kolonu „Isplata", prazna dok je isplata jedna.
+
+### 🔗 Zatečeni obračuni
+- Migracija svakom zatečenom periodu pravi prvu isplatu („konačna zarada", datum poslednjeg dana meseca) i veže obračune za nju. **Nijedan iznos se ne dira.**
+- Dugme 🔗 na ekranu isplata radi isto nad obračunima koji isplatu nemaju.
+
+### 🐛 Nadogradnja je padala kad je migracija u razvoju regenerisana
+- Migracija koja se u toku razvoja obriše pa ponovo napravi dobija **nov vremenski žig uz isti naziv**. Baza koja je stigla da primeni staru verziju nosi njen ID, pa je EF primenjivao po drugi put i program je pri pokretanju padao sa `SQLite Error 1: duplicate column name` — nad živim podacima, bez puta napred.
+- Sada se istorija migracija usklađuje **pre** `Migrate()`: zapis sa starim žigom se prepisuje na aktuelni, uparivanjem po nazivu. Ono što nova verzija migracije donosi a stara nije imala stiže dopunom posle migracije, istim obrascem koji se od 1.2.0 koristi za zatečene baze.
+- Provereno na svim zatečenim bazama ovog instalacije, uključujući onu sa 9.982 obračuna: podaci netaknuti, istorija svedena na jedan zapis.
+
+### 🧪 Testovi
+- 222 ukupno (26 novih): nadogradnja preko migracije sa starim žigom ne ponavlja istu izmenu; obuhvat po isplati u nalozima, storniranju i prekalkulaciji; prijava druge isplate na nalogu prve se odbija; storniranje akontacije ne vraća ratu kredita; obračun bez obustava se od onog sa obustavama razlikuje **tačno za ratu**; druga konačna zarada u mesecu se odbija; briše se samo poslednja i prazna isplata; verzije se broje po isplati a prva obuhvata i arhivu bez upisane isplate; isti radnik u dve isplate nije dupli obračun a u istoj jeste; migracija veže zatečene obračune ne menjajući iznose; i **bez ijedne dodatne isplate nalozi ostaju brojčano isti kao pre**.
+
+### ❗ Šta nedostaje
+- **Radni sati su i dalje mesečni.** Obračun druge isplate prepisuje red u `RadniSati` za taj mesec — iznosi već obračunatih obračuna ostaju netaknuti, jer svaki nosi svoje sate, ali ulazni podaci pokazuju poslednji unos. Sati po isplati traže izmenu šeme i ostavljeni su za Fazu 2.3, gde su i inače potrebni.
+- Brisanje celog perioda i dalje briše sve isplate tog meseca odjednom.
+
 ## [1.9.0] - 2026-08-03
 
 > **Faza 2.7** — storniranje, rekalkulacija i izmenjena prijava. Iz razvojne mape: „dešava se

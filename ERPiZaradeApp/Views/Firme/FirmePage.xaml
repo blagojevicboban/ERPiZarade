@@ -226,6 +226,24 @@
                                     </StackPanel>
                                 </Grid>
 
+                                <!-- Zastupnik: ugovor van radnog odnosa se zaključuje „koga zastupa…" -->
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                        <TextBlock Text="Zastupnik" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                        <TextBox x:Name="TxtZastupnik" Height="32"
+                                                 ToolTip="Ime i prezime lica koje firmu zastupa pri potpisivanju ugovora"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Funkcija zastupnika" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                        <TextBox x:Name="TxtFunkcijaZastupnika" Height="32"
+                                                 ToolTip="npr. direktor, zakonski zastupnik"/>
+                                    </StackPanel>
+                                </Grid>
+
                                 <!-- Napomena -->
                                 <StackPanel Margin="0,0,0,16">
                                     <TextBlock Text="Napomena" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>

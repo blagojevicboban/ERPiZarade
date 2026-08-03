@@ -1,0 +1,90 @@
+<Window x:Class="ERPiZaradeApp.Views.Ugovori.UgovorDokumentWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Tekst ugovora" Height="760" Width="1080"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource SurfaceBrush}">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ── ALATKE ─────────────────────────────────────────────────── -->
+        <Border Grid.Row="0" Style="{StaticResource Card}" Padding="12,10" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal">
+                <StackPanel Margin="0,0,10,0">
+                    <TextBlock Text="Šablon" FontSize="11" Margin="0,0,0,3"
+                               Foreground="{StaticResource TextSecondaryBrush}"/>
+                    <ComboBox x:Name="ComboSablon" Width="300" Height="30" VerticalContentAlignment="Center"
+                              DisplayMemberPath="NazivSaSifrom"
+                              ToolTip="Šablon iz kog se tekst generiše. Uređuje se u meniju „Šabloni ugovora“."/>
+                </StackPanel>
+
+                <StackPanel VerticalAlignment="Bottom" Orientation="Horizontal">
+                    <Button Content="🖨  Generiši iz šablona" Style="{StaticResource SecondaryButton}" Height="30"
+                            Padding="12,0" Margin="0,0,8,0" Click="BtnGenerisi_Click"
+                            ToolTip="Popunjava šablon podacima ugovora, primaoca i firme. Prepisuje zatečeni tekst — pita pre toga."/>
+                    <Button Content="💾  Sačuvaj" Style="{StaticResource PrimaryButton}" Height="30"
+                            Padding="14,0" Margin="0,0,8,0" Click="BtnSacuvaj_Click"/>
+                    <Button Content="📄  PDF" Style="{StaticResource SecondaryButton}" Height="30"
+                            Padding="12,0" Click="BtnPdf_Click"
+                            ToolTip="Snima tekst kao PDF, spreman za štampu i potpis"/>
+                </StackPanel>
+
+                <TextBlock x:Name="TxtZaglavlje" VerticalAlignment="Bottom" Margin="20,0,0,6" FontSize="12"
+                           TextWrapping="Wrap" Foreground="{StaticResource TextSecondaryBrush}"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ── EDITOR I POLJA ─────────────────────────────────────────── -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="300"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource Card}" Padding="0" Margin="0,0,10,0">
+                <TextBox x:Name="TxtTekst" AcceptsReturn="True" AcceptsTab="True"
+                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                         TextWrapping="NoWrap" FontFamily="Consolas" FontSize="12.5"
+                         Padding="12" BorderThickness="0" Background="Transparent"
+                         TextChanged="TxtTekst_TextChanged"/>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource Card}" Padding="12">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="POLJA ZA ŠABLON" FontSize="12" FontWeight="Bold"
+                               Foreground="{StaticResource PrimaryLightBrush}" Margin="0,0,0,4"/>
+                    <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" FontSize="11" Margin="0,0,0,8"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Text="Dvoklik ubacuje polje na mesto kursora. Pri generisanju se zamenjuje podatkom; polje koje nije popunjeno ostaje vidljivo u tekstu, da se rupa primeti pre potpisa."/>
+
+                    <DataGrid x:Name="GridPolja" AutoGenerateColumns="False" IsReadOnly="True"
+                              HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="11"
+                              MouseDoubleClick="GridPolja_MouseDoubleClick">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Polje" Binding="{Binding Polje}" Width="140"/>
+                            <DataGridTextColumn Header="Značenje" Binding="{Binding Opis}" Width="*">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="TextWrapping" Value="Wrap"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <!-- ── STATUS ─────────────────────────────────────────────────── -->
+        <Border Grid.Row="2" Margin="0,10,0,0" Background="White" CornerRadius="6" Padding="12,6"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+            <TextBlock x:Name="StatusMessage" Text="Spreman" FontSize="12" TextWrapping="Wrap"
+                       Foreground="{StaticResource TextSecondaryBrush}"/>
+        </Border>
+    </Grid>
+</Window>

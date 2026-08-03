@@ -76,7 +76,14 @@
                 <TextBlock Grid.Column="6" Text="Fond sati:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
                 <TextBox x:Name="TxtFondCasova" Grid.Column="7" Text="176" Margin="0,0,12,0" VerticalAlignment="Center" LostFocus="TxtFondCasova_LostFocus" Padding="8,4"/>
 
-
+                <!-- Isplata (Faza 2.2): obračun se pravi u okviru jedne isplate meseca, pa
+                     prekalkulacija dira samo njene obračune, a ne i akontaciju pored nje. -->
+                <StackPanel Grid.Column="8" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                    <TextBlock Text="Isplata:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
+                    <ComboBox x:Name="ComboIsplata" MinWidth="170" Padding="6,4" DisplayMemberPath="Naziv"
+                              VerticalAlignment="Center" SelectionChanged="ComboIsplata_SelectionChanged"
+                              ToolTip="Isplata unutar meseca. Nova isplata se dodaje na ekranu „Isplate u mesecu“."/>
+                </StackPanel>
 
                 <TextBlock Grid.Column="9" Text="Kopiraj sate iz:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13" FontWeight="SemiBold"/>
                 <ComboBox x:Name="ComboPrenosIz" Grid.Column="10" Margin="0,0,8,0" Padding="6,4" DisplayMemberPath="Naziv" VerticalAlignment="Center"/>

@@ -105,6 +105,16 @@ public class Radnik
     // ── Status ───────────────────────────────────────────────────────
     public bool Aktivan { get; set; } = true;
 
+    /// <summary>
+    /// Primalac po ugovoru van radnog odnosa (Faza 2.3), a ne zaposleni. Karton mu treba iz
+    /// istog razloga iz kog treba i radniku — zbog JMBG-a, opštine prebivališta i tekućeg
+    /// računa — ali ga obračun zarade preskače: nema koeficijent, sate ni fond.
+    ///
+    /// Odvojeno je od <see cref="Aktivan"/> namerno: neaktivan radnik je bivši zaposleni,
+    /// a ovo lice zaposleno nikada nije ni bilo.
+    /// </summary>
+    public bool VanRadnogOdnosa { get; set; }
+
     // ── Poresko oslobođenje ──────────────────────────────────────────
     [Column(TypeName = "decimal(12,2)")]
     public decimal LicnoOslobodjenje { get; set; }

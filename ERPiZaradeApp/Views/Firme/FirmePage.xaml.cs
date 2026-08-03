@@ -204,6 +204,8 @@ public partial class FirmePage : Page
         TxtSifraPlacanja.Text = f.SifraPlacanja;
         TxtTelefon.Text = f.Telefon;
         TxtEmail.Text = f.Email;
+        TxtZastupnik.Text = f.Zastupnik;
+        TxtFunkcijaZastupnika.Text = f.FunkcijaZastupnika;
         TxtNapomena.Text = f.Napomena;
 
         _isEditing = false;
@@ -348,6 +350,8 @@ public partial class FirmePage : Page
                     SifraPlacanja = TxtSifraPlacanja.Text.Trim(),
                     Telefon = TxtTelefon.Text.Trim(),
                     Email = TxtEmail.Text.Trim(),
+                    Zastupnik = TxtZastupnik.Text.Trim(),
+                    FunkcijaZastupnika = TxtFunkcijaZastupnika.Text.Trim(),
                     Napomena = TxtNapomena.Text.Trim()
                 };
                 newDb.Firme.Add(f);
@@ -371,6 +375,8 @@ public partial class FirmePage : Page
                 f.SifraPlacanja = TxtSifraPlacanja.Text.Trim();
                 f.Telefon = TxtTelefon.Text.Trim();
                 f.Email = TxtEmail.Text.Trim();
+                f.Zastupnik = TxtZastupnik.Text.Trim();
+                f.FunkcijaZastupnika = TxtFunkcijaZastupnika.Text.Trim();
                 f.Napomena = TxtNapomena.Text.Trim();
 
                 editDb.Entry(f).State = Microsoft.EntityFrameworkCore.EntityState.Modified;

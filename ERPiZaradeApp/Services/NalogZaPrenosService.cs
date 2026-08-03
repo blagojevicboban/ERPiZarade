@@ -98,7 +98,13 @@ public class NalogZaPrenosService
     /// Prihvaćena PPP-PD prijava. Bez nje se nalog za poreze i doprinose ne formira —
     /// uplata bez BOP-a se ne može povezati sa prijavom i ostaje neraspoređena.
     /// </param>
-    public PaketNaloga Pripremi(int godina, int mesec, PppPdPrijava? prijava, DateTime datumValute)
+    /// <param name="isplata">
+    /// Isplata za koju se nalozi formiraju (Faza 2.2). <c>null</c> znači ceo period, kao pre
+    /// uvođenja isplata. Kad mesec ima akontaciju i konačnu isplatu, paket mora obuhvatiti
+    /// tačno jednu — inače bi radnik dobio zbir obe, i to sa BOP-om samo jedne prijave.
+    /// </param>
+    public PaketNaloga Pripremi(
+        int godina, int mesec, PppPdPrijava? prijava, DateTime datumValute, Isplata? isplata = null)
     {
         var nalazi = new List<NalazProvere>();
         var nalozi = new List<NalogZaPrenos>();
@@ -119,10 +125,13 @@ public class NalogZaPrenosService
 
         // Stornirani obračun se ne isplaćuje — nalog po njemu bi poslao novac za platu
         // koja je poništena.
-        var obracuni = _db.ObracuniPlata
-            .AsNoTracking()
-            .Include(o => o.Radnik)
-            .Where(o => o.Godina == godina && o.Mesec == mesec && !o.Storniran)
+        var obracuni = IsplataService
+            .Obuhvat(
+                _db.ObracuniPlata.AsNoTracking()
+                    .Include(o => o.Radnik)
+                    .Include(o => o.Ugovor!).ThenInclude(u => u.VrstaUgovora),
+                godina, mesec, isplata)
+            .Where(o => !o.Storniran)
             .ToList();
 
         if (obracuni.Count == 0)
@@ -131,13 +140,20 @@ public class NalogZaPrenosService
             {
                 Tezina = TezinaNalaza.Greska,
                 Provera = "Prazan period",
-                Opis = $"Za period {mesec:D2}/{godina} ne postoji nijedan obračun."
+                Opis = isplata == null
+                    ? $"Za period {mesec:D2}/{godina} ne postoji nijedan obračun."
+                    : $"Isplata „{isplata.Naziv}“ za {mesec:D2}/{godina} ne obuhvata nijedan obračun."
             });
 
             return new PaketNaloga { Godina = godina, Mesec = mesec, Nalozi = nalozi, Nalazi = nalazi };
         }
 
-        string svrhaZarade = $"Isplata zarade za {mesec:D2}/{godina}";
+        // Kad mesec ima više isplata, virman mora reći koja je — inače radnik na izvodu vidi
+        // dve iste stavke i ne zna koja je akontacija a koja konačna isplata.
+        string svrhaZarade = isplata == null || (isplata.JePrva && isplata.Vrsta == VrstaIsplate.KonacnaZarada
+                                                 && string.IsNullOrWhiteSpace(isplata.Opis))
+            ? $"Isplata zarade za {mesec:D2}/{godina}"
+            : $"{isplata.NazivKratki} za {mesec:D2}/{godina}";
 
         foreach (var o in obracuni.OrderBy(o => o.Radnik?.BrojRadnika ?? int.MaxValue))
         {
@@ -159,6 +175,10 @@ public class NalogZaPrenosService
                 continue;
             }
 
+            // Naknada po ugovoru nije zarada: na izvodu mora da se vidi po čemu je isplaćena,
+            // a šifra plaćanja se uzima iz šifarnika vrsta ugovora jer je propisuje NBS.
+            var vrstaUgovora = o.Ugovor?.VrstaUgovora;
+
             nalozi.Add(new NalogZaPrenos
             {
                 Vrsta = VrstaNaloga.NetoZarada,
@@ -168,23 +188,41 @@ public class NalogZaPrenosService
                 PrimalacRacun = radnik.BankovniRacun,
                 PrimalacAdresa = $"{radnik.AdresaStanovanja}; {radnik.Mesto}".Trim(' ', ';'),
                 Iznos = o.NetoIsplata,
-                SifraPlacanja = SifraPlacanjaZarade,
-                Svrha = svrhaZarade,
+                SifraPlacanja = vrstaUgovora != null && !string.IsNullOrWhiteSpace(vrstaUgovora.SifraPlacanja)
+                    ? vrstaUgovora.SifraPlacanja
+                    : SifraPlacanjaZarade,
+                Svrha = vrstaUgovora != null
+                    ? SvrhaNaknade(o.Ugovor!, vrstaUgovora, godina, mesec)
+                    : svrhaZarade,
                 DatumValute = datumValute,
                 BrojRadnika = radnik.BrojRadnika
             });
         }
 
-        DodajNalogObjedinjeneNaplate(obracuni, prijava, platilacNaziv, platilacRacun, datumValute, godina, mesec, nalozi, nalazi);
+        DodajNalogObjedinjeneNaplate(obracuni, prijava, isplata, platilacNaziv, platilacRacun, datumValute, godina, mesec, nalozi, nalazi);
 
         ProveriRavnotezuZarada(obracuni, nalozi, nalazi);
 
         return new PaketNaloga { Godina = godina, Mesec = mesec, Nalozi = nalozi, Nalazi = nalazi };
     }
 
+    /// <summary>
+    /// Svrha plaćanja za naknadu van radnog odnosa. Predmet ugovora ima prednost nad nazivom
+    /// vrste — primalac na izvodu treba da prepozna posao, a ne poresku kategoriju.
+    /// </summary>
+    private static string SvrhaNaknade(Ugovor ugovor, VrstaUgovora vrsta, int godina, int mesec)
+    {
+        string osnov = string.IsNullOrWhiteSpace(ugovor.Predmet) ? vrsta.Naziv : ugovor.Predmet.Trim();
+        string broj = string.IsNullOrWhiteSpace(ugovor.Broj) ? "" : $" br. {ugovor.Broj.Trim()}";
+
+        string svrha = $"{osnov}{broj} — {mesec:D2}/{godina}";
+        return svrha.Length <= 140 ? svrha : svrha[..140];
+    }
+
     private static void DodajNalogObjedinjeneNaplate(
         List<ObracunPlate> obracuni,
         PppPdPrijava? prijava,
+        Isplata? isplata,
         string platilacNaziv,
         string platilacRacun,
         DateTime datumValute,
@@ -206,6 +244,20 @@ public class NalogZaPrenosService
                 Provera = "Nedostaje BOP",
                 Opis = $"Porezi i doprinosi ({nasZbir:N2}) se ne mogu uplatiti bez BOP-a iz prihvaćene PPP-PD prijave. " +
                        "Učitajte dokument koji ePorezi izda po prihvatanju prijave."
+            });
+            return;
+        }
+
+        // BOP jedne isplate na nalogu druge šalje novac na tuđu deklaraciju: tamo ostaje višak,
+        // ovde manjak. Prijava i isplata se vezuju rednim brojem, pa se on ovde i proverava.
+        if (isplata != null && prijava.RedniBroj != isplata.RedniBroj)
+        {
+            nalazi.Add(new NalazProvere
+            {
+                Tezina = TezinaNalaza.Greska,
+                Provera = "Prijava ne pripada ovoj isplati",
+                Opis = $"Nalozi se prave za „{isplata.Naziv}“, a učitana prijava nosi redni broj " +
+                       $"{prijava.RedniBroj}. Uplata sa tuđim BOP-om ostaje neraspoređena."
             });
             return;
         }
@@ -250,7 +302,9 @@ public class NalogZaPrenosService
                 : prijava.ModelPozivaNaBroj,
             PozivNaBroj = prijava.Bop,
             Svrha = string.IsNullOrWhiteSpace(prijava.SvrhaUplate)
-                ? $"Porezi i doprinosi po odbitku za {mesec:D2}/{godina}"
+                ? (isplata == null || isplata.JePrva
+                    ? $"Porezi i doprinosi po odbitku za {mesec:D2}/{godina}"
+                    : $"Porezi i doprinosi po odbitku — {isplata.NazivKratki} {mesec:D2}/{godina}")
                 : prijava.SvrhaUplate,
             DatumValute = datumValute
         });

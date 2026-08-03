@@ -38,6 +38,10 @@ public class PlataDbContext : DbContext
     public DbSet<UnetoPrimanje> UnetaPrimanja => Set<UnetoPrimanje>();
     public DbSet<PoreskaOlaksica> PoreskeOlaksice => Set<PoreskaOlaksica>();
     public DbSet<OlaksicaMfp> OlaksicaMfpDeklaracije => Set<OlaksicaMfp>();
+    public DbSet<Isplata> Isplate => Set<Isplata>();
+    public DbSet<VrstaUgovora> VrsteUgovora => Set<VrstaUgovora>();
+    public DbSet<Ugovor> Ugovori => Set<Ugovor>();
+    public DbSet<SablonUgovora> SabloniUgovora => Set<SablonUgovora>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -178,6 +182,65 @@ public class PlataDbContext : DbContext
         modelBuilder.Entity<OlaksicaMfp>()
             .HasIndex(m => new { m.PoreskaOlaksicaId, m.Oznaka })
             .IsUnique();
+
+        // Isplata → ObracunPlate (1:N). Brisanje isplate NE sme da povuče obračune sa sobom:
+        // obračun je dokaz šta je bilo obračunato i prijavljeno, a isplata je samo obuhvat.
+        modelBuilder.Entity<ObracunPlate>()
+            .HasOne(o => o.Isplata)
+            .WithMany(i => i.Obracuni)
+            .HasForeignKey(o => o.IsplataId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Redni broj razdvaja isplate u mesecu i istovremeno je veza ka PPP-PD prijavi;
+        // dva ista broja učinila bi tu vezu dvosmislenom.
+        modelBuilder.Entity<Isplata>()
+            .HasIndex(i => new { i.Godina, i.Mesec, i.RedniBroj })
+            .IsUnique();
+
+        // Obračuni se od Faze 2.2 čitaju po isplati, ne samo po periodu
+        modelBuilder.Entity<ObracunPlate>()
+            .HasIndex(o => o.IsplataId);
+
+        // Šifra vrste ugovora je ono po čemu je kod traži, pa mora biti jedinstvena
+        modelBuilder.Entity<VrstaUgovora>()
+            .HasIndex(v => v.Sifra)
+            .IsUnique();
+
+        // Vrsta ugovora upotrebljena u zaključenom ugovoru ne sme da se obriše — sa njom bi
+        // nestali normirani troškovi i stope po kojima je naknada obračunata i prijavljena.
+        modelBuilder.Entity<Ugovor>()
+            .HasOne(u => u.VrstaUgovora)
+            .WithMany(v => v.Ugovori)
+            .HasForeignKey(u => u.VrstaUgovoraId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Ugovor se traži po primaocu
+        modelBuilder.Entity<Ugovor>()
+            .HasIndex(u => u.BrojRadnika);
+
+        // Ugovor → ObracunPlate (1:N). Kao i kod isplate, brisanje ugovora ne sme da povuče
+        // obračune: oni su dokaz šta je isplaćeno i prijavljeno.
+        modelBuilder.Entity<ObracunPlate>()
+            .HasOne(o => o.Ugovor)
+            .WithMany(u => u.Obracuni)
+            .HasForeignKey(o => o.UgovorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ObracunPlate>()
+            .HasIndex(o => o.UgovorId);
+
+        // Šifra šablona je ono po čemu ga kod traži pri prvom generisanju
+        modelBuilder.Entity<SablonUgovora>()
+            .HasIndex(s => s.Sifra)
+            .IsUnique();
+
+        // Brisanje vrste ugovora ne sme da povuče šablon: tekst je dokument i preživljava
+        // izmenu šifarnika stopa. Zato je veza opciona i bez kaskade.
+        modelBuilder.Entity<SablonUgovora>()
+            .HasOne(s => s.VrstaUgovora)
+            .WithMany()
+            .HasForeignKey(s => s.VrstaUgovoraId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 
     /// <summary>
@@ -217,8 +280,16 @@ public class PlataDbContext : DbContext
             OznaciPocetnuMigracijuKaoPrimenjenu(ctx);
         }
 
+        // Istorija se usklađuje PRE migracije: migracija koja je u međuvremenu regenerisana
+        // nosi nov žig, pa bi Migrate() pokušao da je primeni po drugi put.
+        UskladiPreimenovaneMigracije(ctx);
+
         // Nova baza: kreira kompletnu šemu i istoriju. Zatečena: primenjuje samo nove migracije.
         ctx.Database.Migrate();
+
+        // Dopune za baze čija je istorija upravo usklađena — Migrate() njihovu migraciju
+        // preskače, pa ono što je nova verzija donela mora da stigne ovim putem.
+        DopuniKoloneIzRegenerisanihMigracija(ctx);
 
         // Optimizacija performansi SQLite-a na nivou same baze
         try { ctx.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;"); } catch { }
@@ -256,6 +327,83 @@ public class PlataDbContext : DbContext
             "INSERT OR IGNORE INTO __EFMigrationsHistory (MigrationId, ProductVersion) VALUES ({0}, {1});",
             pocetnaMigracija,
             typeof(DbContext).Assembly.GetName().Version?.ToString() ?? "8.0.16");
+    }
+
+    /// <summary>
+    /// Usklađuje istoriju migracija kad je migracija u međuvremenu <b>regenerisana</b> —
+    /// obrisana pa ponovo napravljena, čime dobija nov vremenski žig uz isti naziv.
+    ///
+    /// Baza koja je stigla da primeni staru verziju nosi njen ID. EF novi ID vidi kao
+    /// neprimenjen i pokušava da doda kolone koje već postoje, pa nadogradnja pada sa
+    /// „duplicate column name" — nad živim podacima, pri pokretanju programa. Zapis se zato
+    /// prepisuje na novi ID; razlike u sadržaju dve verzije pokriva
+    /// <see cref="DopuniKoloneIzRegenerisanihMigracija"/>.
+    ///
+    /// Uparuje se po nazivu (deo posle prvog podvlaka), jer se pri regenerisanju menja samo
+    /// vremenski žig. Migracija koja je nestala bez zamene istog naziva se ne dira — takav
+    /// zapis EF ionako zanemaruje.
+    /// </summary>
+    private static void UskladiPreimenovaneMigracije(PlataDbContext ctx)
+    {
+        List<string> primenjene;
+        try
+        {
+            primenjene = ctx.Database.GetAppliedMigrations().ToList();
+        }
+        catch
+        {
+            // Nema tabele istorije — nova baza. Nema šta da se usklađuje.
+            return;
+        }
+
+        var uKodu = ctx.Database.GetMigrations().ToList();
+
+        var neprimenjene = uKodu.Except(primenjene, StringComparer.Ordinal).ToList();
+        var nepoznate = primenjene.Except(uKodu, StringComparer.Ordinal).ToList();
+
+        if (neprimenjene.Count == 0 || nepoznate.Count == 0) return;
+
+        foreach (var stara in nepoznate)
+        {
+            var nova = neprimenjene.FirstOrDefault(m => NazivMigracije(m) == NazivMigracije(stara));
+            if (nova == null) continue;
+
+            try
+            {
+                ctx.Database.ExecuteSqlRaw(
+                    "UPDATE __EFMigrationsHistory SET MigrationId = {0} WHERE MigrationId = {1};",
+                    nova, stara);
+
+                neprimenjene.Remove(nova);
+            }
+            catch
+            {
+                // Neuspelo usklađivanje ne sme da obori pokretanje; Migrate() ispod će
+                // prijaviti pravu grešku.
+            }
+        }
+    }
+
+    /// <summary>Naziv migracije bez vremenskog žiga: <c>20260803062215_Faza2_Isplate</c> → <c>Faza2_Isplate</c>.</summary>
+    private static string NazivMigracije(string migrationId)
+    {
+        int podvlaka = migrationId.IndexOf('_');
+        return podvlaka >= 0 ? migrationId[(podvlaka + 1)..] : migrationId;
+    }
+
+    /// <summary>
+    /// Kolone koje bi mogle da nedostaju bazi čija je istorija usklađena: stara i nova verzija
+    /// iste migracije ne moraju biti istovetne, a <c>Migrate()</c> posle usklađivanja tu
+    /// migraciju preskače.
+    ///
+    /// ALTER nad kolonom koja već postoji pukne — i to je u redu, catch ga guta, isto kao u
+    /// <see cref="PrimeniLegacyZakrpe"/>. Zato se poziva bezuslovno, i za nove baze.
+    /// </summary>
+    private static void DopuniKoloneIzRegenerisanihMigracija(PlataDbContext ctx)
+    {
+        // Faza2_Isplate: prva verzija migracije nije imala ovu kolonu, pa je baza koja ju je
+        // primenila nema — a verzije obračuna se od 1.10.0 broje po isplati.
+        try { ctx.Database.ExecuteSqlRaw("ALTER TABLE ObracunVerzije ADD COLUMN IsplataId INTEGER NULL;"); } catch { }
     }
 
     /// <summary>
@@ -510,6 +658,50 @@ public class PlataDbContext : DbContext
             if (nove.Count > 0)
             {
                 ctx.VrstePrimanja.AddRange(nove);
+                ctx.SaveChanges();
+            }
+        }
+        catch { }
+
+        try
+        {
+            // Isto pravilo kao kod vrsta primanja: dopunjuje se po šifri, pa izmene stopa
+            // koje je korisnik napravio ostaju netaknute pri nadogradnji.
+            var postojeceVrsteUgovora = ctx.VrsteUgovora.Select(v => v.Sifra).ToHashSet();
+            var noveVrsteUgovora = VrsteUgovoraSeed.Podrazumevane()
+                .Where(v => !postojeceVrsteUgovora.Contains(v.Sifra))
+                .ToList();
+
+            if (noveVrsteUgovora.Count > 0)
+            {
+                ctx.VrsteUgovora.AddRange(noveVrsteUgovora);
+                ctx.SaveChanges();
+            }
+        }
+        catch { }
+
+        try
+        {
+            // Šabloni se dopunjuju po šifri. Tekst koji je korisnik izmenio ostaje netaknut —
+            // formulacije su njegova odluka, a nadogradnja ih ne sme vraćati na podrazumevane.
+            var postojeciSabloni = ctx.SabloniUgovora.Select(s => s.Sifra).ToHashSet();
+            var noviSabloni = SabloniUgovoraSeed.Podrazumevani()
+                .Where(s => !postojeciSabloni.Contains(s.Sifra))
+                .ToList();
+
+            if (noviSabloni.Count > 0)
+            {
+                // Šablon se veže za vrstu ugovora iste šifre kad takva postoji, pa se pri
+                // generisanju sam ponudi.
+                var vrstePoSifri = ctx.VrsteUgovora.ToDictionary(v => v.Sifra, v => v.VrstaUgovoraId);
+
+                foreach (var sablon in noviSabloni)
+                {
+                    if (vrstePoSifri.TryGetValue(sablon.Sifra, out int vrstaId))
+                        sablon.VrstaUgovoraId = vrstaId;
+                }
+
+                ctx.SabloniUgovora.AddRange(noviSabloni);
                 ctx.SaveChanges();
             }
         }

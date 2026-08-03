@@ -47,7 +47,8 @@ public partial class DodajRadnikaRadniSatiWindow : Window
                 .ToList();
 
             // Učitaj sve radnike iz baze koji nisu već dodati
-            var query = _db.Radnici.Where(r => !vecDodatiRadnikIds.Contains(r.Id));
+            // Lice van radnog odnosa nema radne sate — naknada mu se obračunava po ugovoru.
+            var query = _db.Radnici.Where(r => !vecDodatiRadnikIds.Contains(r.Id) && !r.VanRadnogOdnosa);
 
             // Ako nije čekirano "Prikaži neaktivne", prikaži samo aktivne
             bool prikaziNeaktivne = CheckPrikaziNeaktivne.IsChecked ?? false;

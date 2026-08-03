@@ -35,6 +35,15 @@
                         <!-- Section: Selection and Parameters -->
                         <TextBlock Text="PARAMETRI PRIJAVE" FontSize="12" FontWeight="Bold" Foreground="{StaticResource PrimaryLightBrush}" Margin="0,0,0,12"/>
 
+                        <!-- Isplata (Faza 2.2): vidljivo tek kad mesec ima više od jedne isplate. -->
+                        <StackPanel Margin="0,0,0,10"
+                                    Visibility="{Binding ImaViseIsplata, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="Isplata:" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <ComboBox ItemsSource="{Binding Isplate}" DisplayMemberPath="Naziv"
+                                      SelectedItem="{Binding IzabranaIsplata, Mode=TwoWay}" Padding="8,5"
+                                      ToolTip="Prijava se podnosi za jednu isplatu. Akontacija i konačna isplata istog meseca su dve prijave, svaka sa svojim datumom plaćanja i svojim BOP-om."/>
+                        </StackPanel>
+
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>

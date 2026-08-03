@@ -154,6 +154,8 @@
                         <DataGridTextColumn Header="Mes." Binding="{Binding Mesec}" Width="45"/>
                         <DataGridTextColumn Header="Br." Binding="{Binding Radnik.BrojRadnika}" Width="55"/>
                         <DataGridTextColumn Header="Radnik" Binding="{Binding Radnik.ImeIPrezime}" Width="140"/>
+                        <!-- Isplata u okviru meseca; prazno kad je isplata jedna (Faza 2.2). -->
+                        <DataGridTextColumn Header="Isplata" Binding="{Binding IsplataStr}" Width="110" IsReadOnly="True"/>
                         <DataGridTextColumn Header="Storno" Binding="{Binding StornoStr}" Width="70"
                                             ElementStyle="{StaticResource StornoCelija}"/>
                         <DataGridTextColumn Header="Verz." Binding="{Binding Verzija}" Width="50"/>

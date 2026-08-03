@@ -17,12 +17,29 @@ namespace ERPiZaradeApp.Services;
 public static class KreditRateService
 {
     /// <summary>
+    /// Da li je obračun uopšte skinuo rate (Faza 2.2). Akontacija, bonus i 13. plata se
+    /// isplaćuju bez obustava, pa im se rata ni ne vraća — vraćanje neskinute rate bi
+    /// radniku smanjilo dug bez ijednog dinara koji je otišao poveriocu.
+    ///
+    /// Obračun bez isplate pripada prvoj isplati meseca i radi kao pre Faze 2.2.
+    /// </summary>
+    private static bool NosiObustave(PlataDbContext db, ObracunPlate obracun)
+    {
+        if (obracun.IsplataId == null) return true;
+
+        var isplata = db.Isplate.FirstOrDefault(i => i.IsplataId == obracun.IsplataId);
+        return isplata == null || isplata.NosiObustave;
+    }
+
+    /// <summary>
     /// Vraća ratu koja je bila skinuta u periodu obračuna. Poziva se kad obračun prestaje
     /// da važi — brisanjem, prekalkulacijom ili storniranjem.
     /// </summary>
     /// <returns>Broj kredita kojima je rata vraćena.</returns>
     public static int VratiRate(PlataDbContext db, ObracunPlate obracun)
     {
+        if (!NosiObustave(db, obracun)) return 0;
+
         var periodPocetak = new DateTime(obracun.Godina, obracun.Mesec, 1);
         int pogodjeno = 0;
 
@@ -51,6 +68,8 @@ public static class KreditRateService
     /// <returns>Broj kredita kojima je rata skinuta.</returns>
     public static int SkiniRate(PlataDbContext db, ObracunPlate obracun)
     {
+        if (!NosiObustave(db, obracun)) return 0;
+
         var periodPocetak = new DateTime(obracun.Godina, obracun.Mesec, 1);
         int pogodjeno = 0;
 

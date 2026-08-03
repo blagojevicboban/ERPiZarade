@@ -427,7 +427,12 @@
                             <!-- Aktivan -->
                             <CheckBox Content="Aktivan zaposleni"
                                       IsChecked="{Binding EditingRadnik.Aktivan}"
-                                      FontSize="13" Margin="0,4,0,16"/>
+                                      FontSize="13" Margin="0,4,0,6"/>
+
+                            <CheckBox Content="Van radnog odnosa (primalac po ugovoru)"
+                                      IsChecked="{Binding EditingRadnik.VanRadnogOdnosa}"
+                                      FontSize="13" Margin="0,0,0,16"
+                                      ToolTip="Lice kome se isplaćuje naknada po ugovoru o delu, autorskom ugovoru ili privremenim i povremenim poslovima. Karton mu služi za JMBG, opštinu i tekući račun; ekrani zarade ga ne nude za obračun plate."/>
 
                             <!-- Dugmad -->
                             <StackPanel>

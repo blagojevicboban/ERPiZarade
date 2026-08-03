@@ -220,6 +220,12 @@
                         <Button x:Name="BtnNalozi" Content="🏦  Nalozi za prenos"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnNalozi_Click"/>
+                        <Button x:Name="BtnIsplate" Content="💸  Isplate u mesecu"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnIsplate_Click"/>
+                        <Button x:Name="BtnUgovori" Content="📝  Ugovori van radnog odnosa"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnUgovori_Click"/>
 
                         <TextBlock x:Name="HeaderSifarnici" Text="ŠIFARNICI" FontSize="10" FontWeight="SemiBold"
                                    Foreground="#7986CB" Margin="24,10,0,3"/>
@@ -238,6 +244,12 @@
                         <Button x:Name="BtnOlaksice" Content="🏷️  Poreske olakšice"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnOlaksice_Click"/>
+                        <Button x:Name="BtnVrsteUgovora" Content="📄  Vrste ugovora"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnVrsteUgovora_Click"/>
+                        <Button x:Name="BtnSabloniUgovora" Content="🖋️  Šabloni ugovora"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnSabloniUgovora_Click"/>
 
                         <TextBlock x:Name="HeaderPodesavanja" Text="PODEŠAVANJA" FontSize="10" FontWeight="SemiBold"
                                    Foreground="#7986CB" Margin="24,10,0,3"/>

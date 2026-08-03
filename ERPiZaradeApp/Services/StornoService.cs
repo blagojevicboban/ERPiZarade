@@ -50,17 +50,24 @@ public class StornoService
     /// Obavezan. Bez razloga se posle mesecima ne zna zašto obračuna nema u prijavi, a
     /// upravo to je pitanje koje se postavlja pri kontroli.
     /// </param>
-    public RezultatStorniranja Storniraj(int godina, int mesec, int? brojRadnika, string razlog)
-        => Primeni(godina, mesec, brojRadnika, razlog, storniraj: true);
+    /// <param name="isplata">
+    /// Isplata čiji se obračuni storniraju (Faza 2.2). <c>null</c> je ceo period. Bez ovog
+    /// obuhvata bi storniranje pogrešne akontacije oborilo i konačnu isplatu istog meseca.
+    /// </param>
+    public RezultatStorniranja Storniraj(
+        int godina, int mesec, int? brojRadnika, string razlog, Isplata? isplata = null)
+        => Primeni(godina, mesec, brojRadnika, razlog, storniraj: true, isplata);
 
     /// <summary>
     /// Poništava storniranje i vraća obračun među važeće. Rata kredita se ponovo skida,
     /// da stanje bude isto kao pre storniranja.
     /// </summary>
-    public RezultatStorniranja PonistiStorniranje(int godina, int mesec, int? brojRadnika, string razlog)
-        => Primeni(godina, mesec, brojRadnika, razlog, storniraj: false);
+    public RezultatStorniranja PonistiStorniranje(
+        int godina, int mesec, int? brojRadnika, string razlog, Isplata? isplata = null)
+        => Primeni(godina, mesec, brojRadnika, razlog, storniraj: false, isplata);
 
-    private RezultatStorniranja Primeni(int godina, int mesec, int? brojRadnika, string razlog, bool storniraj)
+    private RezultatStorniranja Primeni(
+        int godina, int mesec, int? brojRadnika, string razlog, bool storniraj, Isplata? isplata)
     {
         if (string.IsNullOrWhiteSpace(razlog))
         {
@@ -71,9 +78,8 @@ public class StornoService
             };
         }
 
-        var upit = _db.ObracuniPlata
-            .Include(o => o.Radnik)
-            .Where(o => o.Godina == godina && o.Mesec == mesec);
+        var upit = IsplataService.Obuhvat(
+            _db.ObracuniPlata.Include(o => o.Radnik), godina, mesec, isplata);
 
         if (brojRadnika.HasValue)
             upit = upit.Where(o => o.Radnik.BrojRadnika == brojRadnika.Value);
@@ -109,10 +115,14 @@ public class StornoService
 
         _db.SaveChanges();
 
-        // Radnja nad jednim radnikom se beleži imenom; radnja nad periodom obimom.
+        // Radnja nad jednim radnikom se beleži imenom; radnja nad periodom obimom. Kad mesec
+        // ima više isplata, u tragu mora stajati i koja — inače se ne zna koji je novac
+        // poništen.
+        string obuhvat = isplata == null || isplata.JePrva ? "" : $"Isplata: {isplata.Naziv}. ";
+
         string detalji = storniraj
-            ? $"Razlog: {razlog}"
-            : $"Poništeno storniranje. Razlog: {razlog}";
+            ? $"{obuhvat}Razlog: {razlog}"
+            : $"{obuhvat}Poništeno storniranje. Razlog: {razlog}";
 
         if (brojRadnika.HasValue)
         {

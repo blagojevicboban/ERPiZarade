@@ -5,6 +5,10 @@
       Title="Nalozi za prenos"
       Background="{StaticResource SurfaceBrush}">
 
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Page.Resources>
+
     <Page.DataContext>
         <local:NaloziViewModel/>
     </Page.DataContext>
@@ -25,6 +29,18 @@
             <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,16,0" Padding="16">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel>
+                        <!-- Isplata (Faza 2.2): vidljivo tek kad mesec ima više od jedne. -->
+                        <StackPanel Margin="0,0,0,14"
+                                    Visibility="{Binding ImaViseIsplata, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="ISPLATA" FontSize="12" FontWeight="Bold"
+                                       Foreground="{StaticResource PrimaryLightBrush}" Margin="0,0,0,4"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Margin="0,0,0,6"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="Paket se pravi za jednu isplatu. Prijava i BOP se uzimaju iz prijave upravo te isplate."/>
+                            <ComboBox ItemsSource="{Binding Isplate}" DisplayMemberPath="Naziv"
+                                      SelectedItem="{Binding IzabranaIsplata, Mode=TwoWay}"/>
+                        </StackPanel>
+
                         <TextBlock Text="OBJEDINJENA NAPLATA" FontSize="12" FontWeight="Bold"
                                    Foreground="{StaticResource PrimaryLightBrush}" Margin="0,0,0,4"/>
                         <TextBlock TextWrapping="Wrap" FontSize="11" Margin="0,0,0,12"

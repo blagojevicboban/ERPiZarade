@@ -375,7 +375,7 @@ public class UvozSatiService
         list.Row(1).Style.Font.Bold = true;
 
         var radnici = _db.Radnici
-            .Where(r => r.Godina == godina && r.Mesec == mesec && r.Aktivan)
+            .Where(r => r.Godina == godina && r.Mesec == mesec && r.Aktivan && !r.VanRadnogOdnosa)
             .OrderBy(r => r.BrojRadnika)
             .ToList();
 

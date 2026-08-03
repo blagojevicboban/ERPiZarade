@@ -83,22 +83,15 @@ public static class VerzijeObracunaService
     public static int SledecaVerzija(
         PlataDbContext db, int godina, int mesec, int radnikId, Isplata? isplata = null)
     {
-        var upit = db.ObracunVerzije
-            .Where(v => v.Godina == godina && v.Mesec == mesec && v.RadnikId == radnikId);
-
-        if (isplata != null)
-        {
-            int id = isplata.IsplataId;
-
-            // Prva isplata obuhvata i arhivu bez upisane isplate — nastalu pre Faze 2.2 —
-            // po istom pravilu po kom je obuhvata i među obračunima. Bez toga bi prvi
-            // obračun posle nadogradnje ponovo dobio verziju 1, koja je već potrošena.
-            upit = isplata.JePrva
-                ? upit.Where(v => v.IsplataId == null || v.IsplataId == id)
-                : upit.Where(v => v.IsplataId == id);
-        }
-
-        var arhivirane = upit.Select(v => (int?)v.Verzija).ToList();
+        // Prva isplata obuhvata i arhivu bez upisane isplate — nastalu pre Faze 2.2 — po
+        // istom pravilu po kom obuhvata i obračune. Bez toga bi prvi obračun posle
+        // nadogradnje ponovo dobio verziju 1, koja je već potrošena. Pravilo se zato ne
+        // prepisuje ovde, nego stiže iz IsplataService.
+        var arhivirane = IsplataService
+            .Obuhvat(db.ObracunVerzije, godina, mesec, isplata)
+            .Where(v => v.RadnikId == radnikId)
+            .Select(v => (int?)v.Verzija)
+            .ToList();
 
         int najveca = arhivirane.Count == 0 ? 0 : arhivirane.Max(v => v ?? 0);
         return najveca + 1;

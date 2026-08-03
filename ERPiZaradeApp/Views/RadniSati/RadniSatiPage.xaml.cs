@@ -18,6 +18,15 @@ public partial class RadniSatiPage : Page
     private decimal _lastVrednostBoda;
     private int _lastFondCasova;
 
+    /// <summary>
+    /// Isplata čiji se sati prikazuju (Faza 2.2). <c>null</c> je ceo period — tako se ekran
+    /// ponaša nad bazom koja tabelu isplata još nema.
+    /// </summary>
+    private Isplata? _izabranaIsplata;
+
+    /// <summary>Popunjavanje padajuće liste ne sme da pokrene ponovno učitavanje.</summary>
+    private bool _popunjavamIsplate;
+
     public RadniSatiPage()
     {
         InitializeComponent();
@@ -50,6 +59,8 @@ public partial class RadniSatiPage : Page
             string periodNaziv = mesec >= 1 && mesec <= 12 ? $"{meseciStr[mesec - 1]} {godina}" : $"{mesec:D2}/{godina}";
             ActivePeriodSubtitle.Text = $"Uređivanje radnih sati zaposlenih u aktivnom periodu: {periodNaziv}";
 
+            UcitajIsplate(godina, mesec);
+
             // Učitaj parametre perioda iz baze (tabela Porezi)
             var porezi = _db.Porezi.FirstOrDefault(p => p.Godina == godina && p.Mesec == mesec);
             if (porezi == null)
@@ -70,10 +81,10 @@ public partial class RadniSatiPage : Page
             TxtVrednostBoda.Text = $"{vrednostBoda:F2}";
             TxtFondCasova.Text = $"{fondSati}";
 
-            // Učitaj radne sate za aktivni period
-            _allSati = _db.RadniSati
-                .Include(s => s.Radnik)
-                .Where(s => s.Godina == godina && s.Mesec == mesec)
+            // Učitaj radne sate izabrane isplate. Dok je isplata jedna, obuhvat je ceo mesec
+            // kao i pre Faze 3.1 — i redovi bez upisane isplate pripadaju prvoj.
+            _allSati = IsplataService
+                .Obuhvat(_db.RadniSati.Include(s => s.Radnik), godina, mesec, _izabranaIsplata)
                 .OrderBy(s => s.Radnik.BrojRadnika)
                 .ToList();
 
@@ -111,13 +122,174 @@ public partial class RadniSatiPage : Page
 
             if (!isLocked)
             {
-                StatusMessage.Text = $"Pronađeno {_allSati.Count} zapisa o radnim satima zaposlenih za period {periodNaziv}.";
+                string obuhvat = _izabranaIsplata == null || _izabranaIsplata.JePrva
+                    ? $"period {periodNaziv}"
+                    : $"isplatu „{_izabranaIsplata.Naziv}“ u periodu {periodNaziv}";
+
+                StatusMessage.Text = $"Pronađeno {_allSati.Count} zapisa o radnim satima zaposlenih za {obuhvat}.";
             }
         }
         catch (Exception ex)
         {
             StatusMessage.Text = $"Greška pri učitavanju podataka: {ex.Message}";
         }
+    }
+
+    /// <summary>
+    /// Puni padajuću listu isplata i bira onu na kojoj se radi. Dok mesec ima jednu isplatu
+    /// lista je onemogućena i ekran radi kao pre Faze 3.1.
+    /// </summary>
+    private void UcitajIsplate(int godina, int mesec)
+    {
+        try
+        {
+            var servis = new IsplataService(_db);
+            servis.Obezbedi(godina, mesec);
+            var isplate = servis.Isplate(godina, mesec);
+
+            _popunjavamIsplate = true;
+            ComboIsplata.ItemsSource = isplate;
+            ComboIsplata.SelectedItem =
+                isplate.FirstOrDefault(i => i.IsplataId == _izabranaIsplata?.IsplataId)
+                ?? isplate.FirstOrDefault();
+            _popunjavamIsplate = false;
+
+            _izabranaIsplata = ComboIsplata.SelectedItem as Isplata;
+            ComboIsplata.IsEnabled = isplate.Count > 1;
+        }
+        catch
+        {
+            // Baza starije verzije nema tabelu isplata — ekran tada radi nad celim periodom,
+            // isto kao pre Faze 2.2.
+            _popunjavamIsplate = true;
+            ComboIsplata.ItemsSource = null;
+            _popunjavamIsplate = false;
+
+            _izabranaIsplata = null;
+            ComboIsplata.IsEnabled = false;
+        }
+    }
+
+    private void ComboIsplata_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_popunjavamIsplate) return;
+
+        _izabranaIsplata = ComboIsplata.SelectedItem as Isplata;
+
+        // Sati druge isplate su drugi redovi, pa se čita iznova; izmene u tabeli su već
+        // snimljene, jer se svaka ćelija snima čim se napusti.
+        _db = PlataDbContext.Create(AppConfig.DbPath);
+        LoadData();
+    }
+
+    /// <summary>
+    /// Preračunava platu jednog radnika iz njegovih sati i upisuje je u obračun izabrane
+    /// isplate. Ista računica je stajala prepisana na četiri mesta na ovom ekranu — snimanju,
+    /// izmeni ćelije, masovnoj izmeni i izmeni parametara perioda — pa se razlikovala samo po
+    /// napomeni koju ostavlja.
+    /// </summary>
+    private async System.Threading.Tasks.Task PreracunajIUpisi(
+        RadniSat rs, Radnik radnik, int godina, int mesec,
+        decimal vrednostBoda, int fondSati, string napomena)
+    {
+        _db.Entry(rs).State = EntityState.Modified;
+
+        // Obustave nosi samo konačna zarada (odluka 11): na akontaciji i bonusu se rate
+        // kredita i samodoprinos ne skidaju, jer se skidaju na konačnoj isplati istog meseca.
+        bool saObustavama = _izabranaIsplata?.NosiObustave ?? true;
+
+        var novi = new ObracunService(_db)
+            .Calculate(radnik, rs, godina, mesec, vrednostBoda, fondSati, saObustavama);
+
+        // Naknade po ugovoru se ne diraju (odluka 17): ne nastaju iz sati i koeficijenata
+        // koji se ovde ponovo računaju, nego zasebnom radnjom nad ugovorom.
+        var postojeci = await IsplataService
+            .Obuhvat(_db.ObracuniPlata, godina, mesec, _izabranaIsplata)
+            .FirstOrDefaultAsync(o => o.RadnikId == rs.RadnikId && o.UgovorId == null);
+
+        if (postojeci == null)
+        {
+            novi.IsplataId = _izabranaIsplata?.IsplataId;
+            _db.ObracuniPlata.Add(novi);
+            return;
+        }
+
+        PreslikajIznose(postojeci, novi);
+        PreslikajSate(postojeci, rs);
+
+        postojeci.Prosek = novi.Prosek;
+        postojeci.DatumObracuna = DateTime.Now;
+        postojeci.Napomena = $"{napomena} {DateTime.Now:dd.MM.yyyy HH:mm}";
+
+        _db.Entry(postojeci).State = EntityState.Modified;
+    }
+
+    /// <summary>Prepisuje obračunate iznose u zatečeni red, da EF Core isprati izmene.</summary>
+    private static void PreslikajIznose(ObracunPlate cilj, ObracunPlate izvor)
+    {
+        cilj.BrutoZarada = izvor.BrutoZarada;
+        cilj.BrutoBolovanje = izvor.BrutoBolovanje;
+        cilj.BrutoNaknade = izvor.BrutoNaknade;
+        cilj.BrutoStimulacija = izvor.BrutoStimulacija;
+        cilj.BrutoMinuliRad = izvor.BrutoMinuliRad;
+
+        cilj.NetoZar = izvor.NetoZar;
+        cilj.NetoNerd = izvor.NetoNerd;
+        cilj.NetoGOd = izvor.NetoGOd;
+        cilj.NetoTo = izvor.NetoTo;
+        cilj.TopliObrokIznos = izvor.TopliObrokIznos;
+        cilj.NetoReg = izvor.NetoReg;
+        cilj.Neto = izvor.Neto;
+        cilj.NetoBol = izvor.NetoBol;
+        cilj.NetoB100 = izvor.NetoB100;
+        cilj.NetoPlac = izvor.NetoPlac;
+        cilj.NetoPlZ = izvor.NetoPlZ;
+        cilj.NetoDrza = izvor.NetoDrza;
+        cilj.NetoNocni = izvor.NetoNocni;
+        cilj.NetoVezba = izvor.NetoVezba;
+        cilj.NetoPrek = izvor.NetoPrek;
+        cilj.NetoTer = izvor.NetoTer;
+        cilj.KorDod = izvor.KorDod;
+        cilj.KorDod1 = izvor.KorDod1;
+        cilj.Kumul = izvor.Kumul;
+        cilj.NetoNede = izvor.NetoNede;
+
+        cilj.DoprinosPioRadnik = izvor.DoprinosPioRadnik;
+        cilj.DoprinosZdravstvoRadnik = izvor.DoprinosZdravstvoRadnik;
+        cilj.DoprinosNezaposlenostRadnik = izvor.DoprinosNezaposlenostRadnik;
+
+        cilj.DoprinosPioPoslodavac = izvor.DoprinosPioPoslodavac;
+        cilj.DoprinosZdravstvoPoslodavac = izvor.DoprinosZdravstvoPoslodavac;
+        cilj.DoprinosNezaposlenostPoslodavac = izvor.DoprinosNezaposlenostPoslodavac;
+
+        cilj.PorezNaDohodak = izvor.PorezNaDohodak;
+        cilj.PoreskaOsnovica = izvor.PoreskaOsnovica;
+        cilj.LicniOdbitak = izvor.LicniOdbitak;
+        cilj.KreditObustava = izvor.KreditObustava;
+        cilj.Samodoprinosi = izvor.Samodoprinosi;
+        cilj.OstaliOdbici = izvor.OstaliOdbici;
+        cilj.NetoIsplata = izvor.NetoIsplata;
+    }
+
+    /// <summary>Sati ostaju i u samom obračunu — on ih nosi u svojim kolonama.</summary>
+    private static void PreslikajSate(ObracunPlate cilj, RadniSat rs)
+    {
+        cilj.RedovniSati = rs.RedovniSati;
+        cilj.BolovanjeSati = rs.BolovanjeSati;
+        cilj.PrekovremeneSati = rs.PrekovremeneSati;
+        cilj.GodisnjioOdmorSati = rs.GodisnjiOdmorSati;
+        cilj.DrzavniPraznikSati = rs.DrzavniPraznikSati;
+        cilj.NocniSati = rs.NocniSati;
+        cilj.SmenskiSati = rs.SmenskiSati;
+        cilj.RadPraznikomSati = rs.RadPraznikomSati;
+        cilj.NocniRadPraznikomSati = rs.NocniRadPraznikomSati;
+        cilj.PlacenoOdsustvoSati = rs.PlacenoOdsustvoSati;
+        cilj.NedeljaSati = rs.RadNedeljomSati;
+        cilj.PlacenoZakonskiSatiLegacy = rs.PlacenoZakonskiSati;
+        cilj.BolovanjePreko60SatiLegacy = rs.BolovanjePreko60Sati;
+        cilj.PorodiljskoOdsustvoSatiLegacy = rs.PorodiljskoOdsustvoSati;
+        cilj.Bolovanje100SatiLegacy = rs.Bolovanje100Sati;
+        cilj.Varijabila = rs.Varijabila;
     }
 
     private void FilterList()
@@ -236,9 +408,13 @@ public partial class RadniSatiPage : Page
             ? $"\n\nKolone koje uvoz ne prepoznaje i preskače: {string.Join(", ", rezultat.NepoznateKolone)}."
             : "";
 
+        string obuhvatUvoza = _izabranaIsplata == null || _izabranaIsplata.JePrva
+            ? $"period {mesec:D2}/{godina}"
+            : $"isplatu „{_izabranaIsplata.Naziv}“ u {mesec:D2}/{godina}";
+
         var potvrda = MessageBox.Show(
             $"Fajl je ispravan: {rezultat.Redovi.Count} radnika.\n\n" +
-            $"Postojeći sati za period {mesec:D2}/{godina} biće zamenjeni unetim vrednostima." +
+            $"Postojeći sati za {obuhvatUvoza} biće zamenjeni unetim vrednostima." +
             upozorenje + "\n\nNastaviti?",
             "Potvrda uvoza", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
@@ -246,10 +422,14 @@ public partial class RadniSatiPage : Page
 
         try
         {
-            int upisano = servis.Primeni(rezultat, godina, mesec);
+            int upisano = servis.Primeni(rezultat, godina, mesec, _izabranaIsplata);
+
+            string tragIsplate = _izabranaIsplata == null || _izabranaIsplata.JePrva
+                ? ""
+                : $"Isplata: {_izabranaIsplata.Naziv}. ";
 
             Services.AuditService.Zabelezi(_db, godina, mesec, AkcijaObracuna.Prekalkulisan,
-                $"Uvezeni radni sati za {upisano} radnika iz {System.IO.Path.GetFileName(ofd.FileName)}");
+                $"{tragIsplate}Uvezeni radni sati za {upisano} radnika iz {System.IO.Path.GetFileName(ofd.FileName)}");
 
             _db = PlataDbContext.Create(AppConfig.DbPath);
             LoadData();
@@ -301,98 +481,12 @@ public partial class RadniSatiPage : Page
             decimal vrednostBoda = porezi?.VrBoda ?? 1860.34m;
             int fondSati = porezi?.FondCasova ?? 176;
 
-            var obracunService = new ObracunService(_db);
             int updatedCount = 0;
 
             foreach (var rs in _allSati)
             {
-                // Označi sate kao modifikovane
-                _db.Entry(rs).State = EntityState.Modified;
-
-                // Ponovo preračunaj obračun plate za ovog radnika
-                var radnik = rs.Radnik;
-                var postojeciObracun = await _db.ObracuniPlata
-                    .FirstOrDefaultAsync(o => o.RadnikId == rs.RadnikId && o.Godina == godina && o.Mesec == mesec);
-
-                if (postojeciObracun != null)
-                {
-                    var noviObracun = obracunService.Calculate(radnik, rs, godina, mesec, vrednostBoda, fondSati);
-
-                    // Kopiramo vrednosti da bi EF Core ispratio izmene nad istim entitetom
-                    postojeciObracun.BrutoZarada = noviObracun.BrutoZarada;
-                    postojeciObracun.BrutoBolovanje = noviObracun.BrutoBolovanje;
-                    postojeciObracun.BrutoNaknade = noviObracun.BrutoNaknade;
-                    postojeciObracun.BrutoStimulacija = noviObracun.BrutoStimulacija;
-                    postojeciObracun.BrutoMinuliRad = noviObracun.BrutoMinuliRad;
-
-                    postojeciObracun.NetoZar = noviObracun.NetoZar;
-                    postojeciObracun.NetoNerd = noviObracun.NetoNerd;
-                    postojeciObracun.NetoGOd = noviObracun.NetoGOd;
-                    postojeciObracun.NetoTo = noviObracun.NetoTo;
-                    postojeciObracun.TopliObrokIznos = noviObracun.TopliObrokIznos;
-                    postojeciObracun.NetoReg = noviObracun.NetoReg;
-                    postojeciObracun.Neto = noviObracun.Neto;
-                    postojeciObracun.NetoBol = noviObracun.NetoBol;
-                    postojeciObracun.NetoB100 = noviObracun.NetoB100;
-                    postojeciObracun.NetoPlac = noviObracun.NetoPlac;
-                    postojeciObracun.NetoPlZ = noviObracun.NetoPlZ;
-                    postojeciObracun.NetoDrza = noviObracun.NetoDrza;
-                    postojeciObracun.NetoNocni = noviObracun.NetoNocni;
-                    postojeciObracun.NetoVezba = noviObracun.NetoVezba;
-                    postojeciObracun.NetoPrek = noviObracun.NetoPrek;
-                    postojeciObracun.NetoTer = noviObracun.NetoTer;
-                    postojeciObracun.KorDod = noviObracun.KorDod;
-                    postojeciObracun.KorDod1 = noviObracun.KorDod1;
-                    postojeciObracun.Kumul = noviObracun.Kumul;
-                    postojeciObracun.NetoNede = noviObracun.NetoNede;
-
-                    postojeciObracun.DoprinosPioRadnik = noviObracun.DoprinosPioRadnik;
-                    postojeciObracun.DoprinosZdravstvoRadnik = noviObracun.DoprinosZdravstvoRadnik;
-                    postojeciObracun.DoprinosNezaposlenostRadnik = noviObracun.DoprinosNezaposlenostRadnik;
-
-                    postojeciObracun.DoprinosPioPoslodavac = noviObracun.DoprinosPioPoslodavac;
-                    postojeciObracun.DoprinosZdravstvoPoslodavac = noviObracun.DoprinosZdravstvoPoslodavac;
-                    postojeciObracun.DoprinosNezaposlenostPoslodavac = noviObracun.DoprinosNezaposlenostPoslodavac;
-
-                    postojeciObracun.PorezNaDohodak = noviObracun.PorezNaDohodak;
-                    postojeciObracun.PoreskaOsnovica = noviObracun.PoreskaOsnovica;
-                    postojeciObracun.LicniOdbitak = noviObracun.LicniOdbitak;
-                    postojeciObracun.KreditObustava = noviObracun.KreditObustava;
-                    postojeciObracun.Samodoprinosi = noviObracun.Samodoprinosi;
-                    postojeciObracun.OstaliOdbici = noviObracun.OstaliOdbici;
-                    postojeciObracun.NetoIsplata = noviObracun.NetoIsplata;
-
-                    // Obezbedimo da su svi sati preneti i u istorijski obračun
-                    postojeciObracun.RedovniSati = rs.RedovniSati;
-                    postojeciObracun.BolovanjeSati = rs.BolovanjeSati;
-                    postojeciObracun.PrekovremeneSati = rs.PrekovremeneSati;
-                    postojeciObracun.GodisnjioOdmorSati = rs.GodisnjiOdmorSati;
-                    postojeciObracun.DrzavniPraznikSati = rs.DrzavniPraznikSati;
-                    postojeciObracun.NocniSati = rs.NocniSati;
-                    postojeciObracun.SmenskiSati = rs.SmenskiSati;
-                    postojeciObracun.RadPraznikomSati = rs.RadPraznikomSati;
-                    postojeciObracun.NocniRadPraznikomSati = rs.NocniRadPraznikomSati;
-                    postojeciObracun.PlacenoOdsustvoSati = rs.PlacenoOdsustvoSati;
-                    postojeciObracun.NedeljaSati = rs.RadNedeljomSati;
-                    postojeciObracun.PlacenoZakonskiSatiLegacy = rs.PlacenoZakonskiSati;
-                    postojeciObracun.BolovanjePreko60SatiLegacy = rs.BolovanjePreko60Sati;
-                    postojeciObracun.PorodiljskoOdsustvoSatiLegacy = rs.PorodiljskoOdsustvoSati;
-                    postojeciObracun.Bolovanje100SatiLegacy = rs.Bolovanje100Sati;
-                    postojeciObracun.Varijabila = rs.Varijabila;
-
-                    postojeciObracun.Prosek = noviObracun.Prosek;
-                    postojeciObracun.DatumObracuna = DateTime.Now;
-                    postojeciObracun.Napomena = $"Ažurirano izmenom radnih sati {DateTime.Now:dd.MM.yyyy HH:mm}";
-
-                    _db.Entry(postojeciObracun).State = EntityState.Modified;
-                }
-                else
-                {
-                    // Ako nema obračuna, kreiramo ga
-                    var noviObracun = obracunService.Calculate(radnik, rs, godina, mesec, vrednostBoda, fondSati);
-                    _db.ObracuniPlata.Add(noviObracun);
-                }
-
+                await PreracunajIUpisi(rs, rs.Radnik, godina, mesec, vrednostBoda, fondSati,
+                    "Ažurirano izmenom radnih sati");
                 updatedCount++;
             }
 
@@ -426,7 +520,7 @@ public partial class RadniSatiPage : Page
         int godina = AppConfig.ActiveGodina.Value;
         int mesec = AppConfig.ActiveMesec.Value;
 
-        var dialog = new DodajRadnikaRadniSatiWindow(godina, mesec)
+        var dialog = new DodajRadnikaRadniSatiWindow(godina, mesec, _izabranaIsplata)
         {
             Owner = Application.Current.MainWindow
         };
@@ -462,6 +556,7 @@ public partial class RadniSatiPage : Page
                     RadnikId = radnik.Id,
                     Godina = godina,
                     Mesec = mesec,
+                    IsplataId = _izabranaIsplata?.IsplataId,
                     RedovniSati = fondSati,
                     BolovanjeSati = 0,
                     PrekovremeneSati = 0,
@@ -478,7 +573,9 @@ public partial class RadniSatiPage : Page
                 _db.RadniSati.Add(noviSat);
 
                 // Automatski kreiraj i inicijalni obračun plate za tog radnika da sve bude u sinhronizaciji
-                var noviObracun = obracunService.Calculate(radnik, noviSat, godina, mesec, vrednostBoda, fondSati);
+                var noviObracun = obracunService.Calculate(radnik, noviSat, godina, mesec, vrednostBoda, fondSati,
+                    _izabranaIsplata?.NosiObustave ?? true);
+                noviObracun.IsplataId = _izabranaIsplata?.IsplataId;
                 _db.ObracuniPlata.Add(noviObracun);
 
                 await _db.SaveChangesAsync();
@@ -529,29 +626,17 @@ public partial class RadniSatiPage : Page
             // 1. Obriši radne sate
             _db.RadniSati.Remove(selectedSat);
 
-            // 2. Pronađi i obriši obračun
-            var obracun = await _db.ObracuniPlata
-                .FirstOrDefaultAsync(o => o.RadnikId == selectedSat.RadnikId && o.Godina == godina && o.Mesec == mesec);
+            // 2. Pronađi i obriši obračun te isplate — naknada po ugovoru se ne dira.
+            var obracun = await IsplataService
+                .Obuhvat(_db.ObracuniPlata, godina, mesec, _izabranaIsplata)
+                .FirstOrDefaultAsync(o => o.RadnikId == selectedSat.RadnikId && o.UgovorId == null);
 
             if (obracun != null)
             {
-                // REVERT: Rate kredita/obustava se vraćaju za 1 mesec unazad
-                var targetDate = new DateTime(godina, mesec, 1);
-                var radnikKrediti = await _db.Krediti
-                    .Where(k => k.RadnikId == selectedSat.RadnikId)
-                    .ToListAsync();
-
-                foreach (var k in radnikKrediti)
-                {
-                    // Ako je ovaj kredit bio otplaćivan u ovom mesecu
-                    if (k.DatumPocetka <= targetDate && targetDate <= k.DatumPocetka.AddMonths(k.PlateneRate - 1))
-                    {
-                        k.PlateneRate--;
-                        k.OstatakDuga = Math.Max(0, k.UkupanIznos - (k.PlateneRate * k.MesecnaRata));
-                        k.Aktivan = true; // ponovo aktiviramo jer je vraćena rata
-                        _db.Entry(k).State = EntityState.Modified;
-                    }
-                }
+                // Rata kredita se vraća isključivo kroz KreditRateService (odluka 8): on
+                // jedini zna da akontacija ratu nije ni skinula, pa nema šta ni da vrati.
+                // Storniranom obračunu je već vraćena pri storniranju.
+                if (!obracun.Storniran) KreditRateService.VratiRate(_db, obracun);
 
                 _db.ObracuniPlata.Remove(obracun);
             }
@@ -611,95 +696,12 @@ public partial class RadniSatiPage : Page
             decimal vrednostBoda = porezi?.VrBoda ?? 1860.34m;
             int fondSati = porezi?.FondCasova ?? 176;
 
-            var obracunService = new ObracunService(_db);
-
-            // Označi radne sate kao modifikovane
-            _db.Entry(rs).State = EntityState.Modified;
-
             // Učitaj radnika iz lokalnog DbContext-a da izbegnemo tracking konflikte
             var radnik = await _db.Radnici.FindAsync(rs.RadnikId);
             if (radnik == null) return;
 
-            // Pronađi postojeći obračun ili kreiraj novi
-            var postojeciObracun = await _db.ObracuniPlata
-                .FirstOrDefaultAsync(o => o.RadnikId == rs.RadnikId && o.Godina == godina && o.Mesec == mesec);
-
-            var noviObracun = obracunService.Calculate(radnik, rs, godina, mesec, vrednostBoda, fondSati);
-
-            if (postojeciObracun != null)
-            {
-                // Kopiramo sve obračunate vrednosti
-                postojeciObracun.BrutoZarada = noviObracun.BrutoZarada;
-                postojeciObracun.BrutoBolovanje = noviObracun.BrutoBolovanje;
-                postojeciObracun.BrutoNaknade = noviObracun.BrutoNaknade;
-                postojeciObracun.BrutoStimulacija = noviObracun.BrutoStimulacija;
-                postojeciObracun.BrutoMinuliRad = noviObracun.BrutoMinuliRad;
-
-                postojeciObracun.NetoZar = noviObracun.NetoZar;
-                postojeciObracun.NetoNerd = noviObracun.NetoNerd;
-                postojeciObracun.NetoGOd = noviObracun.NetoGOd;
-                postojeciObracun.NetoTo = noviObracun.NetoTo;
-                postojeciObracun.TopliObrokIznos = noviObracun.TopliObrokIznos;
-                postojeciObracun.NetoReg = noviObracun.NetoReg;
-                postojeciObracun.Neto = noviObracun.Neto;
-                postojeciObracun.NetoBol = noviObracun.NetoBol;
-                postojeciObracun.NetoB100 = noviObracun.NetoB100;
-                postojeciObracun.NetoPlac = noviObracun.NetoPlac;
-                postojeciObracun.NetoPlZ = noviObracun.NetoPlZ;
-                postojeciObracun.NetoDrza = noviObracun.NetoDrza;
-                postojeciObracun.NetoNocni = noviObracun.NetoNocni;
-                postojeciObracun.NetoVezba = noviObracun.NetoVezba;
-                postojeciObracun.NetoPrek = noviObracun.NetoPrek;
-                postojeciObracun.NetoTer = noviObracun.NetoTer;
-                postojeciObracun.KorDod = noviObracun.KorDod;
-                postojeciObracun.KorDod1 = noviObracun.KorDod1;
-                postojeciObracun.Kumul = noviObracun.Kumul;
-                postojeciObracun.NetoNede = noviObracun.NetoNede;
-
-                postojeciObracun.DoprinosPioRadnik = noviObracun.DoprinosPioRadnik;
-                postojeciObracun.DoprinosZdravstvoRadnik = noviObracun.DoprinosZdravstvoRadnik;
-                postojeciObracun.DoprinosNezaposlenostRadnik = noviObracun.DoprinosNezaposlenostRadnik;
-
-                postojeciObracun.DoprinosPioPoslodavac = noviObracun.DoprinosPioPoslodavac;
-                postojeciObracun.DoprinosZdravstvoPoslodavac = noviObracun.DoprinosZdravstvoPoslodavac;
-                postojeciObracun.DoprinosNezaposlenostPoslodavac = noviObracun.DoprinosNezaposlenostPoslodavac;
-
-                postojeciObracun.PorezNaDohodak = noviObracun.PorezNaDohodak;
-                postojeciObracun.PoreskaOsnovica = noviObracun.PoreskaOsnovica;
-                postojeciObracun.LicniOdbitak = noviObracun.LicniOdbitak;
-                postojeciObracun.KreditObustava = noviObracun.KreditObustava;
-                postojeciObracun.Samodoprinosi = noviObracun.Samodoprinosi;
-                postojeciObracun.OstaliOdbici = noviObracun.OstaliOdbici;
-                postojeciObracun.NetoIsplata = noviObracun.NetoIsplata;
-
-                // Kopiraj sate i u obračun
-                postojeciObracun.RedovniSati = rs.RedovniSati;
-                postojeciObracun.BolovanjeSati = rs.BolovanjeSati;
-                postojeciObracun.PrekovremeneSati = rs.PrekovremeneSati;
-                postojeciObracun.GodisnjioOdmorSati = rs.GodisnjiOdmorSati;
-                postojeciObracun.DrzavniPraznikSati = rs.DrzavniPraznikSati;
-                postojeciObracun.NocniSati = rs.NocniSati;
-                postojeciObracun.SmenskiSati = rs.SmenskiSati;
-                postojeciObracun.RadPraznikomSati = rs.RadPraznikomSati;
-                postojeciObracun.NocniRadPraznikomSati = rs.NocniRadPraznikomSati;
-                postojeciObracun.PlacenoOdsustvoSati = rs.PlacenoOdsustvoSati;
-                postojeciObracun.NedeljaSati = rs.RadNedeljomSati;
-                postojeciObracun.PlacenoZakonskiSatiLegacy = rs.PlacenoZakonskiSati;
-                postojeciObracun.BolovanjePreko60SatiLegacy = rs.BolovanjePreko60Sati;
-                postojeciObracun.PorodiljskoOdsustvoSatiLegacy = rs.PorodiljskoOdsustvoSati;
-                postojeciObracun.Bolovanje100SatiLegacy = rs.Bolovanje100Sati;
-                postojeciObracun.Varijabila = rs.Varijabila;
-
-                postojeciObracun.Prosek = noviObracun.Prosek;
-                postojeciObracun.DatumObracuna = DateTime.Now;
-                postojeciObracun.Napomena = $"Automatski preračunato nakon izmene sata {DateTime.Now:dd.MM.yyyy HH:mm}";
-
-                _db.Entry(postojeciObracun).State = EntityState.Modified;
-            }
-            else
-            {
-                _db.ObracuniPlata.Add(noviObracun);
-            }
+            await PreracunajIUpisi(rs, radnik, godina, mesec, vrednostBoda, fondSati,
+                "Automatski preračunato nakon izmene sata");
 
             await _db.SaveChangesAsync();
             StatusMessage.Text = $"Automatski sačuvano i preračunato za: {radnik.ImeIPrezime} ({DateTime.Now:HH:mm:ss})";
@@ -799,96 +801,17 @@ public partial class RadniSatiPage : Page
             decimal vrednostBoda = porezi?.VrBoda ?? 1860.34m;
             int fondSati = porezi?.FondCasova ?? 176;
 
-            var obracunService = new ObracunService(_db);
             var prop = typeof(RadniSat).GetProperty(selectedItem.PropertyName);
 
             foreach (var rs in _allSati)
             {
                 prop?.SetValue(rs, valueToSet);
-                _db.Entry(rs).State = EntityState.Modified;
 
                 var radnik = await _db.Radnici.FindAsync(rs.RadnikId);
                 if (radnik == null) continue;
 
-                var postojeciObracun = await _db.ObracuniPlata
-                    .FirstOrDefaultAsync(o => o.RadnikId == rs.RadnikId && o.Godina == godina && o.Mesec == mesec);
-
-                var noviObracun = obracunService.Calculate(radnik, rs, godina, mesec, vrednostBoda, fondSati);
-
-                if (postojeciObracun != null)
-                {
-                    // Kopiramo vrednosti obračuna
-                    postojeciObracun.BrutoZarada = noviObracun.BrutoZarada;
-                    postojeciObracun.BrutoBolovanje = noviObracun.BrutoBolovanje;
-                    postojeciObracun.BrutoNaknade = noviObracun.BrutoNaknade;
-                    postojeciObracun.BrutoStimulacija = noviObracun.BrutoStimulacija;
-                    postojeciObracun.BrutoMinuliRad = noviObracun.BrutoMinuliRad;
-
-                    postojeciObracun.NetoZar = noviObracun.NetoZar;
-                    postojeciObracun.NetoNerd = noviObracun.NetoNerd;
-                    postojeciObracun.NetoGOd = noviObracun.NetoGOd;
-                    postojeciObracun.NetoTo = noviObracun.NetoTo;
-                    postojeciObracun.TopliObrokIznos = noviObracun.TopliObrokIznos;
-                    postojeciObracun.NetoReg = noviObracun.NetoReg;
-                    postojeciObracun.Neto = noviObracun.Neto;
-                    postojeciObracun.NetoBol = noviObracun.NetoBol;
-                    postojeciObracun.NetoB100 = noviObracun.NetoB100;
-                    postojeciObracun.NetoPlac = noviObracun.NetoPlac;
-                    postojeciObracun.NetoPlZ = noviObracun.NetoPlZ;
-                    postojeciObracun.NetoDrza = noviObracun.NetoDrza;
-                    postojeciObracun.NetoNocni = noviObracun.NetoNocni;
-                    postojeciObracun.NetoVezba = noviObracun.NetoVezba;
-                    postojeciObracun.NetoPrek = noviObracun.NetoPrek;
-                    postojeciObracun.NetoTer = noviObracun.NetoTer;
-                    postojeciObracun.KorDod = noviObracun.KorDod;
-                    postojeciObracun.KorDod1 = noviObracun.KorDod1;
-                    postojeciObracun.Kumul = noviObracun.Kumul;
-                    postojeciObracun.NetoNede = noviObracun.NetoNede;
-
-                    postojeciObracun.DoprinosPioRadnik = noviObracun.DoprinosPioRadnik;
-                    postojeciObracun.DoprinosZdravstvoRadnik = noviObracun.DoprinosZdravstvoRadnik;
-                    postojeciObracun.DoprinosNezaposlenostRadnik = noviObracun.DoprinosNezaposlenostRadnik;
-
-                    postojeciObracun.DoprinosPioPoslodavac = noviObracun.DoprinosPioPoslodavac;
-                    postojeciObracun.DoprinosZdravstvoPoslodavac = noviObracun.DoprinosZdravstvoPoslodavac;
-                    postojeciObracun.DoprinosNezaposlenostPoslodavac = noviObracun.DoprinosNezaposlenostPoslodavac;
-
-                    postojeciObracun.PorezNaDohodak = noviObracun.PorezNaDohodak;
-                    postojeciObracun.PoreskaOsnovica = noviObracun.PoreskaOsnovica;
-                    postojeciObracun.LicniOdbitak = noviObracun.LicniOdbitak;
-                    postojeciObracun.KreditObustava = noviObracun.KreditObustava;
-                    postojeciObracun.Samodoprinosi = noviObracun.Samodoprinosi;
-                    postojeciObracun.OstaliOdbici = noviObracun.OstaliOdbici;
-                    postojeciObracun.NetoIsplata = noviObracun.NetoIsplata;
-
-                    // Kopiraj sate i u obračun
-                    postojeciObracun.RedovniSati = rs.RedovniSati;
-                    postojeciObracun.BolovanjeSati = rs.BolovanjeSati;
-                    postojeciObracun.PrekovremeneSati = rs.PrekovremeneSati;
-                    postojeciObracun.GodisnjioOdmorSati = rs.GodisnjiOdmorSati;
-                    postojeciObracun.DrzavniPraznikSati = rs.DrzavniPraznikSati;
-                    postojeciObracun.NocniSati = rs.NocniSati;
-                    postojeciObracun.SmenskiSati = rs.SmenskiSati;
-                    postojeciObracun.RadPraznikomSati = rs.RadPraznikomSati;
-                    postojeciObracun.NocniRadPraznikomSati = rs.NocniRadPraznikomSati;
-                    postojeciObracun.PlacenoOdsustvoSati = rs.PlacenoOdsustvoSati;
-                    postojeciObracun.NedeljaSati = rs.RadNedeljomSati;
-                    postojeciObracun.PlacenoZakonskiSatiLegacy = rs.PlacenoZakonskiSati;
-                    postojeciObracun.BolovanjePreko60SatiLegacy = rs.BolovanjePreko60Sati;
-                    postojeciObracun.PorodiljskoOdsustvoSatiLegacy = rs.PorodiljskoOdsustvoSati;
-                    postojeciObracun.Bolovanje100SatiLegacy = rs.Bolovanje100Sati;
-                    postojeciObracun.Varijabila = rs.Varijabila;
-
-                    postojeciObracun.Prosek = noviObracun.Prosek;
-                    postojeciObracun.DatumObracuna = DateTime.Now;
-                    postojeciObracun.Napomena = $"Automatski preračunato nakon masovne izmene {DateTime.Now:dd.MM.yyyy HH:mm}";
-
-                    _db.Entry(postojeciObracun).State = EntityState.Modified;
-                }
-                else
-                {
-                    _db.ObracuniPlata.Add(noviObracun);
-                }
+                await PreracunajIUpisi(rs, radnik, godina, mesec, vrednostBoda, fondSati,
+                    "Automatski preračunato nakon masovne izmene");
             }
 
             await _db.SaveChangesAsync();
@@ -1122,92 +1045,13 @@ public partial class RadniSatiPage : Page
             decimal vrednostBoda = porezi?.VrBoda ?? 1860.34m;
             int fondSati = porezi?.FondCasova ?? 176;
 
-            var obracunService = new ObracunService(_db);
-
             foreach (var rs in _allSati)
             {
-                _db.Entry(rs).State = EntityState.Modified;
-
                 var radnik = await _db.Radnici.FindAsync(rs.RadnikId);
                 if (radnik == null) continue;
 
-                var postojeciObracun = await _db.ObracuniPlata
-                    .FirstOrDefaultAsync(o => o.RadnikId == rs.RadnikId && o.Godina == godina && o.Mesec == mesec);
-
-                var noviObracun = obracunService.Calculate(radnik, rs, godina, mesec, vrednostBoda, fondSati);
-
-                if (postojeciObracun != null)
-                {
-                    postojeciObracun.BrutoZarada = noviObracun.BrutoZarada;
-                    postojeciObracun.BrutoBolovanje = noviObracun.BrutoBolovanje;
-                    postojeciObracun.BrutoNaknade = noviObracun.BrutoNaknade;
-                    postojeciObracun.BrutoStimulacija = noviObracun.BrutoStimulacija;
-                    postojeciObracun.BrutoMinuliRad = noviObracun.BrutoMinuliRad;
-
-                    postojeciObracun.NetoZar = noviObracun.NetoZar;
-                    postojeciObracun.NetoNerd = noviObracun.NetoNerd;
-                    postojeciObracun.NetoGOd = noviObracun.NetoGOd;
-                    postojeciObracun.NetoTo = noviObracun.NetoTo;
-                    postojeciObracun.TopliObrokIznos = noviObracun.TopliObrokIznos;
-                    postojeciObracun.NetoReg = noviObracun.NetoReg;
-                    postojeciObracun.Neto = noviObracun.Neto;
-                    postojeciObracun.NetoBol = noviObracun.NetoBol;
-                    postojeciObracun.NetoB100 = noviObracun.NetoB100;
-                    postojeciObracun.NetoPlac = noviObracun.NetoPlac;
-                    postojeciObracun.NetoPlZ = noviObracun.NetoPlZ;
-                    postojeciObracun.NetoDrza = noviObracun.NetoDrza;
-                    postojeciObracun.NetoNocni = noviObracun.NetoNocni;
-                    postojeciObracun.NetoVezba = noviObracun.NetoVezba;
-                    postojeciObracun.NetoPrek = noviObracun.NetoPrek;
-                    postojeciObracun.NetoTer = noviObracun.NetoTer;
-                    postojeciObracun.KorDod = noviObracun.KorDod;
-                    postojeciObracun.KorDod1 = noviObracun.KorDod1;
-                    postojeciObracun.Kumul = noviObracun.Kumul;
-                    postojeciObracun.NetoNede = noviObracun.NetoNede;
-
-                    postojeciObracun.DoprinosPioRadnik = noviObracun.DoprinosPioRadnik;
-                    postojeciObracun.DoprinosZdravstvoRadnik = noviObracun.DoprinosZdravstvoRadnik;
-                    postojeciObracun.DoprinosNezaposlenostRadnik = noviObracun.DoprinosNezaposlenostRadnik;
-
-                    postojeciObracun.DoprinosPioPoslodavac = noviObracun.DoprinosPioPoslodavac;
-                    postojeciObracun.DoprinosZdravstvoPoslodavac = noviObracun.DoprinosZdravstvoPoslodavac;
-                    postojeciObracun.DoprinosNezaposlenostPoslodavac = noviObracun.DoprinosNezaposlenostPoslodavac;
-
-                    postojeciObracun.PorezNaDohodak = noviObracun.PorezNaDohodak;
-                    postojeciObracun.PoreskaOsnovica = noviObracun.PoreskaOsnovica;
-                    postojeciObracun.LicniOdbitak = noviObracun.LicniOdbitak;
-                    postojeciObracun.KreditObustava = noviObracun.KreditObustava;
-                    postojeciObracun.Samodoprinosi = noviObracun.Samodoprinosi;
-                    postojeciObracun.OstaliOdbici = noviObracun.OstaliOdbici;
-                    postojeciObracun.NetoIsplata = noviObracun.NetoIsplata;
-
-                    postojeciObracun.RedovniSati = rs.RedovniSati;
-                    postojeciObracun.BolovanjeSati = rs.BolovanjeSati;
-                    postojeciObracun.PrekovremeneSati = rs.PrekovremeneSati;
-                    postojeciObracun.GodisnjioOdmorSati = rs.GodisnjiOdmorSati;
-                    postojeciObracun.DrzavniPraznikSati = rs.DrzavniPraznikSati;
-                    postojeciObracun.NocniSati = rs.NocniSati;
-                    postojeciObracun.SmenskiSati = rs.SmenskiSati;
-                    postojeciObracun.RadPraznikomSati = rs.RadPraznikomSati;
-                    postojeciObracun.NocniRadPraznikomSati = rs.NocniRadPraznikomSati;
-                    postojeciObracun.PlacenoOdsustvoSati = rs.PlacenoOdsustvoSati;
-                    postojeciObracun.NedeljaSati = rs.RadNedeljomSati;
-                    postojeciObracun.PlacenoZakonskiSatiLegacy = rs.PlacenoZakonskiSati;
-                    postojeciObracun.BolovanjePreko60SatiLegacy = rs.BolovanjePreko60Sati;
-                    postojeciObracun.PorodiljskoOdsustvoSatiLegacy = rs.PorodiljskoOdsustvoSati;
-                    postojeciObracun.Bolovanje100SatiLegacy = rs.Bolovanje100Sati;
-                    postojeciObracun.Varijabila = rs.Varijabila;
-
-                    postojeciObracun.Prosek = noviObracun.Prosek;
-                    postojeciObracun.DatumObracuna = DateTime.Now;
-                    postojeciObracun.Napomena = $"Automatski preračunato nakon izmene parametara perioda {DateTime.Now:dd.MM.yyyy HH:mm}";
-
-                    _db.Entry(postojeciObracun).State = EntityState.Modified;
-                }
-                else
-                {
-                    _db.ObracuniPlata.Add(noviObracun);
-                }
+                await PreracunajIUpisi(rs, radnik, godina, mesec, vrednostBoda, fondSati,
+                    "Automatski preračunato nakon izmene parametara perioda");
             }
 
             await _db.SaveChangesAsync();

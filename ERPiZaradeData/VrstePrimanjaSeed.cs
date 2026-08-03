@@ -37,9 +37,14 @@ public static class VrstePrimanjaSeed
     private const string SvpZarada = "101101000";
     private const string SvpBolovanje = "109101000";
 
-    /// <summary>Konto troškova zarada; menja se u šifarniku ako firma koristi drugu analitiku.</summary>
+    /// <summary>
+    /// Konto troškova zarada; menja se u šifarniku ako firma koristi drugu analitiku.
+    /// Naknada zarade (godišnji odmor, praznik, bolovanje na teret poslodavca) ide na
+    /// <b>isti</b> konto — 520 je po Kontnom okviru „Troškovi zarada i naknada zarada
+    /// (bruto)". Konto 521 nosi samo doprinose na teret poslodavca i zato ovde nije.
+    /// </summary>
     private const string KontoZarade = "520";
-    private const string KontoNaknade = "521";
+    private const string KontoNaknade = "520";
 
     public static List<VrstaPrimanja> Podrazumevane() =>
     [
@@ -60,7 +65,7 @@ public static class VrstePrimanjaSeed
         Sistemska(PlacenoZakonski, "Plaćeno odsustvo po zakonu",    SvpZarada,    KontoNaknade, 140),
         Sistemska(Bolovanje,       "Bolovanje do 30 dana",          SvpBolovanje, KontoNaknade, 150),
         Sistemska(Bolovanje100,    "Bolovanje 100%",                SvpBolovanje, KontoNaknade, 160),
-        Sistemska(BolovanjePreko30,"Bolovanje preko 30 dana",       SvpBolovanje, KontoNaknade, 170),
+        Sistemska(BolovanjePreko30,"Bolovanje preko 30 dana",       SvpBolovanje, KontoNaknade, 170, naTeretFonda: true),
         Sistemska(Porodiljsko,     "Porodiljsko odsustvo",          SvpBolovanje, KontoNaknade, 180),
 
         // ── Ostala primanja koja ulaze u zaradu ──────────────────────
@@ -77,7 +82,8 @@ public static class VrstePrimanjaSeed
         Neoporeziva("POK", "Poklon deci zaposlenih",   330)
     ];
 
-    private static VrstaPrimanja Sistemska(string sifra, string naziv, string svp, string konto, int redosled)
+    private static VrstaPrimanja Sistemska(
+        string sifra, string naziv, string svp, string konto, int redosled, bool naTeretFonda = false)
         => new()
         {
             Sifra = sifra,
@@ -86,6 +92,7 @@ public static class VrstePrimanjaSeed
             Konto = konto,
             Oporezivo = true,
             UlaziUOsnovicuDoprinosa = true,
+            NaTeretFonda = naTeretFonda,
             Redosled = redosled,
             Aktivna = true,
             JeSistemska = true

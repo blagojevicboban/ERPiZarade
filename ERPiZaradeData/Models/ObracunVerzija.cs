@@ -17,7 +17,7 @@ namespace ERPiZaradeData.Models;
 /// pošto se karton radnika obriše.
 /// </summary>
 [Table("ObracunVerzije")]
-public class ObracunVerzija
+public class ObracunVerzija : IPripadaIsplati
 {
     [Key]
     public int ObracunVerzijaId { get; set; }

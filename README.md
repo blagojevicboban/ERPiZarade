@@ -10,11 +10,15 @@
 
 - 👥 **Employee management** — workers, categories, coefficients, and pay grades
 - 🧮 **Payroll calculation** — automatic gross/net salary, tax, and contribution calculation per current rates
-- ⏱️ **Work hours tracking** — regular, overtime, night shifts, sick leave, and annual leave
+- ⏱️ **Work hours tracking** — regular, overtime, night shifts, sick leave, and annual leave; entered per payout, manually or imported from Excel/CSV
+- 💸 **Multiple payouts per month** — advance, final salary, bonus and 13th salary as separate payouts, each with its own tax return and payment orders
+- 📝 **Contracts outside employment** — service, copyright, temporary work and board-member fees, with contract text generation and PDF export
+- 🏛️ **Payment orders** — Halcom TXT and treasury ePP JSON; taxes and contributions in a single payment with its reference number
+- 📒 **Journal entry** — general-ledger voucher split by income type and cost centre, exported for import into ERPiFinansije; only exported once balanced
 - 💳 **Loans** — tracking and repayment scheduling for employee loans
 - 🏦 **Banks** — employee bank account management for salary transfers
 - 🏢 **Companies** — multi-company support within a single database
-- 📄 **Reports & printing** — pay slip (PDF), payroll list, recapitulation, XML for tax authority (PPP-PD)
+- 📄 **Reports & printing** — pay slip (password-protected PDF, e-mail delivery), payroll list, recapitulation, XML for tax authority (PPP-PD), annual PPP-PO
 - 🔄 **Auto-updates** — silent delta update system via Velopack
 
 ---

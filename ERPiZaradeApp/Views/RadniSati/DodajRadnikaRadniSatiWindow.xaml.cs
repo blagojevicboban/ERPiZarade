@@ -13,18 +13,25 @@ public partial class DodajRadnikaRadniSatiWindow : Window
     private readonly PlataDbContext _db;
     private readonly int _godina;
     private readonly int _mesec;
+    private readonly Isplata? _isplata;
     private List<Radnik> _slobodniRadnici = new();
 
     public Radnik? SelectedRadnik { get; private set; }
 
-    public DodajRadnikaRadniSatiWindow(int godina, int mesec)
+    /// <param name="isplata">
+    /// Isplata za koju se sati unose (Faza 2.2). Radnik koji već ima sate u <b>toj</b>
+    /// isplati se ne nudi; da je uslov ostao na mesecu, radnik obuhvaćen konačnom zaradom se
+    /// ne bi mogao dodati u akontaciju istog meseca. <c>null</c> je ceo period, kao pre.
+    /// </param>
+    public DodajRadnikaRadniSatiWindow(int godina, int mesec, Isplata? isplata = null)
     {
         InitializeComponent();
         Views.Pomoc.ContextHelpFix.UkloniDugmeZaPomoc(this);
-        KeyDown += (s, e) => { if (e.Key == System.Windows.Input.Key.F1) { new Views.Pomoc.EditHelpWindow("Dodavanje radnika", "Dodavanje radnika u radne sate", new[] { ("Enter / Dvaklik", "Dodaj selektovanog radnika"), ("Esc", "Zatvori prozor") }, "Izaberite slobodnog radnika sa liste.").ShowDialog(); e.Handled = true; } };
+        KeyDown += (s, e) => { if (e.Key == System.Windows.Input.Key.F1) { new Views.Pomoc.EditHelpWindow("Dodavanje radnika", "Dodavanje radnika u radne sate", new[] { ("Enter / Dvaklik", "Dodaj selektovanog radnika"), ("Esc", "Zatvori prozor") }, "Izaberite slobodnog radnika sa liste. Nude se radnici koji sate još nemaju u izabranoj isplati.").ShowDialog(); e.Handled = true; } };
         _db = PlataDbContext.Create(AppConfig.DbPath);
         _godina = godina;
         _mesec = mesec;
+        _isplata = isplata;
 
         string[] meseciStr = {
             "Januar", "Februar", "Mart", "April", "Maj", "Jun",
@@ -40,9 +47,9 @@ public partial class DodajRadnikaRadniSatiWindow : Window
     {
         try
         {
-            // Učitaj ID-eve radnika koji već imaju radne sate za ovaj period
-            var vecDodatiRadnikIds = _db.RadniSati
-                .Where(s => s.Godina == _godina && s.Mesec == _mesec)
+            // Učitaj ID-eve radnika koji već imaju radne sate u izabranoj isplati
+            var vecDodatiRadnikIds = Services.IsplataService
+                .Obuhvat(_db.RadniSati, _godina, _mesec, _isplata)
                 .Select(s => s.RadnikId)
                 .ToList();
 

@@ -473,6 +473,11 @@ public class RadniciViewModel : INotifyPropertyChanged
         
         int godina = AppConfig.ActiveGodina ?? DateTime.Now.Year;
         int mesec = AppConfig.ActiveMesec ?? DateTime.Now.Month;
+
+        // Osiguraj da EditingRadnik ima postavljen tekući period pre provera i čuvanja
+        EditingRadnik.Godina = godina;
+        EditingRadnik.Mesec = mesec;
+
         bool isLocked = await _db.ObracuniPlata.AnyAsync(o => o.Godina == godina && o.Mesec == mesec && o.Zakljucan);
         if (isLocked)
         {
@@ -494,12 +499,27 @@ public class RadniciViewModel : INotifyPropertyChanged
                 return;
             }
 
+            // Provera jedinstvenosti broja radnika u tekućem periodu (BrojRadnika, Godina, Mesec)
+            var postojeciSaIstimBrojem = await _db.Radnici
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Godina == godina && r.Mesec == mesec &&
+                                         r.BrojRadnika == EditingRadnik.BrojRadnika &&
+                                         r.Id != EditingRadnik.Id);
+
+            if (postojeciSaIstimBrojem != null)
+            {
+                System.Windows.MessageBox.Show(
+                    $"Broj radnika '{EditingRadnik.BrojRadnika}' je već zauzet u obračunskom periodu {mesec:D2}/{godina}.\n(Zaposleni: {postojeciSaIstimBrojem.ImeIPrezime})\n\nMolimo vas da unesete drugi broj radnika.",
+                    "Dupliran broj radnika",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+                StatusPoruka = $"Greška: Broj radnika {EditingRadnik.BrojRadnika} je već zauzet ({postojeciSaIstimBrojem.ImeIPrezime}).";
+                return;
+            }
+
             if (EditingRadnik.Id == 0)
             {
-                int nextId = (_db.Radnici.Select(r => (int?)r.Id).Max() ?? 0) + 1;
-                EditingRadnik.Id = nextId;
-                EditingRadnik.Godina = godina;
-                EditingRadnik.Mesec = mesec;
+                EditingRadnik.DatumUnosa = DateTime.Now;
                 if (EditingRadnik.BrojRadnika == 0)
                 {
                     EditingRadnik.BrojRadnika = (_db.Radnici.Where(r => r.Godina == godina && r.Mesec == mesec).Select(r => (int?)r.BrojRadnika).Max() ?? 0) + 1;
@@ -514,6 +534,7 @@ public class RadniciViewModel : INotifyPropertyChanged
                 var existing = await _db.Radnici.FindAsync(EditingRadnik.Id);
                 if (existing != null)
                 {
+                    EditingRadnik.DatumIzmene = DateTime.Now;
                     _db.Entry(existing).CurrentValues.SetValues(EditingRadnik);
                     await _db.SaveChangesAsync();
                     StatusPoruka = $"Radnik {EditingRadnik.ImeIPrezime} sačuvan.";
@@ -522,6 +543,15 @@ public class RadniciViewModel : INotifyPropertyChanged
             IsEditing = false;
             await LoadAsync();
         }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateException dbEx) when (dbEx.InnerException?.Message.Contains("UNIQUE constraint failed") == true || dbEx.Message.Contains("UNIQUE constraint failed"))
+        {
+            System.Windows.MessageBox.Show(
+                $"Broj radnika '{EditingRadnik.BrojRadnika}' je već zauzet u ovom obračunskom periodu ({mesec:D2}/{godina}).\n\nMolimo vas da unesete drugi broj radnika.",
+                "Dupliran broj radnika",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Warning);
+            StatusPoruka = $"Greška pri čuvanju: Broj radnika {EditingRadnik.BrojRadnika} već postoji u periodu {mesec:D2}/{godina}.";
+        }
         catch (Exception ex)
         {
             var msg = ex.Message;
@@ -529,6 +559,11 @@ public class RadniciViewModel : INotifyPropertyChanged
             {
                 msg += $" -> {ex.InnerException.Message}";
             }
+            System.Windows.MessageBox.Show(
+                $"Došlo je do greške pri čuvanju radnika:\n\n{msg}",
+                "Greška pri čuvanju",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Error);
             StatusPoruka = $"Greška pri čuvanju: {msg}";
         }
     }
@@ -595,6 +630,8 @@ public class RadniciViewModel : INotifyPropertyChanged
     private static Radnik CopyRadnik(Radnik src) => new()
     {
         Id = src.Id,
+        Godina = src.Godina,
+        Mesec = src.Mesec,
         ImeIPrezime = src.ImeIPrezime,
         Jmbg = src.Jmbg,
         BrojRadnika = src.BrojRadnika,

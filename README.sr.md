@@ -8,11 +8,15 @@
 
 - 👥 **Upravljanje zaposlenima** — evidencija radnika, kategorija, koeficijenata i platnih razreda
 - 🧮 **Obračun plata** — automatski izračun bruto/neto plate, poreza i doprinosa po važećim stopama
-- ⏱️ **Radni sati** — evidencija redovnih, prekovremenih, noćnih, bolovanje i godišnji odmor
+- ⏱️ **Radni sati** — evidencija redovnih, prekovremenih, noćnih, bolovanje i godišnji odmor; unos po isplati, ručno ili uvozom iz Excel/CSV
+- 💸 **Isplate u mesecu** — akontacija, konačna zarada, bonus i 13. plata kao zasebne isplate, svaka sa svojom PPP-PD prijavom i svojim nalozima
+- 📝 **Ugovori van radnog odnosa** — ugovor o delu, autorske naknade, privremeni i povremeni poslovi i naknade odborima, sa generatorom teksta ugovora i izvozom u PDF
+- 🏛️ **Nalozi za prenos** — Halcom TXT i trezorski ePP JSON; porezi i doprinosi jednom uplatom sa BOP-om
+- 📒 **Nalog za knjiženje** — temeljnica po vrstama primanja i mestima troška, za uvoz u ERPiFinansije; izvozi se tek kad je u ravnoteži
 - 💳 **Krediti** — praćenje i otplata kredita zaposlenih
 - 🏦 **Banke** — evidencija bankovnih računa za isplatu
 - 🏢 **Firme** — podrška za više pravnih lica u istoj bazi
-- 📄 **Štampa i izveštaji** — platni listić (PDF), platni spisak, rekapitulacija, XML za PPP-PD
+- 📄 **Štampa i izveštaji** — platni listić (PDF, zaštićen lozinkom, slanje e-mailom), platni spisak, rekapitulacija, XML za PPP-PD, godišnji PPP-PO
 - 🔄 **Automatska ažuriranja** — delta update sistem putem Velopack-a
 
 ---

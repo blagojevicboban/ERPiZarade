@@ -51,6 +51,13 @@ public class Radnik
     [MaxLength(120)]
     public string Email { get; set; } = "";
 
+    /// <summary>
+    /// Lični broj osiguranika (LBO) — jedanaest cifara sa zdravstvene kartice. Traži ga
+    /// obrazac OZ-7 (Faza 2.6) i po njemu RFZO nalazi osiguranika; JMBG ga ne zamenjuje.
+    /// </summary>
+    [MaxLength(11)]
+    public string Lbo { get; set; } = "";
+
     // ── Podaci o zaposlenju ──────────────────────────────────────────
     public DateTime? DatumZaposlenja { get; set; }
     public DateTime? DatumPrestanka { get; set; }

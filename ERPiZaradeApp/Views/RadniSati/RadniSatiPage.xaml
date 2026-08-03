@@ -81,6 +81,15 @@
 
                 <!-- Parametri perioda -->
                 <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
+                    <!-- Isplata (Faza 2.2): sati se unose za jednu isplatu meseca, pa unos za
+                         akontaciju više ne prepisuje onaj za konačnu zaradu. Dok je isplata
+                         jedna, lista je onemogućena i ekran radi kao pre. -->
+                    <TextBlock Text="Isplata:" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"
+                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,8,0"/>
+                    <ComboBox x:Name="ComboIsplata" MinWidth="180" Height="28" Margin="0,0,12,0"
+                              VerticalContentAlignment="Center" DisplayMemberPath="Naziv"
+                              SelectionChanged="ComboIsplata_SelectionChanged"
+                              ToolTip="Isplata za koju se unose sati. Nova isplata se dodaje na ekranu „Isplate u mesecu“."/>
                     <Border Background="#EEF2FF" CornerRadius="6" Padding="8,4" Margin="0,0,8,0" BorderBrush="#C7D2FE" BorderThickness="1">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="Bod: " FontSize="12" FontWeight="SemiBold" Foreground="#3730A3" VerticalAlignment="Center"/>

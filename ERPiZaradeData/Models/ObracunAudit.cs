@@ -17,7 +17,16 @@ public enum AkcijaObracuna
     IsplataDodata = 7,
 
     /// <summary>Obrisana isplata u mesecu; obračune nije nosila.</summary>
-    IsplataObrisana = 8
+    IsplataObrisana = 8,
+
+    /// <summary>Izvezen nalog za knjiženje u glavnu knjigu (Faza 3.1).</summary>
+    NalogZaKnjizenje = 9,
+
+    /// <summary>Uneto ili obrisano bolovanje na teret RFZO (Faza 2.6).</summary>
+    BolovanjeEvidentirano = 10,
+
+    /// <summary>Izdat obrazac za refundaciju naknade zarade — OZ-7 ili OZ-10.</summary>
+    ObrazacRfzo = 11
 }
 
 /// <summary>

@@ -1,0 +1,180 @@
+<Page x:Class="ERPiZaradeApp.Views.Knjizenje.KnjizenjePage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:local="clr-namespace:ERPiZaradeApp.Views.Knjizenje"
+      Title="Nalog za knjiženje"
+      Background="{StaticResource SurfaceBrush}">
+
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Page.Resources>
+
+    <Page.DataContext>
+        <local:KnjizenjeViewModel/>
+    </Page.DataContext>
+
+    <Grid Margin="24,20,24,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="340"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ── LEVO: isplata, datum, zbirovi, izvoz ──────────────── -->
+            <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,16,0" Padding="16">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="NALOG ZA KNJIŽENJE" FontSize="12" FontWeight="Bold"
+                                   Foreground="{StaticResource PrimaryLightBrush}" Margin="0,0,0,4"/>
+                        <TextBlock TextWrapping="Wrap" FontSize="11" Margin="0,0,0,12"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Text="Temeljnica se izvodi iz obračuna svaki put iznova — ništa se ne upisuje ovde. Trošak ide na konto upisan uz vrstu primanja i deli se po mestu troška iz kartona radnika; protivstava dolazi iz šifarnika „Konta za knjiženje“."/>
+
+                        <!-- Isplata: vidljivo tek kad mesec ima više od jedne. -->
+                        <StackPanel Margin="0,0,0,14"
+                                    Visibility="{Binding ImaViseIsplata, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="ISPLATA" FontSize="12" FontWeight="Bold"
+                                       Foreground="{StaticResource PrimaryLightBrush}" Margin="0,0,0,4"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Margin="0,0,0,6"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="Svaka isplata se knjiži zasebnim nalogom, sa svojim datumom."/>
+                            <ComboBox ItemsSource="{Binding Isplate}" DisplayMemberPath="Naziv"
+                                      SelectedItem="{Binding IzabranaIsplata, Mode=TwoWay}"/>
+                        </StackPanel>
+
+                        <TextBlock Text="Datum naloga" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                        <DatePicker SelectedDate="{Binding Datum, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,14"/>
+
+                        <Border Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush}"
+                                BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,14">
+                            <StackPanel>
+                                <TextBlock Text="Opis naloga" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                <TextBlock Text="{Binding OpisNaloga}" FontSize="12" FontWeight="SemiBold"
+                                           TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+                                <TextBlock Text="Obračuna u nalogu" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                <TextBlock Text="{Binding BrojObracuna}" FontSize="12" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="ZBIROVI" FontSize="12" FontWeight="Bold"
+                                   Foreground="{StaticResource PrimaryLightBrush}" Margin="0,0,0,8"/>
+
+                        <Grid Margin="0,0,0,4">
+                            <TextBlock Text="Duguje" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Text="{Binding UkupnoDuguje, StringFormat=N2}" FontSize="12" HorizontalAlignment="Right"/>
+                        </Grid>
+                        <Grid Margin="0,0,0,4">
+                            <TextBlock Text="Potražuje" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Text="{Binding UkupnoPotrazuje, StringFormat=N2}" FontSize="12" HorizontalAlignment="Right"/>
+                        </Grid>
+                        <Separator Margin="0,6"/>
+                        <Grid>
+                            <TextBlock Text="Ravnoteža" FontSize="13" FontWeight="Bold"/>
+                            <TextBlock Text="{Binding RavnotezaTekst}" FontSize="13" FontWeight="Bold"
+                                       HorizontalAlignment="Right"/>
+                        </Grid>
+
+                        <Button Content="🔄  Osveži nalog"
+                                Style="{StaticResource SecondaryButton}"
+                                Command="{Binding PripremiCommand}"
+                                Margin="0,16,0,0"/>
+
+                        <TextBlock Text="IZVOZ" FontSize="12" FontWeight="Bold"
+                                   Foreground="{StaticResource PrimaryLightBrush}" Margin="0,20,0,8"/>
+
+                        <Button Content="📒  Za ERPiFinansije (JSON)"
+                                Style="{StaticResource PrimaryButton}"
+                                Command="{Binding IzvoziJsonCommand}"
+                                ToolTip="Fajl koji glavna knjiga uvozi kao nalog; snima se samo kad je nalog u ravnoteži"
+                                Margin="0,0,0,8"/>
+
+                        <Button Content="📊  Za proveru u tabeli (CSV)"
+                                Style="{StaticResource SecondaryButton}"
+                                Command="{Binding IzvoziCsvCommand}"
+                                ToolTip="Iste stavke u tabeli — za poređenje sa rekapitulacijom pre knjiženja"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- ── DESNO: stavke naloga i nalazi kontrola ────────────── -->
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0" Style="{StaticResource Card}" Padding="0">
+                    <DataGrid ItemsSource="{Binding Stavke}" AutoGenerateColumns="False" IsReadOnly="True"
+                              HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Rb." Binding="{Binding RedniBroj}" Width="40"/>
+                            <DataGridTextColumn Header="Konto" Binding="{Binding Konto}" Width="70"/>
+                            <DataGridTextColumn Header="Opis" Binding="{Binding Opis}" Width="*"/>
+                            <DataGridTextColumn Header="Mesto troška" Binding="{Binding MestoTroska}" Width="100"/>
+                            <DataGridTextColumn Header="Duguje" Binding="{Binding Duguje, StringFormat=N2}" Width="120">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Right"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="Potražuje" Binding="{Binding Potrazuje, StringFormat=N2}" Width="120">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Right"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Border>
+
+                <!-- Nalazi kontrola: sakriveni kad ih nema, da ne zauzimaju prostor bez potrebe -->
+                <Border Grid.Row="1" Margin="0,12,0,0" Padding="12" MaxHeight="200">
+                    <Border.Style>
+                        <Style TargetType="Border" BasedOn="{StaticResource Card}">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Nalazi.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Text="KONTROLE" FontSize="12" FontWeight="Bold"
+                                   Foreground="{StaticResource PrimaryLightBrush}" Margin="0,0,0,8"/>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding Nalazi}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap" FontSize="12">
+                                            <Run Text="["/><Run Text="{Binding TezinaTekst, Mode=OneWay}"/><Run Text="] "/>
+                                            <Run Text="{Binding Radnik, Mode=OneWay}" FontWeight="SemiBold"/>
+                                            <Run Text=" — "/>
+                                            <Run Text="{Binding Provera, Mode=OneWay}" FontWeight="SemiBold"/>
+                                            <Run Text=": "/>
+                                            <Run Text="{Binding Opis, Mode=OneWay}"/>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- ── STATUS ─────────────────────────────────────────────────── -->
+        <Border Grid.Row="1" Margin="0,12,0,0">
+            <TextBlock Text="{Binding StatusTekst}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+        </Border>
+    </Grid>
+</Page>

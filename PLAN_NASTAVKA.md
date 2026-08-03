@@ -4,7 +4,7 @@
 > [`ANALIZA_I_PREDLOZI_FUNKCIONALNOSTI.md`](ANALIZA_I_PREDLOZI_FUNKCIONALNOSTI.md) i beleži
 > šta je urađeno, šta je namerno odloženo i **na čemu se stalo zbog podataka koji nedostaju**.
 >
-> Stanje na dan **03.08.2026**, verzija **1.12.0**, 272 testa.
+> Stanje na dan **04.08.2026**, verzija **1.15.0**, 337 testova (uz 69 u ERPiFinansije 1.2.0).
 
 ---
 
@@ -26,8 +26,11 @@
 | **2.2** | Entitet `Isplata` (više isplata u mesecu) | ✅ | 1.10.0 |
 | **2.3** | Ugovori o delu, autorski, PP poslovi, naknade odborima | ✅ | 1.11.0 |
 | — | Generator ugovora: šabloni, editor teksta, PDF | ✅ | 1.11.0 |
-| **2.6** | Bolovanja preko 30 dana, RFZO obrasci (OZ-7, OZ-10) | ⬜ | |
-| **3** | Integracija sa ERPi ekosistemom | ⬜ | |
+| — | Radni sati po isplati (dovršetak 2.2) | ✅ | 1.13.0 |
+| **3.1** | Automatsko knjiženje u ERPiFinansije | ✅ | 1.14.0 |
+| **2.6** | Bolovanja preko 30 dana, RFZO obrasci (OZ-7, OZ-10) | ✅ | 1.15.0 |
+| — | Knjiženje refundacije (225 / 454, 455, 456) | ✅ | 1.15.0 |
+| **3.2** | Preuzimanje putnih naloga iz ERPiFinansije | ⬜ | |
 | **4** | Kadrovski modul | ⬜ | |
 | **5** | Web ESS | ⬜ preispitati | |
 
@@ -45,40 +48,27 @@ struktura je spremna i nedostaje samo zapisivač/čitač.
 | **Obrazac PPD (zahtev za povraćaj)** | Podnosi se elektronski kao i PPP-PD, dakle XML-om, ali šema nije javno dostupna. Podaci već postoje u obračunu (`OlaksicaPorez`, `OlaksicaDoprinosi`). | Primer PPD XML-a ili specifikacija. |
 | **OL oznake olakšica** | Karton je nudio `01/02/03` za čl. 21v; po Pravilniku o Obrascu PPD važe **OL08/OL09/OL10**. Lista je izvađena iz koda u šifarnik, pa se ispravlja bez nove verzije. | Provera u važećem Katalogu vrste prihoda i ispravka u šifarniku „Poreske olakšice". |
 | **JIPD podnetih prijava** | Izmenjena prijava se poziva na JIPD prijave koju menja, a JIPD dodeljuje PU pri prijemu. Polje postoji uz prijavu, ali se ne popunjava samo — čitanje iz `EPoreziImportService` čeka isti XML kao i BOP. | Isti preuzet XML iz reda iznad. |
+| **XML „Potvrda o ostvarenoj zaradi" za eBolovanje** | Portal prima podatke o zaradi iz 12 meseci i **učitavanjem XML fajla**, ali šema nije javno objavljena — ni u korisničkom uputstvu ni na sajtu RFZO. Pet polja koja portal traži (mesec i godina, ukupan broj plaćenih časova, neto, bruto, datum isplate) su tačno kolone obrasca OZ-7, pa `Oz7Obrazac` već nosi sve što treba; nedostaje samo zapisivač. | Jedan primer XML-a ili šema — najlakše iz samog portala, ako tamo postoji šablon za preuzimanje. Bez toga se format ne piše napamet, isto pravilo kao kod Halcom fajla. |
 | **OVP oznake za deo vrsta ugovora** | Potvrđeno je 601/602/603 (ugovor o delu i naknade odborima), 301/302/303 (autorske naknade 50% i 43%) i 150/151 (PP poslovi). Za autorsku naknadu sa **34%** normiranih troškova OVP nije potvrđen i ostavljen je **prazan** — obračun prolazi, ali kontrolna provera javlja grešku. Ostaje i da se potvrdi koji tip primaoca ide uz PP poslove. | Provera u važećem Katalogu vrste prihoda i unos u šifarnik „Vrste ugovora". Bez nove verzije. |
 
 ---
 
 ## 3. Sledeći koraci, po preporučenom redosledu
 
-### 3.1. Radni sati po isplati *(preporučeno prvo)*
+### 3.1. Faza 3.2 — preuzimanje putnih naloga iz ERPiFinansije *(preporučeno prvo)*
 
-Jedina stavka koju je 2.3 ostavila iza sebe, i jedina koja i dalje traži izmenu šeme.
-`RadniSat` je jedinstven po (radnik, godina, mesec), pa obračun druge isplate prepisuje taj
-red. **Iznosi već napravljenih obračuna ostaju netaknuti** — svaki obračun nosi svoje sate u
-svojim kolonama — ali ekran radnih sati pokazuje poslednji unos.
+Dnevnice i putni troškovi već postoje u ERPiFinansije (`PutniNalog`); ERPiZarade treba da
+**preuzme oporezivi deo**, ne da ga računa iznova. Smer je obrnut od 3.1, ali je pravilo isto:
+iznos se prepisuje sa mesta gde nastaje.
 
-Razdvajanje je dodavanje `RadniSat.IsplataId` uz izmenu jedinstvenog indeksa, po istom pravilu
-kao `ObracunPlate.IsplataId`: `null` znači prvu isplatu perioda, pa se zatečeni redovi ne diraju
-(vidi odluku 9). Dodiruje `RadniSatiPage`, `UvozSatiService` i `NoviObracunWindow`.
-
-### 3.2. Faza 3.1 — automatsko knjiženje u ERPiFinansije
-
-`VrstaPrimanja.Konto`, `VrstaUgovora.Konto` i `Radnik.SifraMestaTroska` postoje od ranije i još
-se nigde ne koriste — uvedeni su baš za ovo.
-
-### 3.3. Faza 2.6 — bolovanja preko 30 dana i RFZO obrasci
-
-OZ-7 i OZ-10. Vrsta primanja `B60` postoji u šifarniku od 2.1 i obračun je puni, pa je osnova
-spremna; nedostaje obrazac za refundaciju.
-
-### 3.4. Namerno odloženo
+### 3.2. Namerno odloženo
 
 | Šta | Zašto je odloženo |
 | :--- | :--- |
 | **Brisanje perioda** | I dalje briše sve isplate meseca odjednom, sada i naknade po ugovoru. Brisanje pojedinačne isplate ide preko ekrana isplata, gde je i zaštićeno. |
 | **Zaključavanje po isplati** | Zaključavanje ostaje na periodu. Isplata je **obuhvat, ne stanje** — drugo mesto koje kaže „ovo je zaključano" bilo bi isti duplikat kao nekadašnji `Zakljucan`/`Zakljucen`. |
 | **Obrazac M-UN i M-4** | **Ne treba ih ni raditi.** Ukinuti su od 01.01.2019. (čl. 30 Zakona o izmenama i dopunama ZPIO briše čl. 144); Fond PIO podatke preuzima elektronski iz PPP-PD, najkasnije do kraja februara za prethodnu godinu. Stari obrasci važe samo za period zaključno sa 31.12.2018. Ako se u nekoj sesiji „primeti da nedostaju" — ne dodavati ih. |
+| **Podnošenje zahteva RFZO iz programa** | Od **01.04.2026.** se zahtev za obračun i refundaciju podnosi **isključivo elektronski**, kroz „eBolovanje – Poslodavac" na Portalu eUprava, uz kvalifikovani sertifikat i potpis zahteva. Portal period i uzrok preuzima iz **doznake** (koju program nema), RFZO sam obračunava naknadu, a uz zahtev idu izjave i izvod iz PPP-PD prijave. Program to ne može da zameni; OZ-7 i OZ-10 služe za pripremu i proveru brojeva pre unosa i kao arhivski trag. Jedino što bi imalo smisla je XML za sekciju „Potvrda o ostvarenoj zaradi" — vidi tabelu blokiranog iznad. |
 | **Prijava na osiguranje (obrazac M)** | Podnosi se preko **portala CROSO**, jedinstvenom prijavom za PIO, RFZO i nezaposlenost — dakle van ovog programa, i pre isplate. Za privremene i povremene poslove najkasnije dan pre početka rada. Program to ne može da zameni; zabeleženo je u pomoći kao korak koji se ne sme preskočiti. |
 | **Obračunski listić za naknadu** | Primalac po ugovoru ne dobija platni listić — on prikazuje sate, fond i obustave, kojih ovde nema. Zaseban „obračun naknade" bi bio nova štampa, ne izmena postojeće. Generator ugovora (1.11.0) pokriva sam ugovor, ne i obračunski listić uz isplatu. |
 | **Bogat format teksta ugovora** | Tekst je običan tekst; podebljava se samo naslov i red koji počinje sa „Član". RTF ili HTML bi značio da se ono što korisnik vidi u editoru više ne poklapa pouzdano sa PDF-om, a i da se dokument ne može uporediti prostim poređenjem teksta. |
@@ -171,10 +161,96 @@ Ovo su svesne odluke sa razlogom; nova sesija ih lako „popravi" u pogrešnom s
     `VrstaUgovora`. Tekst je dokument, a ne izvor podataka; da je obrnuto, ispravka slovne
     greške bi menjala isplatu.
 
-20. **Zamena polja u šablonu nema uslova ni petlji.** Traži se `{Polje}` i menja vrednošću —
+20. **Radni sat je unos, obračun je dokaz.** Zato se sati brišu zajedno sa isplatom za koju
+    su uneti (uz poruku koliko ih je bilo), a obračun ne — isplata koja nosi obračune se ne
+    briše uopšte. Ne izjednačavati ta dva; sat se ponovo unese, obračun ne može da se vrati.
+
+21. **Brojevi faza su iz razvojne mape, ne iz ovog dokumenta.** Numeracija odeljaka ovde
+    (3.1, 3.2…) je redosled posla i **ne poklapa se** sa fazama iz
+    `ANALIZA_I_PREDLOZI_FUNKCIONALNOSTI.md`. „Faza 3.1" je tamo automatsko knjiženje u
+    ERPiFinansije — urađeno u 1.14.0, i to je faza u kojoj su `VrstaPrimanja.Konto`,
+    `VrstaUgovora.Konto` i `Radnik.SifraMestaTroska` prvi put upotrebljeni. Radni sati po
+    isplati su **dovršetak Faze 2.2** i tako su označeni u kodu i migraciji.
+
+22. **Obuhvat po isplati piše se jednom, u `IsplataService.Obuhvat`.** Od 1.13.0 je generički,
+    nad `IPripadaIsplati` — nosi ga i `ObracunPlate`, i `RadniSat`, i `ObracunVerzija`. Ne
+    pisati `Where(x => x.IsplataId == null || x.IsplataId == id)` u upitu; to je bilo
+    prepisano na tri mesta i upravo se tako razilazi. Uz svaki nov tip koji dobije
+    `IsplataId` ide i test nad **pravim SQLite fajlom**, jer se pristup polju preko
+    interfejsa mora prevesti u SQL, a InMemory to ne proverava.
+
+23. **Prenos sati iz ranijeg meseca uzima sate njegove prve isplate.** Prenosi se ono što je
+    radnik u mesecu radio, a to stoji uz konačnu zaradu; bez toga bi mesec sa akontacijom dao
+    dva reda za istog radnika i prenos bi pao.
+
+24. **Nalog za knjiženje se ne čuva.** Izvodi se iz obračuna svaki put iznova; u bazi zarada
+    ne postoji entitet „nalog". Zbog toga izmena konta odmah važi, a pogrešan izvoz se
+    ispravlja ponovnim izvozom. Snimljen nalog bi bio treći zapis istih iznosa — pored
+    obračuna i pored naloga u glavnoj knjizi — i prvi bi se razišao sa ostalima.
+
+25. **Trošak se uzima iz stavki, ne iz bruta.** `UkupnoBruto` ne sadrži neoporeziva primanja
+    (prevoz, jubilarna nagrada): ona se isplaćuju radniku, a po zakonu nisu ni u poreskoj
+    osnovici ni u osnovici doprinosa. Zbir stavki ih nosi i jedino se sa njim nalog
+    uravnoteži. Obračun bez stavki nema ni neoporezivih primanja, pa je za njega bruto isto to.
+
+26. **Protivstava ne zavisi od vrste primanja.** Konto troška živi uz vrstu primanja i vrstu
+    ugovora — tamo mu je mesto, jer trošak zavisi od toga *šta* je isplaćeno. Neto obaveza,
+    porez, doprinosi i obustave zavise od **uloge iznosa u nalogu**, kojih ima konačno mnogo;
+    zato stoje u zasebnom šifarniku sa sistemskim ključem. Ne dodavati polja `KontoObaveze`
+    uz vrstu primanja — svaka vrsta bi nosila isti broj.
+
+27. **Neuravnotežen nalog se ne izvozi, a neslaganje se javlja po radniku.** Razlika u glavnoj
+    knjizi se više ne može vezati za obračun iz kog je došla. Kontrola sastava (bruto − porez −
+    doprinosi − obustave = neto) hvata to dok je ispravka još jeftina. Ne ublažavati je na
+    upozorenje.
+
+28. **Zamena polja u šablonu nema uslova ni petlji.** Traži se `{Polje}` i menja vrednošću —
     ništa više. Šablon sa granama bio bi program koji niko ne testira, a piše ga knjigovođa.
     Polje koje se ne prepozna ili nije popunjeno **ostaje vidljivo** i prijavljuje se; ne
     brisati ga tiho, jer se praznina na mestu iznosa primeti tek posle potpisa.
+
+29. **`Bolovanje` ne nosi nijedan iznos.** Naknada je već obračunata i stoji u stavkama;
+    zapis nosi samo ono što se iz obračuna ne vidi — dane, osnov i to da li je prva isplata
+    iz Fonda. Ne dodavati polje sa iznosom refundacije: bio bi treći zapis istog novca,
+    pored obračuna i pored naloga za knjiženje, i prvi bi se razišao sa ostalima. Iz istog
+    razloga ni `BrojDana` nije kolona nego se izvodi iz datuma.
+
+30. **Šta je na teret Fonda kaže šifarnik.** `VrstaPrimanja.NaTeretFonda` je označena samo za
+    `B60`; povreda na radu i nega člana porodice zavise od slučaja i filijale. Ne uvoditi
+    spisak šifri u `RfzoService` — bilo bi to isto pravilo iz tačke 1.
+
+31. **Pol osiguranika se izvodi iz JMBG-a.** Cifre 10–12 ga nose (`JmbgValidator.Pol`).
+    Ne dodavati `Radnik.Pol` — to bi bila druga vrednost koja može protivrečiti JMBG-u,
+    isti duplikat kao oznaka olakšice iz tačke 2.
+
+32. **Bolovanje se vezuje za period, ne za isplatu.** Refundira se ono što je radniku u mesecu
+    isplaćeno, bez obzira kroz koliko je isplata prošlo. Zato `Bolovanje` nije `IPripadaIsplati`
+    i zato spisak OZ-10 sabira sve obračune meseca, a ne obuhvat jedne isplate.
+
+33. **Porez i doprinosi se na naknadu dele srazmerno, i neto je ostatak.** Obračun ih ne vodi po
+    stavkama, pa se udeo računa iz zbira stavki. Neto se izvodi kao `bruto − doprinosi − porez`
+    da kontrola sa obrasca (14 = 15 + 17 + 18) izlazi i posle zaokruživanja. Ne računati neto
+    zasebno i ne zaokruživati ga posebno.
+
+34. **Refundirana naknada nije trošak.** Kontni okvir je izvodi iz grupe 52 u celosti: umesto
+    troška nastaje potraživanje na **225**, a obaveze idu na **454/455/456** umesto na
+    450–453. Ne vraćati je na 520/450 „zbog jednostavnosti" — time bi trošak firme bio veći
+    za iznos koji Fond vraća. Napomena: **455 spaja porez i doprinose zaposlenog**, dok su
+    kod redovne zarade to dva konta (451 i 452); to nije previd nego Kontni okvir.
+
+35. **Obustava se skida prvo sa zarade, pa tek onda sa naknade.** Za pun mesec bolovanja
+    zarade nema, pa obustava pada na 454. Bez tog redosleda bi 450 ispao negativan. Iznos na
+    225 obustava **ne dira** — Fond refundira obračunato, ne isplaćeno.
+
+36. **Prag za teret Fonda nije svuda 31. dan.** Povreda na radu, profesionalna bolest i
+    davanje tkiva idu od prvog dana; nega člana porodice zavisi od uzrasta člana, koji zapis
+    ne nosi. `Bolovanje.PrviDanNaTeretFonda` to drži na jednom mestu i koristi se **samo za
+    upozorenje** — nijedan iznos od njega ne zavisi. Ne vraćati opštu proveru „30 dana za
+    sve": netačno upozorenje nauči korisnika da nalaze preskače.
+
+37. **Mesec bez obračuna u OZ-7 ostaje prazan.** Uputstvo uz obrazac traži minimalnu zaradu za
+    taj mesec, a program je nema. Prazan red se prijavljuje i popunjava rukom; upisan iznos
+    „za svaki slučaj" ušao bi u prosek po kome se naknada isplaćuje.
 
 ---
 
@@ -209,7 +285,7 @@ Ovo su svesne odluke sa razlogom; nova sesija ih lako „popravi" u pogrešnom s
 ## 6. Pre nego što korisnik testira
 
 - **Rezervna kopija baze** (Podešavanja → Rezervna kopija). Od 1.2.0 naovamo primenjuje se
-  dvanaest migracija, od kojih jedna briše kolonu.
+  trinaest migracija, od kojih jedna briše kolonu.
 - Prevod zatečenih obračuna na stavke (Vrste primanja → 🔀) — **prvo proba**, koja ništa ne
   upisuje, pa tek onda potvrda.
 - Storniranje se proba na **jednom** obračunu (Obračun plate → 🚫), pa se proveri da tog
@@ -245,3 +321,65 @@ Ovo su svesne odluke sa razlogom; nova sesija ih lako „popravi" u pogrešnom s
   šablona **ne dira** tekstove već zaključenih ugovora.
 - Proveriti **iznos slovima** na jednom primeru pre nego što dokument ode na potpis — razlika
   brojke i slova tumači se u korist slova.
+- **Radni sati po isplati (1.13.0) se prvo proveravaju „na prazno".** Otvoriti „⏱️ Radni sati"
+  za zatečeni mesec i potvrditi da je padajuća lista isplata **onemogućena** sa „1. Konačna
+  zarada", da je broj redova isti kao u 1.12.0 i da je „💾 Sačuvaj i preračunaj" dao **iste
+  iznose**. Sve dok je isplata jedna, ovaj ekran mora raditi kao pre.
+- Tek onda druga isplata: dodati akontaciju (💸 Isplate u mesecu → ➕), vratiti se na radne
+  sate, izabrati je u listi i uneti **drugačiji** broj redovnih sati jednom radniku. Zatim
+  prebaciti listu nazad na konačnu zaradu i potvrditi da su njeni sati **ostali isti** — to je
+  upravo ono što se do 1.12.0 gubilo.
+- Proveriti i da akontacija **nije skinula ratu kredita** (Krediti → ostatak duga) i da se u
+  „➕ Dodaj radnika" nudi i radnik koji sate već ima u konačnoj zaradi.
+- Uvoz sati (📥) probati **u akontaciju**, pa potvrditi da su sati konačne zarade netaknuti.
+- **Knjiženje (1.14.0) počinje od šifarnika.** Otvoriti „📗 Konta za knjiženje" i uporediti
+  brojeve sa kontnim planom firme u ERPiFinansije. Podrazumevani su iz Kontnog okvira; ko vodi
+  analitiku (520-1 po jedinici) upisuje svoje. **Konto koji ne postoji u kontnom planu zaustavlja
+  uvoz na drugoj strani** — bolje ga ispraviti odmah nego posle prvog izvoza.
+- Proveriti i konta uz **vrste primanja** (💰) i uz **vrste ugovora** (📄). Naknade zarade —
+  godišnji odmor, praznik, bolovanje — treba da imaju **520**, isto kao zarada; do 1.14.0 im je
+  stajao 521, što migracija ispravlja sama ako broj nije menjan ručno.
+- Ako se trošak deli po organizacionim delovima, uneti **šifru mesta troška** u karton radnika,
+  istu onu koja stoji u ERPiFinansije („Mesta troška" → Šifra). Bez nje nalog i dalje radi, samo
+  bez podele.
+- Zatim „📒 Nalog za knjiženje" za zatečeni mesec: proveriti da piše **„✔ u ravnoteži"**, da je
+  broj obračuna isti kao u „Obračun plate", i — ovo je glavna provera — da je iznos na kontu
+  **450 jednak zbiru naloga za prenos** neto zarada, a 451/452/453 iznosima iz PPP-PD prijave.
+- Ako kontrola javi **„Sastav obračuna se ne slaže"**, taj radnik ima obračun koji treba
+  prekalkulisati; nalog se dotle ne izvozi. To nije kvar knjiženja nego nalaz o obračunu.
+- „📊 CSV" otvoriti u tabeli i uporediti sa mesečnom rekapitulacijom **pre** nego što nalog ode
+  u knjige. Tek onda „📒 JSON".
+- U ERPiFinansije (od 1.2.0) otvoriti „Nalozi" → **„📒 Uvoz zarada"**, izabrati snimljen fajl i
+  pročitati šta piše u potvrdi. Nalog ulazi kao **neproknjižen** — pregledati stavke, pa ga
+  proknjižiti dugmetom „✅ Proknjiži".
+- Posle knjiženja proveriti **karticu konta 450**: saldo mora biti jednak onome što se isplaćuje
+  radnicima, i zatvara se izvodom kad isplata prođe.
+- **Bolovanja (1.15.0) počinju od šifarnika i kartona.** U „💰 Vrste primanja" potvrditi da je
+  „Bolovanje preko 30 dana" označeno kao **na teret Fonda**, i označiti i ostale ako filijala
+  refundira i njih. U karton firme uneti **poseban račun** i **šifru delatnosti**, a u karton
+  radnika **LBO** — bez posebnog računa i LBO-a kontrolne provere javljaju grešku.
+- Zatim „🏥 Bolovanja i RFZO" za mesec u kome je isplaćeno bolovanje preko 30 dana: uneti radnika,
+  **početak sprečenosti** (ne prvi dan refundacije) i period, pa proveriti da se u tabeli pojavio
+  iznos naknade — on dolazi iz obračuna i ovde se ne unosi. Ako je nula, u obračunu nema sati
+  bolovanja preko 30 dana.
+- Glavna provera: **bruto naknada mora biti jednaka zbiru stavki „Bolovanje preko 30 dana"** iz
+  tog meseca, a kolona „Za isplatu" bruto uvećan za doprinose na teret poslodavca — to je ono što
+  Fond refundira. Za pun mesec bolovanja iznosi moraju biti **isti** kao u obračunu, bez podele.
+- „📋" snima OZ-10, „🖨️" OZ-7 za izabrani red. Na OZ-7 proveriti da je period **12 meseci pre
+  meseca u kome je sprečenost nastupila** i da su meseci bez obračuna prazni — njih po uputstvu
+  popunjavate minimalnom zaradom rukom, i kontrola ih nabraja.
+- Prosek po času sa OZ-7 uporediti sa ručnim računom na jednom radniku: ukupan bruto podeljen
+  ukupnim brojem časova iz te iste tabele.
+- **Knjiženje refundacije se proverava na istom mesecu.** Otvoriti „📒 Nalog za knjiženje" za mesec
+  sa bolovanjem i potvrditi tri stvari: da naknada **nije** na kontu 520, da je iznos na kontu
+  **225 jednak koloni „za isplatu" na OZ-10**, i da nalog i dalje piše „✔ u ravnoteži".
+- Ako neki radnik ima i bolovanje i ratu kredita, proveriti da konto **450 nije negativan** — obustava
+  se skida prvo sa zarade, a kod punog meseca bolovanja pada na 454.
+- Konta 225, 454, 455 i 456 uporediti sa kontnim planom firme u ERPiFinansije, kao i ostala —
+  konto koji tamo ne postoji zaustavlja uvoz.
+- Posle knjiženja, **potraživanje na 225 se zatvara u ERPiFinansije** izvodom posebnog računa kad
+  refundacija stigne od Fonda. Taj korak program ne radi sam.
+- **Sam zahtev se od 01.04.2026. podnosi kroz „eBolovanje – Poslodavac"** na Portalu eUprava, ne u
+  papiru. Obrasci odavde služe da se brojevi provere pre unosa; u portalu se period i uzrok
+  preuzimaju iz doznake, a podaci o zaradi iz 12 meseci traže se samo kod **prve** isplate za to
+  bolovanje i unose ručno ili XML fajlom.

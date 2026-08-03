@@ -424,6 +424,14 @@
                                 </StackPanel>
                             </Grid>
 
+                            <!-- LBO -->
+                            <StackPanel Margin="0,0,0,12">
+                                <TextBlock Text="LBO (lični broj osiguranika)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                <TextBox Text="{Binding EditingRadnik.Lbo, UpdateSourceTrigger=PropertyChanged}"
+                                         MaxLength="11"
+                                         ToolTip="Jedanaestocifreni broj sa zdravstvene kartice. Traži ga obrazac OZ-7 pri refundaciji naknade zarade od RFZO; JMBG ga ne zamenjuje."/>
+                            </StackPanel>
+
                             <!-- Aktivan -->
                             <CheckBox Content="Aktivan zaposleni"
                                       IsChecked="{Binding EditingRadnik.Aktivan}"

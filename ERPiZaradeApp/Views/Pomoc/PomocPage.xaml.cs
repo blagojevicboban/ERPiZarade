@@ -50,6 +50,7 @@ public partial class PomocPage : Page
             Sadrzaj =
                 "Meni '⏱️ Radni sati' omogućava unos i izmenu svih vrsta radnih sati za svakog zaposlenog u AKTIVNOM periodu. Ako period nije postavljen, prvo ga aktivirajte u meniju 'Obračunski periodi'.\n\n" +
                 "1. PARAMETRI PERIODA (gornja traka):\n" +
+                "• Isplata — sati se unose za JEDNU isplatu meseca. Dok mesec ima jednu isplatu lista je onemogućena i sve radi kao i do sada; nova isplata se dodaje u meniju '💸 Isplate u mesecu'. Sati uneti za akontaciju više ne prepisuju one unete za konačnu zaradu.\n" +
                 "• Bod (RSD) — vrednost obračunskog boda za dati mesec, koristi se za izračun bruto zarade po koeficijentu.\n" +
                 "• Fond sati — ukupan fond radnih časova u mesecu.\n\n" +
                 "2. KOLONE (glavne): Redovni sati, Bolovanje, Prekovremeni, Godišnji odmor, Državni praznik, Noćni rad, Rad praznikom, Plaćeno odsustvo, Bolovanje >60 dana, Porodiljsko, Bolovanje 100%, Topli obrok (iznos), Regres (iznos), Stimulacija (%), Bruto dodatak, Prosek (12m).\n\n" +
@@ -119,9 +120,11 @@ public partial class PomocPage : Page
                 "• Dok mesec ima JEDNU isplatu, sve radi kao i do sada — selektori isplate se ni ne prikazuju.\n" +
                 "• Svaka isplata je zaseban obračun, zasebna PPP-PD prijava sa svojim BOP-om i zaseban paket naloga za prenos. BOP jedne isplate na nalogu druge šalje novac na pogrešnu deklaraciju, pa program to zaustavlja.\n" +
                 "• Prekalkulacija i storniranje diraju samo obračune izabrane isplate — akontacija koja je već isplaćena ostaje netaknuta.\n" +
+                "• RADNI SATI se od 1.13.0 takođe vode po isplati: svaka isplata ima svoj unos sati, a ekran '⏱️ Radni sati' i uvoz iz Excel/CSV rade nad izabranom isplatom.\n" +
+                "• Brisanje isplate briše i radne sate unete za nju — oni su unos, ne dokaz. Obračun se ne briše nikad: isplata koja nosi obračune se ne može obrisati.\n" +
                 "• OBUSTAVE (rate kredita i samodoprinos) skidaju se SAMO na konačnoj zaradi. Akontacija, bonus i 13. plata idu bez njih, jer bi radnik inače istu ratu platio više puta u mesecu. Zato mesec sme imati samo jednu isplatu vrste 'Konačna zarada'.\n" +
                 "• Akontacija se u PPP-PD prijavi označava sa 'A' (nije konačna isplata prihoda), ostale isplate sa 'K'.\n" +
-                "• Dugme '🔗' upisuje isplatu obračunima koji je nemaju — nijedan iznos se pri tome ne menja.",
+                "• Dugme '🔗' upisuje isplatu obračunima i radnim satima koji je nemaju — nijedan iznos ni sat se pri tome ne menja.",
             Kljuc = "Isplate"
         },
         new PomocTema
@@ -171,6 +174,58 @@ public partial class PomocPage : Page
                 "• Iznosi se iz teksta NE ČITAJU — obračun ide iz polja ugovora. Ispravka slovne greške u dokumentu ne može da promeni isplatu.\n" +
                 "• '📄 PDF' snima dokument spreman za štampu i potpis.",
             Kljuc = "SabloniUgovora"
+        },
+        new PomocTema
+        {
+            Naslov = "📒 Nalog za knjiženje",
+            Sadrzaj =
+                "Meni '📒 Nalog za knjiženje' pravi temeljnicu za glavnu knjigu — dvostrani nalog koji se izvozi u ERPiFinansije.\n\n" +
+                "• Nalog se IZVODI iz obračuna svaki put iznova; ništa se ovde ne upisuje. Zato se izmena konta odmah vidi, a pogrešan izvoz se ispravlja ponovnim izvozom, bez storniranja.\n" +
+                "• TROŠAK ide na konto upisan uz VRSTU PRIMANJA (meni '💰 Vrste primanja') odnosno uz VRSTU UGOVORA, i deli se po ŠIFRI MESTA TROŠKA iz kartona radnika. Obaveze se ne dele po mestima troška — obaveza prema radniku je jedna bez obzira gde je radio.\n" +
+                "• PROTIVSTAVA (neto obaveza, porez, doprinosi, obustave) dolazi iz šifarnika '📗 Konta za knjiženje'. Ona ne zavisi od toga šta je isplaćeno nego od uloge iznosa u nalogu, pa zato stoji zasebno.\n" +
+                "• Iznosi su ISTI oni koje obračun već nosi: konto neto obaveza se poklapa sa zbirom naloga za prenos, a porez i doprinosi sa PPP-PD prijavom. Ništa se ne računa iznova.\n" +
+                "• Svaka ISPLATA se knjiži zasebnim nalogom, sa svojim datumom. Stornirani obračuni se ne knjiže.\n" +
+                "• NALOG KOJI NIJE U RAVNOTEŽI SE NE IZVOZI. Ako se sastav nekog obračuna ne slaže (bruto umanjen za porez, doprinose i obustave ne daje isplaćen neto), kontrola to javlja PO RADNIKU — u glavnoj knjizi bi se videla samo razlika, bez traga odakle je došla.\n" +
+                "• Neoporeziva primanja (prevoz, jubilarna nagrada) ulaze u trošak iako nisu u bruto iznosu — zato se trošak uzima iz stavki obračuna, a ne iz bruta.\n" +
+                "• '📒 JSON' snima fajl za uvoz u ERPiFinansije; '📊 CSV' iste stavke za proveru u tabeli, i sme se snimiti i kad nalog nije spreman — upravo se u njemu i traži gde je razlika.",
+            Kljuc = "Knjizenje"
+        },
+        new PomocTema
+        {
+            Naslov = "🏥 Bolovanja i refundacija RFZO (OZ-7, OZ-10)",
+            Sadrzaj =
+                "Meni '🏥 Bolovanja i RFZO' vodi evidenciju privremene sprečenosti za rad i pravi obrasce kojima se od Republičkog fonda za zdravstveno osiguranje traži refundacija isplaćene naknade zarade.\n\n" +
+                "• Naknadu za PRVIH 30 DANA sprečenosti nosi poslodavac; od 31. dana je refundira Fond. Zato se uz svako bolovanje unosi i POČETAK SPREČENOSTI, a ne samo period za koji se traži refundacija — bez njega se ne zna koji je to dan po redu, pa kontrola upozorava kad period počinje unutar prvih 30 dana.\n" +
+                "• OVDE SE NE UNOSI NIJEDAN IZNOS. Naknada je već obračunata i stoji u stavkama obračuna. Ekran unosi samo ono što se iz obračuna ne vidi: za koje dane, po kom osnovu i da li je to prva isplata iz sredstava Fonda.\n" +
+                "• Koje su naknade na teret Fonda kaže kolona 'Na teret Fonda' u meniju '💰 Vrste primanja'. Podrazumevano je označeno samo 'Bolovanje preko 30 dana'; ko refundira i naknadu za povredu na radu ili negu člana porodice, označi i te vrste.\n" +
+                "• Porez i doprinosi se dele srazmerno udelu naknade u ukupnom bruto iznosu obračuna — obračun ih ne vodi po stavkama. Za pun mesec bolovanja udeo je ceo obračun, pa podele ni nema.\n" +
+                "• OBRAZAC OZ-7 ('🖨️') je potvrda o ostvarenoj zaradi iz 12 meseci KOJI PRETHODE MESECU U KOME JE SPREČENOST NASTUPILA; iz nje se utvrđuje prosek po času, koji je osnov za naknadu. Traži LBO iz kartona radnika. Za mesece bez obračuna se po uputstvu upisuje minimalna zarada za taj mesec — taj podatak program nema, pa se ti redovi popunjavaju rukom, a kontrola ih nabraja.\n" +
+                "• OBRAZAC OZ-10 ('📋') je spisak obračunatih i isplaćenih naknada zarada za ceo mesec; predaje se filijali u dva primerka. Kolona 'za isplatu' je ono što Fond refundira — bruto naknada uvećana za doprinose na teret poslodavca.\n" +
+                "• Zaglavlje oba obrasca se popunjava iz kartona firme: POSEBAN RAČUN na koji Fond uplaćuje refundaciju i ŠIFRA DELATNOSTI. Poseban račun nije isti kao poslovni račun firme.\n" +
+                "• Stornirani obračun nije isplaćen, pa se ni ne refundira — u obrazac ne ulazi.\n" +
+                "• PRAG OD 30 DANA NE VAŽI ZA SVE OSNOVE. Kod povrede na radu, profesionalne bolesti i davanja tkiva i organa Fond plaća od PRVOG dana; kod nege člana porodice zavisi od toga da li je član mlađi ili stariji od tri godine, pa program tu ništa ne pretpostavlja. Upozorenje o prvih 30 dana se javlja samo tamo gde prag stvarno postoji.\n" +
+                "• KNJIŽENJE: refundirana naknada NIJE trošak poslodavca. Ne ide na 520/521 nego se knjiži kao POTRAŽIVANJE od Fonda na kontu 225, uz obaveze na 454 (neto), 455 (porez i doprinosi zaposlenog) i 456 (doprinosi poslodavca). Nalog za knjiženje to radi sam; iznos na 225 je jednak koloni 'za isplatu' obrasca OZ-10. Potraživanje se zatvara u ERPiFinansije, izvodom posebnog računa kad refundacija stigne.\n" +
+                "• ZAHTEV SE OD 01.04.2026. PODNOSI ELEKTRONSKI, kroz sistem 'eBolovanje – Poslodavac' na Portalu eUprava — papirna predaja filijali više nije put. Rok za tip 'Naknada zarade' je 15 dana od isplate zarade ostalim zaposlenima; za tip 'Refundacija' (kad je poslodavac već isplatio) rok je 3 godine. Program to ne može da zameni; obrasci ovde služe za pripremu i proveru brojeva PRE unosa u portal, i kao arhivski trag.\n" +
+                "• U portalu se period i uzrok bolovanja preuzimaju iz doznake, a poslodavac unosi 'Prva isplata za bolovanje' i broj dana — isto što se ovde evidentira. Podaci o zaradi iz 12 meseci (sekcija 'Potvrda o ostvarenoj zaradi') unose se ručno ili učitavanjem XML fajla, i traže se SAMO kod prve isplate za to bolovanje. Pet polja koja portal traži — mesec i godina, ukupan broj plaćenih časova, neto, bruto i datum isplate — su tačno kolone obrasca OZ-7 iz ovog programa.",
+            Kljuc = "Bolovanja"
+        },
+        new PomocTema
+        {
+            Naslov = "📗 Konta za knjiženje",
+            Sadrzaj =
+                "Meni '📗 Konta za knjiženje' drži konta na koja idu obaveze i troškovi po obračunu. Menja se SAMO broj konta — svaki red je uloga koju program traži po imenu, pa se redovi ne dodaju i ne brišu.\n\n" +
+                "Podrazumevani brojevi su iz Pravilnika o Kontnom okviru za privredna društva, zadruge i preduzetnike:\n" +
+                "• 520 — troškovi zarada i naknada zarada (bruto); tu ide i godišnji odmor, praznik i bolovanje na teret poslodavca\n" +
+                "• 521 — troškovi doprinosa na teret poslodavca\n" +
+                "• 522–526 — troškovi naknada po ugovorima van radnog odnosa (522 ugovor o delu, 523 autorski, 524 privremeni i povremeni poslovi, 525 ostali ugovori, 526 organi upravljanja i nadzora)\n" +
+                "• 529 — ostali lični rashodi (neoporeziva primanja)\n" +
+                "• 450 — obaveze za neto zarade; 451 porez na teret zaposlenog; 452 doprinosi na teret zaposlenog; 453 porezi i doprinosi na teret poslodavca\n" +
+                "• 465 — obaveze prema fizičkim licima za naknade po ugovorima\n" +
+                "• 469 — ostale obaveze (obustave iz zarade); 489 — ostale obaveze za poreze i doprinose\n\n" +
+                "• Firma koja vodi analitiku (npr. 520-1 po poslovnoj jedinici) upisuje svoje brojeve — nova verzija programa za to nije potrebna.\n" +
+                "• Dugme '↩' vraća podrazumevane brojeve; traži potvrdu, jer briše unetu analitiku.\n" +
+                "• Konto bez broja zaustavlja izvoz naloga — glavna knjiga takav dokument odbija.",
+            Kljuc = "KontaKnjizenja"
         },
         new PomocTema
         {
@@ -289,6 +344,8 @@ public partial class PomocPage : Page
                 "• Šta je razlika između Bruto 1 i Bruto 2? Bruto 1 = ukupna bruto zarada radnika (na platnom listiću). Bruto 2 = ukupni trošak poslodavca = Bruto 1 + doprinosi koje plaća poslodavac.\n\n" +
                 "• Radnik je radio samo deo meseca? Unesite tačan broj sati u 'Redovni sati' — sistem automatski preračunava proporcionalan iznos. Fond sati ostaje fiksan za celu firmu.\n\n" +
                 "• Kako dodati radnika usred meseca? Prvo ga dodajte u 'Radnici', zatim u 'Radni sati' kliknite '➕ Dodaj radnika' da ga uključite u aktivni period.\n\n" +
+                "• Zašto se u 'Radni sati' pojavila lista 'Isplata'? Zato što mesec ima više od jedne isplate. Sati se unose za jednu isplatu: prebacivanjem liste vidite i uređujete sate te isplate, a sati ostalih ostaju netaknuti. Dok je isplata jedna, lista je onemogućena i sve radi kao ranije.\n\n" +
+                "• Uneo sam sate, a u obračunu ih nema? Proverite da je u 'Novi obračun' izabrana ISTA isplata za koju su sati uneti — svaka isplata ima svoje sate.\n\n" +
                 "• Mogu li da menjam prethodne obračune? Da — postavite prethodni period kao aktivan, izmenite radne sate i kliknite '💾 Sačuvaj i preračunaj'. Proverite da li su štampane kopije izveštaja i dalje usaglašene.\n\n" +
                 "• Gde se čuva baza? SQLite datoteka u folderu aplikacije — redovno pravite rezervne kopije (meni Podešavanja)."
         },

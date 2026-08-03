@@ -115,6 +115,10 @@ public static class AppConfig
                 }
 
                 File.Copy(fajl, cilj);
+                if (cilj.EndsWith(".db", StringComparison.OrdinalIgnoreCase))
+                {
+                    ERPiZaradeData.PlataDbContext.UkloniReadOnlyAtribut(cilj);
+                }
                 kopirano++;
             }
             catch (Exception ex)

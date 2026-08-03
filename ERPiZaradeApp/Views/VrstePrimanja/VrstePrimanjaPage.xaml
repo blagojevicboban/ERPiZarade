@@ -20,7 +20,7 @@
 
                 <TextBlock Grid.Column="0" VerticalAlignment="Center" TextWrapping="Wrap" FontSize="12"
                            Foreground="{StaticResource TextSecondaryBrush}"
-                           Text="Novo primanje se dodaje kao red u ovoj tabeli — bez izmene baze. Sistemske vrste popunjava sam obračun i njima se šifra ne sme menjati."/>
+                           Text="Novo primanje se dodaje kao red u ovoj tabeli — bez izmene baze. Sistemske vrste popunjava sam obračun i njima se šifra ne sme menjati. „Na teret Fonda&quot; označava naknadu koju refundira RFZO; ona ulazi u obrazac OZ-10."/>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button Content="🔀" Style="{StaticResource SecondaryButton}" Width="36" Padding="0" Margin="0,0,16,0"
@@ -51,6 +51,7 @@
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
                     <DataGridTextColumn Header="Konto" Binding="{Binding Konto, UpdateSourceTrigger=PropertyChanged}" Width="65"/>
+                    <DataGridCheckBoxColumn Header="Na teret Fonda" Binding="{Binding NaTeretFonda, UpdateSourceTrigger=PropertyChanged}" Width="100"/>
                     <DataGridCheckBoxColumn Header="Aktivna" Binding="{Binding Aktivna, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
                     <DataGridCheckBoxColumn Header="Sistemska" Binding="{Binding JeSistemska}" Width="80" IsReadOnly="True"/>
                 </DataGrid.Columns>

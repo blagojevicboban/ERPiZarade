@@ -38,6 +38,25 @@ public class Firma
     [MaxLength(50)]
     public string SifraPlacanja { get; set; } = "";
 
+    /// <summary>
+    /// Šifra pretežne delatnosti po Klasifikaciji delatnosti — zaglavlje obrasca OZ-10
+    /// (Faza 2.6).
+    /// </summary>
+    [MaxLength(10)]
+    public string SifraDelatnosti { get; set; } = "";
+
+    /// <summary>
+    /// Poseban tekući račun na koji RFZO uplaćuje refundiranu naknadu zarade. Nije isti kao
+    /// <see cref="BankovniRacun"/> — Fond uplaćuje na namenski račun, pa bi jedno polje za
+    /// oba značilo da se refundacija traži na račun sa kog se plaćaju obaveze.
+    /// </summary>
+    [MaxLength(30)]
+    public string PosebanRacun { get; set; } = "";
+
+    /// <summary>Podračun poslovne jedinice; popunjava se samo kad ga filijala traži (OZ-7).</summary>
+    [MaxLength(30)]
+    public string PodracunPoslovneJedinice { get; set; } = "";
+
     [MaxLength(50)]
     public string Telefon { get; set; } = "";
 

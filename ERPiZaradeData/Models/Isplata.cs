@@ -26,6 +26,21 @@ public enum VrstaIsplate
 }
 
 /// <summary>
+/// Zapis koji pripada jednoj isplati u mesecu.
+///
+/// Nose ga obračun, radni sat i arhivirana verzija obračuna, i za sva tri važi isto pravilo:
+/// <c>IsplataId == null</c> je <b>prva isplata svog perioda</b>. Zbog ovog interfejsa pravilo
+/// stoji napisano jednom, u <c>IsplataService.Obuhvat</c>, umesto po jednom puta za svaku
+/// tabelu — a upravo se prepisano pravilo najlakše razilazi.
+/// </summary>
+public interface IPripadaIsplati
+{
+    int Godina { get; }
+    int Mesec { get; }
+    int? IsplataId { get; }
+}
+
+/// <summary>
 /// Jedna isplata unutar obračunskog meseca (Faza 2.2).
 ///
 /// Do sada je sve bilo vezano za par (godina, mesec), pa je mesec mogao imati tačno jednu

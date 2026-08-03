@@ -5,6 +5,25 @@ namespace ERPiZaradeApp.Services
 {
     public static class JmbgValidator
     {
+        /// <summary>
+        /// Pol osiguranika iz JMBG-a — cifre 10–12 su redni broj u kome je 000–499 muški,
+        /// a 500–999 ženski pol. Vraća „М" ili „Ж" (ćirilicom, jer se tako i štampa), odnosno
+        /// prazno kad JMBG nije upotrebljiv.
+        ///
+        /// Traži ga obrazac OZ-10. Ne čuva se uz radnika: pol je već sadržan u JMBG-u, pa bi
+        /// zasebno polje bila druga vrednost koja može da mu protivreči.
+        /// </summary>
+        public static string Pol(string? jmbg)
+        {
+            if (string.IsNullOrWhiteSpace(jmbg)) return "";
+
+            jmbg = jmbg.Trim();
+            if (jmbg.Length != 13 || !jmbg.All(char.IsDigit)) return "";
+
+            int redniBroj = int.Parse(jmbg.Substring(9, 3));
+            return redniBroj < 500 ? "М" : "Ж";
+        }
+
         public static bool Validate(string? jmbg, out string error)
         {
             error = "";

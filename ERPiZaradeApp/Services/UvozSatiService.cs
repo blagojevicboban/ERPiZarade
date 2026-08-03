@@ -332,22 +332,29 @@ public class UvozSatiService
     // ── Upis ─────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Upisuje pročitane sate, zamenjujući postojeći zapis za istog radnika i period —
+    /// Upisuje pročitane sate, zamenjujući postojeći zapis za istog radnika u istoj isplati —
     /// isti ishod kao da su uneti ručno.
     /// </summary>
-    public int Primeni(RezultatUvoza rezultat, int godina, int mesec)
+    /// <param name="isplata">
+    /// Isplata za koju se sati unose (Faza 2.2). <c>null</c> je ceo period, kao pre uvođenja
+    /// isplata — uvoz tada zamenjuje sve zatečene sate meseca, bez obzira na isplatu.
+    /// </param>
+    public int Primeni(RezultatUvoza rezultat, int godina, int mesec, Isplata? isplata = null)
     {
         if (!rezultat.JeIspravan)
             throw new InvalidOperationException("Uvoz se ne može primeniti dok fajl sadrži greške.");
 
-        var postojeci = _db.RadniSati
-            .Where(s => s.Godina == godina && s.Mesec == mesec)
-            .ToDictionary(s => s.RadnikId, s => s);
+        var postojeci = IsplataService.Obuhvat(_db.RadniSati, godina, mesec, isplata)
+            .ToList()
+            .GroupBy(s => s.RadnikId)
+            .ToDictionary(g => g.Key, g => g.ToList());
 
         foreach (var novi in rezultat.Redovi)
         {
+            novi.IsplataId = isplata?.IsplataId;
+
             if (postojeci.TryGetValue(novi.RadnikId, out var stari))
-                _db.RadniSati.Remove(stari);
+                _db.RadniSati.RemoveRange(stari);
 
             _db.RadniSati.Add(novi);
         }

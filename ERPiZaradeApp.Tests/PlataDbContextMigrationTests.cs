@@ -84,6 +84,45 @@ public class PlataDbContextMigrationTests : IDisposable
         ctx.Database.ExecuteSqlRaw(sql);
     }
 
+    /// <summary>
+    /// Ubacuje radne sate u zatečenu šemu, istim postupkom i iz istog razloga kao
+    /// <see cref="UbaciObracunUZatecenuSemu"/>: spisak kolona se čita iz same baze.
+    /// </summary>
+    private static void UbaciRadneSateUZatecenuSemu(
+        PlataDbContext ctx, int radnikId, int godina, int mesec, int redovniSati)
+    {
+        var conn = ctx.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open) conn.Open();
+
+        var kolone = new List<(string Ime, string Tip)>();
+
+        using (var pragma = conn.CreateCommand())
+        {
+            pragma.CommandText = "PRAGMA table_info(RadniSati);";
+            using var citac = pragma.ExecuteReader();
+            while (citac.Read())
+            {
+                string ime = citac.GetString(1);
+                if (ime == "Id") continue;
+                kolone.Add((ime, citac.GetString(2).ToUpperInvariant()));
+            }
+        }
+
+        static string Vrednost((string Ime, string Tip) k, int radnikId, int godina, int mesec, int redovniSati)
+            => k.Ime switch
+            {
+                "RadnikId" => radnikId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                "Godina" => godina.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                "Mesec" => mesec.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                "RedovniSati" => redovniSati.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                _ => k.Tip.Contains("TEXT", StringComparison.Ordinal) ? "''" : "0"
+            };
+
+        ctx.Database.ExecuteSqlRaw(
+            $"INSERT INTO RadniSati ({string.Join(", ", kolone.Select(k => k.Ime))}) " +
+            $"VALUES ({string.Join(", ", kolone.Select(k => Vrednost(k, radnikId, godina, mesec, redovniSati)))});");
+    }
+
     private static List<string> PrimenjeneMigracije(string putanja)
     {
         var options = new DbContextOptionsBuilder<PlataDbContext>()
@@ -294,6 +333,90 @@ public class PlataDbContextMigrationTests : IDisposable
     }
 
     /// <summary>
+    /// Faza 2.2: radni sati dobijaju isplatu. Zatečeni redovi se vezuju za prvu isplatu svog
+    /// perioda — i onda kad taj period nema nijedan obračun, pa mu Faza2_Isplate isplatu nije
+    /// ni napravila: sati se unesu, a obračun se pokrene tek posle. Nijedan sat se ne menja.
+    /// </summary>
+    [Fact]
+    public void Create_ZatecenaBaza_VezujeRadneSateZaPrvuIsplatu()
+    {
+        string putanja = NovaPutanja();
+
+        var options = new DbContextOptionsBuilder<PlataDbContext>()
+            .UseSqlite($"Data Source={putanja}")
+            .Options;
+
+        using (var staraBaza = new PlataDbContext(options))
+        {
+            NapraviZatecenuSemu(staraBaza);
+
+            staraBaza.Database.ExecuteSqlRaw(@"
+                INSERT INTO Radnici
+                    (Id, Godina, Mesec, BrojRadnika, ImeIPrezime, Jmbg, MaticniBroj, MestoRodjenja,
+                     AdresaStanovanja, Mesto, SifraOpstine, Kategorija, Radno_Mesto,
+                     BrojRadneJedinice, MinuliRadGodine, Koeficijent, Koeficijent1, OsnovnaPlata,
+                     StopaPio, StopaZdravstvo, StopaNezaposlenost, BankovniRacun, NazivBanke,
+                     Aktivan, LicnoOslobodjenje, Operativni, DatumUnosa)
+                VALUES
+                    (31, 2026, 5, 9, 'Sima Simić', '0101990710014', '', '',
+                     '', '', '', '', '',
+                     1, 0, 2.5, 0, 0,
+                     0, 0, 0, '', '',
+                     1, 0, '', '2026-05-31 00:00:00');");
+
+            // Period sa satima, ali bez ijednog obračuna.
+            UbaciRadneSateUZatecenuSemu(staraBaza, radnikId: 31, godina: 2026, mesec: 5, redovniSati: 168);
+        }
+
+        using (var db = PlataDbContext.Create(putanja))
+        {
+            var isplata = db.Isplate.Single(i => i.Godina == 2026 && i.Mesec == 5);
+            Assert.Equal(1, isplata.RedniBroj);
+            Assert.Equal(VrstaIsplate.KonacnaZarada, isplata.Vrsta);
+
+            var sati = db.RadniSati.Single();
+            Assert.Equal(isplata.IsplataId, sati.IsplataId);
+
+            // Migracija ne dira nijedan sat.
+            Assert.Equal(168, sati.RedovniSati);
+        }
+    }
+
+    /// <summary>
+    /// Obuhvat po isplati mora da se prevede u SQL i nad <b>radnim satima</b>, ne samo nad
+    /// obračunima: pravilo je od Faze 3.1 napisano jednom, kroz <c>IPripadaIsplati</c>, pa
+    /// upit više ne pominje konkretnu tabelu. InMemory provajder prihvata i ono što SQLite
+    /// odbija, zato ovaj test stoji među onima koji rade nad fajlom.
+    /// </summary>
+    [Fact]
+    public void ObuhvatRadnihSati_RadiNadSqliteBazom()
+    {
+        string putanja = NovaPutanja();
+
+        using var db = PlataDbContext.Create(putanja);
+
+        db.Radnici.Add(new Radnik { BrojRadnika = 1, ImeIPrezime = "Pera Perić", Godina = 2026, Mesec = 6 });
+        db.SaveChanges();
+        int radnikId = db.Radnici.Single().Id;
+
+        var servis = new ERPiZaradeApp.Services.IsplataService(db);
+        var prva = servis.Obezbedi(2026, 6);
+        var druga = servis.Dodaj(2026, 6, VrstaIsplate.Akontacija, "Akontacija", new DateTime(2026, 6, 15)).Isplata!;
+
+        db.RadniSati.AddRange(
+            new RadniSat { RadnikId = radnikId, Godina = 2026, Mesec = 6, IsplataId = prva.IsplataId, RedovniSati = 176 },
+            new RadniSat { RadnikId = radnikId, Godina = 2026, Mesec = 6, IsplataId = druga.IsplataId, RedovniSati = 80 });
+        db.SaveChanges();
+
+        Assert.Equal(176,
+            ERPiZaradeApp.Services.IsplataService.Obuhvat(db.RadniSati, 2026, 6, prva).Single().RedovniSati);
+        Assert.Equal(80,
+            ERPiZaradeApp.Services.IsplataService.Obuhvat(db.RadniSati, 2026, 6, druga).Single().RedovniSati);
+        Assert.Equal(2,
+            ERPiZaradeApp.Services.IsplataService.Obuhvat(db.RadniSati, 2026, 6, null).Count());
+    }
+
+    /// <summary>
     /// Zbir isplaćenog po ugovorima mora da radi nad <b>pravim SQLite-om</b>.
     ///
     /// SQLite ne ume <c>SUM</c> nad <c>decimal</c> kolonom: grupisanje na strani baze pada sa
@@ -344,6 +467,185 @@ public class PlataDbContextMigrationTests : IDisposable
 
         Assert.Equal(2, zbir[ugovor.UgovorId].BrojIsplata);
         Assert.Equal(50000m, zbir[ugovor.UgovorId].Bruto);
+    }
+
+    /// <summary>
+    /// Nalog za knjiženje mora da se sastavi nad <b>pravim SQLite-om</b> (Faza 3.1).
+    ///
+    /// Upit spaja tri stvari koje InMemory provajder prihvata i kad ih SQLite ne bi:
+    /// obuhvat po isplati preko interfejsa <c>IPripadaIsplati</c>, <c>Include</c> lanac do
+    /// vrste primanja i vrste ugovora, i zbrajanje decimalnih kolona. Zbrajanje ide u
+    /// memoriji, posle <c>ToList()</c> — ovaj test je taj koji to drži.
+    /// </summary>
+    [Fact]
+    public void NalogZaKnjizenje_SeSastavljaNadSqliteBazom()
+    {
+        string putanja = NovaPutanja();
+
+        using var db = PlataDbContext.Create(putanja);
+
+        db.Firme.Add(new Firma { Naziv = "TEST DOO", BankovniRacun = "160-0000000000-11", Pib = "100000001" });
+        db.Radnici.Add(new Radnik
+        {
+            BrojRadnika = 1,
+            ImeIPrezime = "Radnik Jedan",
+            Jmbg = "0101990710016",
+            SifraMestaTroska = "MT-01",
+            Godina = 2026,
+            Mesec = 6
+        });
+        db.SaveChanges();
+
+        int radnikId = db.Radnici.Single().Id;
+        var vrstaZarade = db.VrstePrimanja.First(v => v.Sifra == VrstePrimanjaSeed.OsnovnaZarada);
+
+        var obracun = new ObracunPlate
+        {
+            RadnikId = radnikId,
+            Godina = 2026,
+            Mesec = 6,
+            BrutoZarada = 100000m,
+            PorezNaDohodak = 10000m,
+            DoprinosPioRadnik = 14000m,
+            DoprinosZdravstvoRadnik = 5150m,
+            DoprinosNezaposlenostRadnik = 750m,
+            DoprinosPioPoslodavac = 10000m,
+            DoprinosZdravstvoPoslodavac = 5150m,
+            NetoIsplata = 70100m
+        };
+
+        obracun.Stavke.Add(new ObracunStavka
+        {
+            VrstaPrimanjaId = vrstaZarade.VrstaPrimanjaId,
+            Iznos = 100000m,
+            OporeziviDeo = 100000m
+        });
+
+        db.ObracuniPlata.Add(obracun);
+        db.SaveChanges();
+
+        var prva = new ERPiZaradeApp.Services.IsplataService(db).Obezbedi(2026, 6);
+
+        var nalog = new ERPiZaradeApp.Services.KnjizenjeService(db)
+            .Pripremi(2026, 6, prva, new DateTime(2026, 6, 30));
+
+        Assert.True(nalog.JeUravnotezen, $"Razlika {nalog.Razlika:N2}");
+        Assert.True(nalog.SmeSeIzvesti);
+        Assert.Equal(100000m, nalog.Stavke.Where(s => s.Konto == "520").Sum(s => s.Duguje));
+        Assert.Equal(70100m, nalog.Stavke.Where(s => s.Konto == "450").Sum(s => s.Potrazuje));
+        Assert.Equal("MT-01", nalog.Stavke.First(s => s.Konto == "520").MestoTroska);
+    }
+
+    /// <summary>
+    /// Naknada zarade se knjiži na isti konto kao i zarada — 520 po Kontnom okviru nosi
+    /// „troškove zarada i naknada zarada (bruto)". Zatečenim bazama je do 1.14.0 upisivan
+    /// 521, koji nosi samo doprinose na teret poslodavca; migracija to ispravlja, ali samo
+    /// tamo gde vrednost nije menjana.
+    /// </summary>
+    [Fact]
+    public void Migracija_IspravljaKontoNaknadeZarade()
+    {
+        string putanja = NovaPutanja();
+
+        using (var db = PlataDbContext.Create(putanja))
+        {
+            var godisnji = db.VrstePrimanja.Single(v => v.Sifra == VrstePrimanjaSeed.GodisnjiOdmor);
+            Assert.Equal("520", godisnji.Konto);
+        }
+    }
+
+    /// <summary>
+    /// Spisak OZ-10 mora da se sastavi nad <b>pravim SQLite-om</b> (Faza 2.6).
+    ///
+    /// Upit spaja <c>Include</c> lanac do vrste primanja i zbrajanje decimalnih kolona — dvoje
+    /// koje InMemory provajder prihvata i kad ih SQLite ne bi. Zbrajanje ide u memoriji, posle
+    /// <c>ToList()</c>, i ovaj test je taj koji to drži.
+    ///
+    /// Uz njega ide i provera da migracija zatečenoj bazi označi „bolovanje preko 30 dana" kao
+    /// naknadu na teret Fonda: dopuna šifarnika pri pokretanju dodaje samo vrste kojih nema, a
+    /// ta postoji od Faze 2.1, pa bez SQL-a u migraciji nijedna zatečena baza ne bi imala
+    /// nijednu označenu vrstu — i obrazac bi svuda ispao prazan.
+    /// </summary>
+    [Fact]
+    public void SpisakOz10_SeSastavljaNadSqliteBazom()
+    {
+        string putanja = NovaPutanja();
+
+        using var db = PlataDbContext.Create(putanja);
+
+        // Migracija je označila vrstu; ništa drugo nije dirano.
+        Assert.True(db.VrstePrimanja.Single(v => v.Sifra == VrstePrimanjaSeed.BolovanjePreko30).NaTeretFonda);
+        Assert.False(db.VrstePrimanja.Single(v => v.Sifra == VrstePrimanjaSeed.OsnovnaZarada).NaTeretFonda);
+
+        db.Firme.Add(new Firma
+        {
+            Naziv = "TEST DOO",
+            Pib = "100000001",
+            PosebanRacun = "160-0000000123-45",
+            SifraDelatnosti = "6201"
+        });
+        db.Radnici.Add(new Radnik
+        {
+            BrojRadnika = 1,
+            ImeIPrezime = "Radnik Jedan",
+            Jmbg = "0101990710016",
+            Lbo = "12345678901",
+            Godina = 2026,
+            Mesec = 6
+        });
+        db.SaveChanges();
+
+        int radnikId = db.Radnici.Single().Id;
+        var bolovanje = db.VrstePrimanja.Single(v => v.Sifra == VrstePrimanjaSeed.BolovanjePreko30);
+
+        var obracun = new ObracunPlate
+        {
+            RadnikId = radnikId,
+            Godina = 2026,
+            Mesec = 6,
+            BrutoBolovanje = 80000m,
+            PorezNaDohodak = 8000m,
+            DoprinosPioRadnik = 11200m,
+            DoprinosZdravstvoRadnik = 4120m,
+            DoprinosNezaposlenostRadnik = 600m,
+            DoprinosPioPoslodavac = 8000m,
+            DoprinosZdravstvoPoslodavac = 4120m,
+            NetoIsplata = 56080m
+        };
+
+        obracun.Stavke.Add(new ObracunStavka
+        {
+            VrstaPrimanjaId = bolovanje.VrstaPrimanjaId,
+            Iznos = 80000m,
+            OporeziviDeo = 80000m,
+            Sati = 176
+        });
+
+        db.ObracuniPlata.Add(obracun);
+        db.Bolovanja.Add(new Bolovanje
+        {
+            BrojRadnika = 1,
+            Godina = 2026,
+            Mesec = 6,
+            DatumPocetkaSprecenosti = new DateTime(2026, 5, 1),
+            DatumOd = new DateTime(2026, 6, 1),
+            DatumDo = new DateTime(2026, 6, 30),
+            PrvaIsplata = true
+        });
+        db.SaveChanges();
+
+        var spisak = new ERPiZaradeApp.Services.RfzoService(db).Pripremi(2026, 6);
+
+        Assert.True(spisak.SmeSeIzvesti, string.Join(" · ", spisak.Nalazi.Select(n => n.Opis)));
+        Assert.Equal(80000m, spisak.UkupnoBruto);
+        Assert.Equal(92120m, spisak.UkupnoZaIsplatu);
+
+        // Isti obračun kroz OZ-7: dvanaest meseci pre maja 2026.
+        int bolovanjeId = db.Bolovanja.Single().BolovanjeId;
+        var (obrazac, _) = new ERPiZaradeApp.Services.RfzoService(db).PripremiOz7(bolovanjeId);
+
+        Assert.NotNull(obrazac);
+        Assert.Equal(12, obrazac.Redovi.Count);
     }
 
     /// <summary>
@@ -431,5 +733,35 @@ public class PlataDbContextMigrationTests : IDisposable
         var primenjene = PrimenjeneMigracije(putanja);
         Assert.NotEmpty(primenjene);
         Assert.Equal(primenjene.Count, primenjene.Distinct().Count());
+    }
+
+    [Fact]
+    public void Create_KadaJeBazaReadOnly_UklanjaReadOnlyAtributIUspesnoInicijalizuje()
+    {
+        string putanja = NovaPutanja();
+
+        // Kreiramo bazu i zatvaramo je
+        using (var db = PlataDbContext.Create(putanja))
+        {
+            db.Radnici.Add(new Radnik { BrojRadnika = 1, ImeIPrezime = "Test Radnik", Godina = 2026, Mesec = 1 });
+            db.SaveChanges();
+        }
+
+        // Oslobađamo SQLite pool da bismo mogli menjati atribute na disku
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+
+        // Eksplicitno postavljamo ReadOnly atribut na fajl baze
+        File.SetAttributes(putanja, FileAttributes.ReadOnly);
+        Assert.True((File.GetAttributes(putanja) & FileAttributes.ReadOnly) != 0);
+
+        // Ponovno otvaranje kroz PlataDbContext.Create mora samostalno skinuti ReadOnly atribut i raditi upise bez greške
+        using (var db = PlataDbContext.Create(putanja))
+        {
+            db.Radnici.Add(new Radnik { BrojRadnika = 2, ImeIPrezime = "Drugi Radnik", Godina = 2026, Mesec = 1 });
+            db.SaveChanges();
+            Assert.Equal(2, db.Radnici.Count());
+        }
+
+        Assert.False((File.GetAttributes(putanja) & FileAttributes.ReadOnly) != 0);
     }
 }

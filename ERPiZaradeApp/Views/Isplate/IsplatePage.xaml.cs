@@ -171,8 +171,9 @@ public partial class IsplatePage : Page
             int povezano = _servis.PoveziZatecene(Godina, Mesec);
 
             StatusMessage.Text = povezano == 0
-                ? "Svi obračuni ovog meseca već nose svoju isplatu."
-                : $"Vezano {povezano} obračuna za prvu isplatu meseca. Nijedan iznos nije promenjen.";
+                ? "Svi obračuni i radni sati ovog meseca već nose svoju isplatu."
+                : $"Vezano {povezano} zapisa (obračuni i radni sati) za prvu isplatu meseca. " +
+                  "Nijedan iznos ni sat nije promenjen.";
 
             Ucitaj();
         }

@@ -3,6 +3,7 @@ using System;
 using ERPiZaradeData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ERPiZaradeData.Migrations
 {
     [DbContext(typeof(PlataDbContext))]
-    partial class PlataDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260803141739_Faza3_KontaKnjizenja")]
+    partial class Faza3_KontaKnjizenja
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.16");
@@ -47,59 +50,6 @@ namespace ERPiZaradeData.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Banke");
-                });
-
-            modelBuilder.Entity("ERPiZaradeData.Models.Bolovanje", b =>
-                {
-                    b.Property<int>("BolovanjeId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("BrojDoznake")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("BrojRadnika")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("DatumDo")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("DatumOd")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("DatumPocetkaSprecenosti")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("DatumUnosa")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Godina")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Mesec")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Napomena")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Osnov")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("PrvaIsplata")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("BolovanjeId");
-
-                    b.HasIndex("Godina", "Mesec", "BrojRadnika");
-
-                    b.HasIndex("BrojRadnika", "Godina", "Mesec", "DatumOd")
-                        .IsUnique();
-
-                    b.ToTable("Bolovanja");
                 });
 
             modelBuilder.Entity("ERPiZaradeData.Models.Doprinos", b =>
@@ -497,21 +447,6 @@ namespace ERPiZaradeData.Migrations
                     b.Property<string>("Pib")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PodracunPoslovneJedinice")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PosebanRacun")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("SifraDelatnosti")
-                        .IsRequired()
-                        .HasMaxLength(10)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SifraOpstine")
@@ -1895,11 +1830,6 @@ namespace ERPiZaradeData.Migrations
                     b.Property<decimal>("Koeficijent1")
                         .HasColumnType("decimal(10,4)");
 
-                    b.Property<string>("Lbo")
-                        .IsRequired()
-                        .HasMaxLength(11)
-                        .HasColumnType("TEXT");
-
                     b.Property<decimal>("LicnoOslobodjenje")
                         .HasColumnType("decimal(12,2)");
 
@@ -2235,9 +2165,6 @@ namespace ERPiZaradeData.Migrations
                         .IsRequired()
                         .HasMaxLength(10)
                         .HasColumnType("TEXT");
-
-                    b.Property<bool>("NaTeretFonda")
-                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Naziv")
                         .IsRequired()

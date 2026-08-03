@@ -6,6 +6,105 @@ Format je zasnovan na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) s
 
 ---
 
+## [1.15.0] - 2026-08-04
+
+> **Faza 2.6** — bolovanja preko 30 dana i obrasci kojima se od RFZO traži refundacija
+> isplaćene naknade zarade: **OZ-7** i **OZ-10**. Vrsta primanja `B60` postoji od Faze 2.1 i
+> obračun je puni; nedostajao je obrazac.
+
+### 🏥 Bolovanja i RFZO (novi ekran)
+- Evidentira se **za koje dane i po kom osnovu** je naknada isplaćena, i da li je to prva isplata iz sredstava Fonda. **Nijedan iznos se ne unosi** — iznosi stoje u stavkama obračuna. Ponovljen iznos bi bio treći zapis istog novca, pored obračuna i pored naloga za knjiženje, i prvi bi se razišao sa ostalima.
+- Uz svako bolovanje ide i **datum početka sprečenosti**, odvojen od perioda za koji se traži refundacija: prvih 30 dana nosi poslodavac, a od 31. dana Fond. Bez toga se ne zna koji je dan po redu, pa kontrola upozorava kada period počinje unutar prvih 30 dana.
+- Osam osnova sprečenosti, po kolonama obrasca: bolest, povreda na radu, profesionalna bolest, nega člana porodice (65% i po čl. 78. st. 3), izolacija i praćenje, davalac tkiva i organa, održavanje trudnoće.
+
+### 📋 Obrazac OZ-10 — spisak obračunatih i isplaćenih naknada zarada
+- Sastavlja se za ceo mesec, jedan red po bolovanju. Kolone i njihov redosled prate obrazac sa sajta Fonda, uključujući i numeraciju od nule.
+- **Formule sa obrasca drži kod, ne korisnik**: bruto naknada = 15 + 17 + 18, a kolona „za isplatu" = 15 + 16 + 17 + 18. Neto se računa kao ostatak bruta, pa kontrola izlazi i posle zaokruživanja. Oba pravila imaju test.
+- Porez i doprinosi se dele **srazmerno udelu naknade u zbiru stavki** — obračun ih ne vodi po stavkama. Za pun mesec bolovanja udeo je ceo obračun, pa podele ni nema; za mešovit mesec je to jedina podela čiji se zbir slaže sa PPP-PD prijavom.
+- Stornirani obračun nije isplaćen, pa se ni ne refundira.
+
+### 🖨️ Obrazac OZ-7 — potvrda o ostvarenoj zaradi
+- Osnov se uzima iz **12 meseci koji prethode mesecu u kome je sprečenost nastupila** — ne mesecu isplate. Iz njega se dobija prosek po času, po kome se naknada obračunava.
+- Kolona 3 je zarada **bez poreza i doprinosa**, a ne neto za isplatu: obustave su radnikov trošak i ostvarenu zaradu ne umanjuju. Da se pomešaju, naknada bi svakom radniku sa kreditom ispala niža.
+- Broj časova se uzima iz **stavki obračuna**; obračun bez stavki (zatečen pre Faze 2.1) pada na zbir kolona, dopunjen legacy satima za bolovanje preko 30 dana, porodiljsko i plaćeno odsustvo po zakonu.
+- **Mesec bez obračuna ostaje prazan i prijavljuje se.** Po uputstvu uz obrazac se za mesece van radnog odnosa upisuje minimalna zarada za taj mesec — program taj podatak nema, a izmišljen iznos bi ušao u prosek po kome se naknada isplaćuje.
+
+### 💰 Šifarnik: naknada na teret Fonda
+- `VrstaPrimanja` dobija oznaku **„Na teret Fonda"**. Šta Fond refundira propisuje Zakon o zdravstvenom osiguranju, pa to stoji u šifarniku, a ne u kodu — isto pravilo po kome su tamo i SVP šifra i konto.
+- Podrazumevano je označeno **samo „Bolovanje preko 30 dana"**; migracija to upisuje i u zatečene baze, jer dopuna šifarnika pri pokretanju dodaje samo vrste kojih nema. Ko refundira i naknadu za povredu na radu ili negu člana porodice, označi i te vrste.
+
+### 👤 Novi podaci u kartonima
+- Radnik: **LBO** — lični broj osiguranika sa zdravstvene kartice, koji traži OZ-7. JMBG ga ne zamenjuje.
+- Firma: **poseban račun** na koji Fond uplaćuje refundaciju (nije isti kao poslovni račun), **šifra delatnosti** i **podračun poslovne jedinice**.
+- **Pol osiguranika se ne čuva** — izvodi se iz JMBG-a (cifre 10–12). Zasebno polje bi bila druga vrednost koja mu može protivrečiti.
+
+### 📒 Knjiženje refundacije
+- **Refundirana naknada nije trošak poslodavca.** Kontni okvir joj ne daje samo druga konta obaveza nego je i **potpuno izvodi iz grupe 52**: umesto troška nastaje **potraživanje od Fonda na kontu 225**, a obaveze idu na **454** (neto), **455** (porez i doprinosi na teret zaposlenog — jedan konto, za razliku od 451 i 452) i **456** (doprinosi na teret poslodavca). Do sada je sve to išlo na 520/450, što je naduvavalo trošak za iznos koji Fond vraća.
+- Iznos na kontu **225 je jednak koloni „za isplatu" obrasca OZ-10** — isti novac, isti izvor računice (`RfzoService.DeoNaTeretFonda`), pa se nalog i obrazac ne mogu razići. To drži test.
+- **Obustava se skida prvo sa zarade**, a tek kad zarade nema — pun mesec bolovanja — pada na naknadu. Bez tog redosleda bi konto 450 za takav mesec ispao negativan, a takav nalog glavna knjiga odbija. Potraživanje od Fonda obustava ne dira: Fond refundira obračunato, ne isplaćeno.
+- Četiri nova reda u šifarniku „Konta za knjiženje"; firma koja vodi analitiku menja brojeve kao i do sada.
+- **Obračun bez naknade na teret Fonda daje nepromenjen nalog** — konto 450 je i dalje jednak zbiru naloga za prenos. Test to fiksira.
+
+### ⚠️ Zahtev se od 01.04.2026. podnosi elektronski
+- Sistem **„eBolovanje – Poslodavac"** je obavezan od 01.01.2026, a od **01.04.2026** se zahtev za obračun i refundaciju podnosi **isključivo elektronski**, preko Portala eUprava. Papirna predaja filijali više nije put, i program to ne može da zameni — zabeleženo je u pomoći, isto kao za CROSO.
+- Obrasci OZ-7 i OZ-10 zato služe za **pripremu i proveru brojeva pre unosa u portal** i kao arhivski trag. Pet polja koja portal traži u sekciji „Potvrda o ostvarenoj zaradi" — mesec i godina, ukupan broj plaćenih časova, neto, bruto i datum isplate — su tačno kolone obrasca OZ-7.
+- Portal prima i **XML fajl** sa podacima o zaradi umesto ručnog unosa, ali njegova šema nije javno objavljena. Dok se ne dobije primer, fajl se ne piše napamet — isto pravilo kao kod Halcom formata i ePorezi XML-a.
+
+### 🩹 Ispravke
+- **Prag od 30 dana ne važi za sve osnove.** Kod povrede na radu, profesionalne bolesti i davanja tkiva i organa Fond plaća od **prvog** dana, a kod nege člana porodice zavisi od uzrasta člana — što zapis ne nosi. Kontrolna provera je do sada upozoravala na svih osam osnova; sada samo tamo gde prag stvarno postoji. Netačno upozorenje je gore od nikakvog, jer nauči korisnika da nalaze preskače.
+
+## [1.14.0] - 2026-08-04
+
+> **Faza 3.1** — automatsko knjiženje u ERPiFinansije. Prva veza sa ostatkom ERPi ekosistema.
+> `VrstaPrimanja.Konto`, `VrstaUgovora.Konto` i `Radnik.SifraMestaTroska` postoje od ranijih faza
+> i do sada ih nije koristio niko — uvedeni su baš za ovo.
+
+### 📒 Nalog za knjiženje (novi ekran)
+- Temeljnica se **izvodi iz obračuna svaki put iznova**; ništa se ne upisuje. Zato se izmena konta odmah vidi, a pogrešan izvoz se ispravlja ponovnim izvozom umesto storniranjem.
+- **Trošak** ide na konto upisan uz vrstu primanja, odnosno uz vrstu ugovora, i deli se po **šifri mesta troška** iz kartona radnika. Obaveze se po mestima troška ne dele — obaveza prema radniku je jedna bez obzira gde je radio.
+- **Iznosi su isti oni koje obračun već nosi**: konto neto obaveza se poklapa sa zbirom naloga za prenos, a porez i doprinosi sa PPP-PD prijavom. Ništa se ne računa iznova — račun na drugom mestu ume da se raziđe sa prvim.
+- **Neoporeziva primanja ulaze u trošak iako nisu u bruto iznosu.** Prevoz i jubilarna nagrada se isplaćuju radniku, a po zakonu nisu ni u poreskoj osnovici ni u osnovici doprinosa. Zato se trošak uzima iz **stavki obračuna**, a ne iz bruta; jedino se tako nalog uravnoteži.
+- Svaka **isplata** se knjiži zasebnim nalogom, sa svojim datumom. Stornirani obračuni se ne knjiže.
+- Izvoz u **JSON** za ERPiFinansije i u **CSV** za proveru u tabeli. CSV se sme snimiti i kad nalog nije spreman — upravo se u njemu i traži gde je razlika.
+
+### 🧮 Kontrole pre knjiženja
+- **Nalog koji nije u ravnoteži se ne izvozi.** Glavna knjiga takav dokument odbija, a razlika se u njoj više ne može vezati za obračun iz kog je došla.
+- **Sastav obračuna se proverava po radniku**: bruto (odnosno zbir stavki) umanjen za porez, doprinose i obustave mora dati isplaćen neto. Neslaganje se javlja sa imenom radnika, dok je ispravka još jeftina.
+- Vrsta primanja ili vrsta ugovora **bez konta** je greška, ne tiho svrstavanje na zbirni konto — trošak bi završio na pogrešnom mestu, a to se otkriva tek u bilansu.
+- Obračun **bez stavki** (zatečen pre Faze 2.1) ide ceo na zbirni konto, uz upozorenje da se razlaganje pokrene.
+- Radnik **bez mesta troška** se prijavljuje samo kad ga neki radnici imaju — firma koja ih ne vodi ne treba da vidi upozorenje na svakom nalogu.
+
+### 📗 Šifarnik konta za knjiženje (novi šifarnik)
+- Protivstava troška ne zavisi od toga šta je isplaćeno nego od **uloge iznosa u nalogu**: neto obaveza, porez, doprinosi, obustava. Zato svaka uloga ima svoj red sa sistemskim ključem po kome je kod traži; redovi se ne dodaju i ne brišu, menja se samo broj konta.
+- Podrazumevani brojevi su iz **Pravilnika o Kontnom okviru** za privredna društva, zadruge i preduzetnike: 520, 521, 522–526, 529, 450–453, 465, 469, 489. Firma koja vodi analitiku upisuje svoje — nova verzija za to nije potrebna.
+- **Ispravljen podrazumevani konto naknada zarade.** Godišnji odmor, praznik i bolovanje su imali upisan 521, koji po Kontnom okviru nosi samo doprinose na teret poslodavca; naknada zarade ide na **520**, zajedno sa zaradom. Polje do sada nije koristio niko, pa migracija to ispravlja i u zatečenim bazama — ali samo tamo gde vrednost nije menjana ručno.
+
+### 🔗 Uvoz u ERPiFinansije
+- ERPiFinansije od verzije **1.2.0** ima dugme „📒 Uvoz zarada" na ekranu naloga: pročita fajl, pokaže šta je u njemu i uveze nalog kao **neproknjižen**.
+- Uvoz se zaustavlja kad fajl nije iz ERPiZarade, kad nalog nije u ravnoteži i kad neki konto ne postoji u kontnom planu. Mesta troška se uparuju po šifri; nepoznata šifra je samo upozorenje.
+
+## [1.13.0] - 2026-08-03
+
+> **Dovršetak Faze 2.2** — radni sati se vode po isplati, ne po mesecu. Poslednje što je
+> uvođenje isplata ostavilo iza sebe i jedino što je i dalje tražilo izmenu šeme.
+
+### ⏱️ Radni sati po isplati
+- `RadniSat` je bio jedinstven po (radnik, godina, mesec), pa je **unos sati za drugu isplatu meseca prepisivao onaj za prvu**. Iznosi već napravljenih obračuna time nisu bili ugroženi — svaki obračun nosi svoje sate u svojim kolonama — ali je ekran radnih sati pokazivao poslednji unos, ma za koju isplatu bio rađen. Sada svaka isplata ima svoje sate.
+- Ekran „⏱️ Radni sati" dobija **izbor isplate**, po istom pravilu kao obračun i ugovori: dok mesec ima jednu isplatu lista je onemogućena i sve radi kao pre. Izbor prati i „➕ Dodaj radnika" — radnik obuhvaćen konačnom zaradom se sada može dodati u akontaciju istog meseca.
+- **Uvoz sati iz Excel/CSV** zamenjuje sate izabrane isplate. Do sada je zamenjivao sve sate meseca, pa bi uvoz za akontaciju obrisao ono što je uneto za konačnu zaradu.
+- „Novi obračun" čita sate **izabrane isplate** i upisuje ih na nju. Prenos sati iz ranijeg meseca uzima sate njegove **prve** isplate — prenosi se ono što je radnik u mesecu radio, a to stoji uz konačnu zaradu.
+- Preračun sa ovog ekrana poštuje pravilo o obustavama: na akontaciji i bonusu se rate kredita i samodoprinos **ne skidaju**, jer se skidaju na konačnoj isplati istog meseca.
+- Uklanjanje radnika iz radnih sati vraća ratu kredita kroz `KreditRateService`, jedini izvor te računice — do sada je imalo svoju kopiju, koja nije znala da akontacija ratu nije ni skinula.
+
+### 🔗 Veza sa isplatom
+- **`IsplataId == null` i dalje znači prvu isplatu perioda.** Migracija zatečene redove veže za prvu isplatu njihovog meseca, i pravi je za period koji ima sate a nema obračun — sati se unesu, a obračun pokrene tek posle. Nijedan sat se pri tome ne menja.
+- Dugme „🔗" na ekranu isplata sada povezuje i radne sate, ne samo obračune.
+- **Brisanje isplate briše i sate unete za nju**, uz poruku koliko ih je bilo. Oni su unos iz kog obračun tek nastaje, a ne dokaz šta je isplaćeno; obračun se ne briše nikad — isplata koja nosi obračune se ne može obrisati.
+
+### 🧹 Pravilo o obuhvatu na jednom mestu
+- Pravilo „šta pripada ovoj isplati" bilo je prepisano na tri mesta. Sada ga nosi interfejs `IPripadaIsplati` (obračun, radni sat, arhivirana verzija), a `IsplataService.Obuhvat` je jedan generički upit. Uz njega ide i test nad **pravim SQLite fajlom** — InMemory provajder prihvata i ono što SQLite odbija.
+- Ekran radnih sati je isti preračun imao prepisan na **četiri mesta** (snimanje, izmena ćelije, masovna izmena, izmena parametara perioda), pa se razlikovao samo po napomeni. Sada je jedna metoda; bez toga se izbor isplate ne bi mogao ugraditi a da se negde ne izgubi.
+
 ## [1.12.0] - 2026-08-03
 
 > Dopuna uputstva uz Fazu 2.3. Nema izmena u obračunu, prijavama ni nalozima — objavljuje se

@@ -42,6 +42,8 @@ public class PlataDbContext : DbContext
     public DbSet<VrstaUgovora> VrsteUgovora => Set<VrstaUgovora>();
     public DbSet<Ugovor> Ugovori => Set<Ugovor>();
     public DbSet<SablonUgovora> SabloniUgovora => Set<SablonUgovora>();
+    public DbSet<KontoKnjizenja> KontaKnjizenja => Set<KontoKnjizenja>();
+    public DbSet<Bolovanje> Bolovanja => Set<Bolovanje>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -88,10 +90,22 @@ public class PlataDbContext : DbContext
         modelBuilder.Entity<ObracunPlate>()
             .HasIndex(o => new { o.RadnikId, o.Godina, o.Mesec });
 
-        // Indeks: radni sati po radniku/godini/mesecu
+        // Indeks: radni sati po radniku, periodu i isplati
+        // Isplata je deo ključa od Faze 3.1 — jedan radnik ima svoje sate u svakoj isplati
+        // meseca. Migracija je zatečenim redovima upisala prvu isplatu perioda, pa redova sa
+        // NULL u praksi nema; to je bitno jer SQLite NULL-ove u jedinstvenom indeksu smatra
+        // međusobno različitim, pa oni ne bi bili pokriveni.
         modelBuilder.Entity<RadniSat>()
-            .HasIndex(rs => new { rs.RadnikId, rs.Godina, rs.Mesec })
+            .HasIndex(rs => new { rs.RadnikId, rs.Godina, rs.Mesec, rs.IsplataId })
             .IsUnique();
+
+        // Isplata → RadniSat (1:N). Brisanje isplate ne povlači sate za sobom prećutno —
+        // šta se sa njima dešava odlučuje IsplataService, koji ih broji i prijavljuje.
+        modelBuilder.Entity<RadniSat>()
+            .HasOne(rs => rs.Isplata)
+            .WithMany()
+            .HasForeignKey(rs => rs.IsplataId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // Radnik → DoprinosiPoslodavca (1:N)
         modelBuilder.Entity<DoprinosiPoslodavca>()
@@ -241,6 +255,21 @@ public class PlataDbContext : DbContext
             .WithMany()
             .HasForeignKey(s => s.VrstaUgovoraId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // Ključ je ono po čemu KnjizenjeService traži konto; dva reda istog ključa bi
+        // značila da nalog zavisi od redosleda u tabeli.
+        modelBuilder.Entity<KontoKnjizenja>()
+            .HasIndex(k => k.Kljuc)
+            .IsUnique();
+
+        // Spisak OZ-10 se sastavlja po periodu isplate, a unutar njega po radniku
+        modelBuilder.Entity<Bolovanje>()
+            .HasIndex(b => new { b.Godina, b.Mesec, b.BrojRadnika });
+
+        // Isti period sprečenosti unet dvaput bi RFZO-u poslao dva zahteva za isti novac
+        modelBuilder.Entity<Bolovanje>()
+            .HasIndex(b => new { b.BrojRadnika, b.Godina, b.Mesec, b.DatumOd })
+            .IsUnique();
     }
 
     /// <summary>
@@ -249,21 +278,66 @@ public class PlataDbContext : DbContext
     /// </summary>
     public static PlataDbContext Create(string dbPath)
     {
-        var optionsBuilder = new DbContextOptionsBuilder<PlataDbContext>();
-        optionsBuilder.UseSqlite($"Data Source={dbPath}");
-        var ctx = new PlataDbContext(optionsBuilder.Options);
-
         lock (_initLock)
         {
             var absolutePath = System.IO.Path.GetFullPath(dbPath);
+            UkloniReadOnlyAtribut(absolutePath);
+
+            var optionsBuilder = new DbContextOptionsBuilder<PlataDbContext>();
+            optionsBuilder.UseSqlite($"Data Source={dbPath}");
+            var ctx = new PlataDbContext(optionsBuilder.Options);
+
             if (!_initializedDbs.Contains(absolutePath))
             {
                 InitializeDatabase(ctx);
                 _initializedDbs.Add(absolutePath);
             }
-        }
 
-        return ctx;
+            return ctx;
+        }
+    }
+
+    /// <summary>
+    /// Uklanja Windows ReadOnly atribut sa baze podataka i njenih pomoćnih WAL/SHM fajlova
+    /// kako SQLite ne bi bacio 'attempt to write a readonly database' grešku.
+    /// </summary>
+    public static void UkloniReadOnlyAtribut(string dbPath)
+    {
+        try
+        {
+            if (System.IO.File.Exists(dbPath))
+            {
+                var attr = System.IO.File.GetAttributes(dbPath);
+                if ((attr & System.IO.FileAttributes.ReadOnly) != 0)
+                {
+                    System.IO.File.SetAttributes(dbPath, attr & ~System.IO.FileAttributes.ReadOnly);
+                }
+            }
+
+            var shm = dbPath + "-shm";
+            if (System.IO.File.Exists(shm))
+            {
+                var shmAttr = System.IO.File.GetAttributes(shm);
+                if ((shmAttr & System.IO.FileAttributes.ReadOnly) != 0)
+                {
+                    System.IO.File.SetAttributes(shm, shmAttr & ~System.IO.FileAttributes.ReadOnly);
+                }
+            }
+
+            var wal = dbPath + "-wal";
+            if (System.IO.File.Exists(wal))
+            {
+                var walAttr = System.IO.File.GetAttributes(wal);
+                if ((walAttr & System.IO.FileAttributes.ReadOnly) != 0)
+                {
+                    System.IO.File.SetAttributes(wal, walAttr & ~System.IO.FileAttributes.ReadOnly);
+                }
+            }
+        }
+        catch
+        {
+            // Ignorišemo eventualne sistemske greške pri proveri atributa
+        }
     }
 
     private static void InitializeDatabase(PlataDbContext ctx)
@@ -717,6 +791,23 @@ public class PlataDbContext : DbContext
             if (noveOlaksice.Count > 0)
             {
                 ctx.PoreskeOlaksice.AddRange(noveOlaksice);
+                ctx.SaveChanges();
+            }
+        }
+        catch { }
+
+        try
+        {
+            // Konta za knjiženje se dopunjuju po ključu — broj konta koji je korisnik
+            // prilagodio svom kontnom planu ostaje netaknut pri nadogradnji.
+            var postojecaKonta = ctx.KontaKnjizenja.Select(k => k.Kljuc).ToHashSet();
+            var novaKonta = KontaKnjizenjaSeed.Podrazumevana()
+                .Where(k => !postojecaKonta.Contains(k.Kljuc))
+                .ToList();
+
+            if (novaKonta.Count > 0)
+            {
+                ctx.KontaKnjizenja.AddRange(novaKonta);
                 ctx.SaveChanges();
             }
         }

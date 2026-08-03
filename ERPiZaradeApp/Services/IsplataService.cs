@@ -17,11 +17,11 @@ public sealed class RezultatIsplate
 /// <summary>
 /// Isplate unutar obračunskog meseca (Faza 2.2).
 ///
-/// Ovde stoji <b>jedino</b> mesto koje zna šta znači „obračuni ove isplate". Pravilo je
+/// Ovde stoji <b>jedino</b> mesto koje zna šta znači „zapisi ove isplate". Pravilo je
 /// jednostavno ali se lako razilazi po upitima ako se ponovi: prva isplata meseca obuhvata
-/// i obračune bez <see cref="ObracunPlate.IsplataId"/>, jer su takvi svi zatečeni i svi koje
-/// naprave ekrani koji za isplate ne znaju (radni sati, doprinosi, porezi). Zbog toga
-/// program radi isto kao pre Faze 2.2 sve dok korisnik ne napravi drugu isplatu.
+/// i zapise bez <see cref="IPripadaIsplati.IsplataId"/>, jer su takvi svi zatečeni i svi koje
+/// naprave ekrani koji za isplate ne znaju (doprinosi, porezi). Zbog toga program radi isto
+/// kao pre Faze 2.2 sve dok korisnik ne napravi drugu isplatu.
 /// </summary>
 public class IsplataService
 {
@@ -30,11 +30,13 @@ public class IsplataService
     public IsplataService(PlataDbContext db) => _db = db;
 
     /// <summary>
-    /// Obračuni koji pripadaju datoj isplati. Kad je <paramref name="isplata"/> <c>null</c>,
-    /// obuhvat je ceo period — tako se ponašaju svi pozivi koji isplatu ne zadaju.
+    /// Zapisi koji pripadaju datoj isplati — obračuni, radni sati ili arhivirane verzije,
+    /// svejedno koji, jer za sve važi isto pravilo. Kad je <paramref name="isplata"/>
+    /// <c>null</c>, obuhvat je ceo period; tako se ponašaju svi pozivi koji isplatu ne zadaju.
     /// </summary>
-    public static IQueryable<ObracunPlate> Obuhvat(
-        IQueryable<ObracunPlate> upit, int godina, int mesec, Isplata? isplata)
+    public static IQueryable<T> Obuhvat<T>(
+        IQueryable<T> upit, int godina, int mesec, Isplata? isplata)
+        where T : class, IPripadaIsplati
     {
         var uPeriodu = upit.Where(o => o.Godina == godina && o.Mesec == mesec);
 
@@ -178,13 +180,27 @@ public class IsplataService
             };
         }
 
+        // Radni sati upisani na ovu isplatu odlaze sa njom (Faza 2.2). Oni nisu dokaz kao
+        // obračun, nego unos iz kog se obračun tek pravi — a strani ključ bi ih inače
+        // zadržao uz isplatu koje više nema. Traže se po ključu, ne po obuhvatu: redovi bez
+        // isplate pripadaju periodu, ne ovom zapisu, i ostaju gde jesu.
+        var sati = _db.RadniSati.Where(s => s.IsplataId == isplataId).ToList();
+        if (sati.Count > 0) _db.RadniSati.RemoveRange(sati);
+
         _db.Isplate.Remove(isplata);
         _db.SaveChanges();
 
         AuditService.Zabelezi(_db, isplata.Godina, isplata.Mesec, AkcijaObracuna.IsplataObrisana,
-            $"{isplata.RedniBroj}. isplata — {Isplata.NazivVrste(isplata.Vrsta)}");
+            $"{isplata.RedniBroj}. isplata — {Isplata.NazivVrste(isplata.Vrsta)}" +
+            (sati.Count > 0 ? $"; obrisano i {sati.Count} unosa radnih sati" : ""));
 
-        return new RezultatIsplate { Uspesno = true, Poruka = "Isplata je obrisana." };
+        return new RezultatIsplate
+        {
+            Uspesno = true,
+            Poruka = sati.Count > 0
+                ? $"Isplata je obrisana, zajedno sa {sati.Count} unosa radnih sati koji su joj pripadali."
+                : "Isplata je obrisana."
+        };
     }
 
     public RezultatIsplate Sacuvaj(Isplata isplata)
@@ -206,22 +222,30 @@ public class IsplataService
             p.Godina == isplata.Godina && p.Mesec == isplata.Mesec && p.RedniBroj == isplata.RedniBroj);
 
     /// <summary>
-    /// Vezuje obračune bez isplate za prvu isplatu perioda. Ne menja nijedan iznos — samo
-    /// upisuje ono što se do sada podrazumevalo, da bi se u tabeli videlo kojoj isplati
-    /// obračun pripada.
+    /// Vezuje obračune i radne sate bez isplate za prvu isplatu perioda. Ne menja nijedan
+    /// iznos ni sat — samo upisuje ono što se do sada podrazumevalo, da bi se u tabeli videlo
+    /// kojoj isplati zapis pripada.
     /// </summary>
+    /// <returns>Broj povezanih zapisa, obračuna i sati zajedno.</returns>
     public int PoveziZatecene(int godina, int mesec)
     {
         var prva = Obezbedi(godina, mesec);
 
-        var bezIsplate = _db.ObracuniPlata
+        var obracuni = _db.ObracuniPlata
             .Where(o => o.Godina == godina && o.Mesec == mesec && o.IsplataId == null)
             .ToList();
 
-        foreach (var o in bezIsplate) o.IsplataId = prva.IsplataId;
+        foreach (var o in obracuni) o.IsplataId = prva.IsplataId;
 
-        if (bezIsplate.Count > 0) _db.SaveChanges();
-        return bezIsplate.Count;
+        var sati = _db.RadniSati
+            .Where(s => s.Godina == godina && s.Mesec == mesec && s.IsplataId == null)
+            .ToList();
+
+        foreach (var s in sati) s.IsplataId = prva.IsplataId;
+
+        int povezano = obracuni.Count + sati.Count;
+        if (povezano > 0) _db.SaveChanges();
+        return povezano;
     }
 
     /// <summary>

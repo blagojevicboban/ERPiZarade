@@ -24,98 +24,111 @@ public partial class FirmePage : Page
         Loaded += FirmePage_Loaded;
     }
 
-    private void FirmePage_Loaded(object sender, RoutedEventArgs e)
+    private async void FirmePage_Loaded(object sender, RoutedEventArgs e)
     {
-        UcitajPodatke();
+        await UcitajPodatkeAsync();
     }
 
-    private void UcitajPodatke()
+    private async Task UcitajPodatkeAsync()
     {
         try
         {
+            LoadingOverlay.Visibility = Visibility.Visible;
+            TxtStatus.Text = "Učitavanje spiska firmi u toku...";
+
             var bazeDir = AppConfig.BazeDir;
             Directory.CreateDirectory(bazeDir);
 
-            // Skeniraj sve .db baze u folderu Baze
             var dbFiles = Directory.GetFiles(bazeDir, "*.db");
-            var firmeList = new List<FirmaGridItem>();
 
-            foreach (var file in dbFiles)
+            var firmeList = await Task.Run(() =>
             {
-                try
+                var list = new List<FirmaGridItem>();
+                foreach (var file in dbFiles)
                 {
-                    using var fileDb = PlataDbContext.Create(file);
-                    var f = fileDb.Firme.FirstOrDefault();
-                    if (f == null)
+                    try
                     {
-                        f = new Firma
+                        var f = ProcitajZaglavljeFirmeBrzo(file);
+                        if (f == null)
                         {
-                            Naziv = Path.GetFileNameWithoutExtension(file),
-                            Pib = "000000000"
-                        };
-                        fileDb.Firme.Add(f);
-                        fileDb.SaveChanges();
-                    }
+                            using var fileDb = PlataDbContext.Create(file);
+                            f = fileDb.Firme.FirstOrDefault() ?? new Firma
+                            {
+                                Naziv = Path.GetFileNameWithoutExtension(file),
+                                Pib = "000000000"
+                            };
+                        }
 
-                    firmeList.Add(new FirmaGridItem
-                    {
-                        Id = f.Id,
-                        Naziv = f.Naziv,
-                        Pib = f.Pib,
-                        Mb = f.Mb,
-                        Grad = f.Grad,
-                        Telefon = f.Telefon,
-                        DbPath = file,
-                        OriginalFirma = f
-                    });
+                        list.Add(new FirmaGridItem
+                        {
+                            Id = f.Id,
+                            Naziv = f.Naziv,
+                            Pib = f.Pib,
+                            Mb = f.Mb,
+                            Grad = f.Grad,
+                            Telefon = f.Telefon,
+                            DbPath = file,
+                            OriginalFirma = f
+                        });
+                    }
+                    catch { }
                 }
-                catch { }
-            }
+                return list;
+            });
 
             // Ako nema nijedne baze podataka, pokreni inicijalizaciju podrazumevane baze podataka
             if (!firmeList.Any())
             {
-                // Ovo će inicijalizovati DefaultDbPath i migrirati ga u Baze folder
                 var defaultPath = AppConfig.DbPath; 
-                try
+                firmeList = await Task.Run(() =>
                 {
-                    using var fileDb = PlataDbContext.Create(defaultPath);
-                    var f = fileDb.Firme.FirstOrDefault();
-                    if (f == null)
+                    var list = new List<FirmaGridItem>();
+                    try
                     {
-                        f = new Firma
+                        using var fileDb = PlataDbContext.Create(defaultPath);
+                        var f = fileDb.Firme.FirstOrDefault();
+                        if (f == null)
                         {
-                            Naziv = "Zavod za poljoprivredu",
-                            Grad = "Pirot",
-                            Pib = "123456789",
-                            Mb = "98765432"
-                        };
-                        fileDb.Firme.Add(f);
-                        fileDb.SaveChanges();
-                    }
+                            f = new Firma
+                            {
+                                Naziv = "Zavod za poljoprivredu",
+                                Grad = "Pirot",
+                                Pib = "123456789",
+                                Mb = "98765432"
+                            };
+                            fileDb.Firme.Add(f);
+                            fileDb.SaveChanges();
+                        }
 
-                    firmeList.Add(new FirmaGridItem
-                    {
-                        Id = f.Id,
-                        Naziv = f.Naziv,
-                        Pib = f.Pib,
-                        Mb = f.Mb,
-                        Grad = f.Grad,
-                        Telefon = f.Telefon,
-                        DbPath = defaultPath,
-                        OriginalFirma = f
-                    });
-                }
-                catch { }
+                        list.Add(new FirmaGridItem
+                        {
+                            Id = f.Id,
+                            Naziv = f.Naziv,
+                            Pib = f.Pib,
+                            Mb = f.Mb,
+                            Grad = f.Grad,
+                            Telefon = f.Telefon,
+                            DbPath = defaultPath,
+                            OriginalFirma = f
+                        });
+                    }
+                    catch { }
+                    return list;
+                });
             }
 
             _allFirme = firmeList.OrderBy(f => f.Naziv).ToList();
             OsveziTabelu();
             ResetForme();
+            TxtStatus.Text = $"Ukupno firmi: {_allFirme.Count}";
         }
         catch (Exception ex)
         {
             TxtStatus.Text = $"Greška pri učitavanju firmi: {ex.Message}";
+        }
+        finally
+        {
+            LoadingOverlay.Visibility = Visibility.Collapsed;
         }
     }
 
@@ -176,6 +189,9 @@ public partial class FirmePage : Page
         TxtSifraOpstine.Clear();
         TxtBankovniRacun.Clear();
         TxtSifraPlacanja.Clear();
+        TxtPosebanRacun.Clear();
+        TxtPodracunPoslovneJedinice.Clear();
+        TxtSifraDelatnosti.Clear();
         TxtTelefon.Clear();
         TxtEmail.Clear();
         TxtNapomena.Clear();
@@ -202,6 +218,9 @@ public partial class FirmePage : Page
         TxtSifraOpstine.Text = f.SifraOpstine;
         TxtBankovniRacun.Text = f.BankovniRacun;
         TxtSifraPlacanja.Text = f.SifraPlacanja;
+        TxtPosebanRacun.Text = f.PosebanRacun;
+        TxtPodracunPoslovneJedinice.Text = f.PodracunPoslovneJedinice;
+        TxtSifraDelatnosti.Text = f.SifraDelatnosti;
         TxtTelefon.Text = f.Telefon;
         TxtEmail.Text = f.Email;
         TxtZastupnik.Text = f.Zastupnik;
@@ -272,6 +291,9 @@ public partial class FirmePage : Page
         TxtSifraOpstine.Clear();
         TxtBankovniRacun.Clear();
         TxtSifraPlacanja.Clear();
+        TxtPosebanRacun.Clear();
+        TxtPodracunPoslovneJedinice.Clear();
+        TxtSifraDelatnosti.Clear();
         TxtTelefon.Clear();
         TxtEmail.Clear();
         TxtNapomena.Clear();
@@ -307,7 +329,7 @@ public partial class FirmePage : Page
         }
     }
 
-    private void BtnSacuvaj_Click(object sender, RoutedEventArgs e)
+    private async void BtnSacuvaj_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(TxtNaziv.Text))
         {
@@ -348,6 +370,9 @@ public partial class FirmePage : Page
                     SifraOpstine = TxtSifraOpstine.Text.Trim(),
                     BankovniRacun = TxtBankovniRacun.Text.Trim(),
                     SifraPlacanja = TxtSifraPlacanja.Text.Trim(),
+                    PosebanRacun = TxtPosebanRacun.Text.Trim(),
+                    PodracunPoslovneJedinice = TxtPodracunPoslovneJedinice.Text.Trim(),
+                    SifraDelatnosti = TxtSifraDelatnosti.Text.Trim(),
                     Telefon = TxtTelefon.Text.Trim(),
                     Email = TxtEmail.Text.Trim(),
                     Zastupnik = TxtZastupnik.Text.Trim(),
@@ -373,6 +398,9 @@ public partial class FirmePage : Page
                 f.SifraOpstine = TxtSifraOpstine.Text.Trim();
                 f.BankovniRacun = TxtBankovniRacun.Text.Trim();
                 f.SifraPlacanja = TxtSifraPlacanja.Text.Trim();
+                f.PosebanRacun = TxtPosebanRacun.Text.Trim();
+                f.PodracunPoslovneJedinice = TxtPodracunPoslovneJedinice.Text.Trim();
+                f.SifraDelatnosti = TxtSifraDelatnosti.Text.Trim();
                 f.Telefon = TxtTelefon.Text.Trim();
                 f.Email = TxtEmail.Text.Trim();
                 f.Zastupnik = TxtZastupnik.Text.Trim();
@@ -392,7 +420,7 @@ public partial class FirmePage : Page
             }
 
             TxtStatus.Text = "Firma je uspešno sačuvana!";
-            UcitajPodatke();
+            await UcitajPodatkeAsync();
 
             // Izaberi sačuvani element
             var toSelect = _displayedFirme.FirstOrDefault(x => x.DbPath == dbPathToSave);
@@ -407,7 +435,7 @@ public partial class FirmePage : Page
         }
     }
 
-    private void BtnObrisi_Click(object sender, RoutedEventArgs e)
+    private async void BtnObrisi_Click(object sender, RoutedEventArgs e)
     {
         if (_selectedItem == null) return;
 
@@ -450,7 +478,7 @@ public partial class FirmePage : Page
             }
 
             TxtStatus.Text = "Firma je uspešno obrisana!";
-            UcitajPodatke();
+            await UcitajPodatkeAsync();
 
             // Ako je obrisana aktivna firma, uradi kompletan reload
             if (isDeletedActive)
@@ -516,6 +544,59 @@ public partial class FirmePage : Page
         {
             MessageBox.Show($"Greška pri postavljanju aktivne firme: {ex.Message}", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    /// <summary>
+    /// Brzo čita zaglavlje firme iz SQLite baze direktnim upitom bez pokretanja
+    /// Entity Framework migracija i teške inicijalizacije šeme.
+    /// </summary>
+    private static Firma? ProcitajZaglavljeFirmeBrzo(string dbPath)
+    {
+        try
+        {
+            PlataDbContext.UkloniReadOnlyAtribut(dbPath);
+
+            var builder = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder
+            {
+                DataSource = dbPath,
+                Mode = Microsoft.Data.Sqlite.SqliteOpenMode.ReadOnly,
+                Pooling = false
+            };
+
+            using var conn = new Microsoft.Data.Sqlite.SqliteConnection(builder.ConnectionString);
+            conn.Open();
+
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT Id, Naziv, Pib, Mb, Adresa, Grad, SifraOpstine, BankovniRacun, SifraPlacanja, Telefon, Email, Zastupnik, FunkcijaZastupnika, Napomena FROM Firme LIMIT 1;";
+
+            using var reader = cmd.ExecuteReader();
+            if (reader.Read())
+            {
+                return new Firma
+                {
+                    Id = reader.IsDBNull(0) ? 0 : reader.GetInt32(0),
+                    Naziv = reader.IsDBNull(1) ? "" : reader.GetString(1),
+                    Pib = reader.IsDBNull(2) ? "" : reader.GetString(2),
+                    Mb = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                    Adresa = reader.IsDBNull(4) ? "" : reader.GetString(4),
+                    Grad = reader.IsDBNull(5) ? "" : reader.GetString(5),
+                    SifraOpstine = reader.IsDBNull(6) ? "" : reader.GetString(6),
+                    BankovniRacun = reader.IsDBNull(7) ? "" : reader.GetString(7),
+                    SifraPlacanja = reader.IsDBNull(8) ? "" : reader.GetString(8),
+                    Telefon = reader.IsDBNull(9) ? "" : reader.GetString(9),
+                    Email = reader.IsDBNull(10) ? "" : reader.GetString(10),
+                    Zastupnik = reader.IsDBNull(11) ? "" : reader.GetString(11),
+                    FunkcijaZastupnika = reader.IsDBNull(12) ? "" : reader.GetString(12),
+                    Napomena = reader.IsDBNull(13) ? "" : reader.GetString(13)
+                };
+            }
+        }
+        catch
+        {
+            // Baza još ne sadrži tabelu Firme ili zahteva inicijalizaciju
+        }
+
+        return null;
     }
 }
 

@@ -1,0 +1,162 @@
+<Page x:Class="ERPiZaradeApp.Views.Bolovanja.BolovanjaPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Title="Bolovanja i refundacija RFZO"
+      Background="{StaticResource SurfaceBrush}">
+
+    <Grid Margin="24,20,24,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ── PERIOD I OBRASCI ───────────────────────────────────────── -->
+        <Border Grid.Row="0" Style="{StaticResource Card}" Padding="16,12" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <TextBlock Text="Godina" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"
+                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,8,0"/>
+                    <ComboBox x:Name="ComboGodina" Width="90" Height="30" VerticalContentAlignment="Center"
+                              SelectionChanged="ComboPeriod_SelectionChanged" Margin="0,0,16,0"/>
+
+                    <TextBlock Text="Mesec" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"
+                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,8,0"/>
+                    <ComboBox x:Name="ComboMesec" Width="70" Height="30" VerticalContentAlignment="Center"
+                              SelectionChanged="ComboPeriod_SelectionChanged"/>
+                </StackPanel>
+
+                <TextBlock Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap" FontSize="12"
+                           Margin="24,0,16,0" Foreground="{StaticResource TextSecondaryBrush}"
+                           Text="Naknada za prvih 30 dana sprečenosti pada na teret poslodavca, a od 31. dana je refundira RFZO. Iznosi se ne unose ovde — uzimaju se iz stavki obračuna, iz vrsta primanja označenih kao naknada na teret Fonda."/>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button Content="🖨️" Style="{StaticResource PrimaryButton}" Width="36" Padding="0" Margin="0,0,8,0"
+                            Click="BtnOz7_Click"
+                            ToolTip="Obrazac OZ-7 za izabrano bolovanje — potvrda o ostvarenoj zaradi iz 12 meseci pre sprečenosti"/>
+                    <Button Content="📋" Style="{StaticResource PrimaryButton}" Width="36" Padding="0"
+                            Click="BtnOz10_Click"
+                            ToolTip="Obrazac OZ-10 — spisak obračunatih i isplaćenih naknada zarada za izabrani mesec"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ── UNOS ───────────────────────────────────────────────────── -->
+        <Border Grid.Row="1" Style="{StaticResource Card}" Padding="16,12" Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Novo bolovanje:" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"
+                           Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,12,0"/>
+
+                <ComboBox x:Name="ComboRadnik" Width="200" Height="30" VerticalContentAlignment="Center"
+                          DisplayMemberPath="Naziv" Margin="0,0,12,0"
+                          ToolTip="Radnik za koga se evidentira sprečenost"/>
+
+                <ComboBox x:Name="ComboOsnov" Width="180" Height="30" VerticalContentAlignment="Center"
+                          DisplayMemberPath="Naziv" Margin="0,0,12,0"
+                          ToolTip="Osnov sprečenosti — određuje kolonu u kojoj se broj dana upisuje na obrascu OZ-10"/>
+
+                <TextBlock Text="Početak sprečenosti" FontSize="12" VerticalAlignment="Center"
+                           Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,6,0"/>
+                <DatePicker x:Name="DatumPocetka" Width="120" Height="30" VerticalContentAlignment="Center" Margin="0,0,12,0"
+                            ToolTip="Prvi dan sprečenosti — od njega teku 30 dana na teret poslodavca"/>
+
+                <TextBlock Text="Refundacija od" FontSize="12" VerticalAlignment="Center"
+                           Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,6,0"/>
+                <DatePicker x:Name="DatumOd" Width="120" Height="30" VerticalContentAlignment="Center" Margin="0,0,8,0"/>
+
+                <TextBlock Text="do" FontSize="12" VerticalAlignment="Center"
+                           Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,6,0"/>
+                <DatePicker x:Name="DatumDo" Width="120" Height="30" VerticalContentAlignment="Center" Margin="0,0,12,0"/>
+
+                <CheckBox x:Name="ChkPrvaIsplata" Content="Prva isplata iz Fonda" VerticalAlignment="Center"
+                          FontSize="12" Margin="0,0,12,0"
+                          ToolTip="Na obrascu OZ-10 se upisuje „da“ za prvu isplatu po ovoj sprečenosti"/>
+
+                <Button Content="➕" Style="{StaticResource SecondaryButton}" Width="36" Padding="0" Margin="0,0,8,0"
+                        Click="BtnDodaj_Click" ToolTip="Dodaj bolovanje u izabrani mesec"/>
+                <Button Content="🗑" Style="{StaticResource SecondaryButton}" Width="36" Padding="0"
+                        Click="BtnObrisi_Click" ToolTip="Obriši izabrano bolovanje"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ── SPISAK I KONTROLE ──────────────────────────────────────── -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="340"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource Card}" Padding="0" Margin="0,0,16,0">
+                <DataGrid x:Name="GridRedovi" AutoGenerateColumns="False" IsReadOnly="True"
+                          HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
+                    <DataGrid.Resources>
+                        <Style x:Key="Desno" TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Right"/>
+                        </Style>
+                    </DataGrid.Resources>
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Br." Binding="{Binding RedniBroj}" Width="40"/>
+                        <DataGridTextColumn Header="Osiguranik" Binding="{Binding Radnik.ImeIPrezime}" Width="*"/>
+                        <DataGridTextColumn Header="Pol" Binding="{Binding Pol}" Width="40"/>
+                        <DataGridTextColumn Header="Osnov" Binding="{Binding Bolovanje.OsnovNaziv}" Width="150"/>
+                        <DataGridTextColumn Header="Od" Binding="{Binding DatumOd, StringFormat=dd.MM.yyyy}" Width="85"/>
+                        <DataGridTextColumn Header="Do" Binding="{Binding DatumDo, StringFormat=dd.MM.yyyy}" Width="85"/>
+                        <DataGridTextColumn Header="Dana" Binding="{Binding BrojDana}" Width="50"
+                                            ElementStyle="{StaticResource Desno}"/>
+                        <DataGridTextColumn Header="1." Binding="{Binding PrvaIsplataStr}" Width="35"/>
+                        <DataGridTextColumn Header="Bruto naknada" Binding="{Binding BrutoNaknada, StringFormat=N2}" Width="110"
+                                            ElementStyle="{StaticResource Desno}"/>
+                        <DataGridTextColumn Header="Dopr. iz" Binding="{Binding DoprinosiIzNaknade, StringFormat=N2}" Width="95"
+                                            ElementStyle="{StaticResource Desno}"/>
+                        <DataGridTextColumn Header="Dopr. na" Binding="{Binding DoprinosiNaNaknadu, StringFormat=N2}" Width="95"
+                                            ElementStyle="{StaticResource Desno}"/>
+                        <DataGridTextColumn Header="Porez" Binding="{Binding Porez, StringFormat=N2}" Width="90"
+                                            ElementStyle="{StaticResource Desno}"/>
+                        <DataGridTextColumn Header="Neto" Binding="{Binding NetoNaknada, StringFormat=N2}" Width="100"
+                                            ElementStyle="{StaticResource Desno}"/>
+                        <DataGridTextColumn Header="Za isplatu" Binding="{Binding ZaIsplatu, StringFormat=N2}" Width="110"
+                                            ElementStyle="{StaticResource Desno}"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource Card}" Padding="12">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="KONTROLNE PROVERE" FontSize="12" FontWeight="Bold"
+                               Foreground="{StaticResource PrimaryLightBrush}" Margin="0,0,0,4"/>
+                    <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" FontSize="11" Margin="0,0,0,8"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Text="Filijala nepotpun obrazac vraća, a refundacija se odlaže za ceo mesec. Zato se traži da nalazi budu čisti pre štampe."/>
+
+                    <DataGrid x:Name="GridNalazi" AutoGenerateColumns="False" IsReadOnly="True"
+                              HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="11">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="" Binding="{Binding TezinaTekst}" Width="75"/>
+                            <DataGridTextColumn Header="Nalaz" Binding="{Binding Opis}" Width="*">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="TextWrapping" Value="Wrap"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <!-- ── STATUS ─────────────────────────────────────────────────── -->
+        <Border Grid.Row="3" Margin="0,12,0,0" Background="White" CornerRadius="6" Padding="12,6"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+            <TextBlock x:Name="StatusMessage" Text="Spreman" FontSize="12"
+                       Foreground="{StaticResource TextSecondaryBrush}"/>
+        </Border>
+    </Grid>
+</Page>

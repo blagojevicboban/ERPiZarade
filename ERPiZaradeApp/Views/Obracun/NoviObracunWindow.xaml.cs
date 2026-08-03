@@ -23,7 +23,7 @@ public partial class NoviObracunWindow : Window
     {
         InitializeComponent();
         Views.Pomoc.ContextHelpFix.UkloniDugmeZaPomoc(this);
-        KeyDown += (s, e) => { if (e.Key == System.Windows.Input.Key.F1) { new Views.Pomoc.EditHelpWindow("Novi obračun zarada", "Mesečni obračun plata i naknada", new[] { ("F1", "Pomoć"), ("Esc", "Zatvori prozor") }, "Unesite godinu, mesec, vrednost boda i fond časova.").ShowDialog(); e.Handled = true; } };
+        KeyDown += (s, e) => { if (e.Key == System.Windows.Input.Key.F1) { new Views.Pomoc.EditHelpWindow("Novi obračun zarada", "Mesečni obračun plata i naknada", new[] { ("F1", "Pomoć"), ("Esc", "Zatvori prozor") }, "Unesite godinu, mesec, vrednost boda i fond časova. Ako mesec ima više isplata, izaberite i isplatu — obračun i radni sati se čitaju i upisuju za nju.").ShowDialog(); e.Handled = true; } };
         
         _preselectedPeriod = preselectedPeriod;
         _db = PlataDbContext.Create(AppConfig.DbPath);
@@ -83,6 +83,8 @@ public partial class NoviObracunWindow : Window
 
         try
         {
+            _popunjavamIsplate = true;
+
             _isplataService.Obezbedi(godina, mesec);
             var isplate = _isplataService.Isplate(godina, mesec);
 
@@ -98,16 +100,30 @@ public partial class NoviObracunWindow : Window
             ComboIsplata.IsEnabled = false;
             Serilog.Log.Warning(ex, "Isplate se ne mogu učitati za {Godina}/{Mesec}", godina, mesec);
         }
+        finally
+        {
+            _popunjavamIsplate = false;
+        }
     }
 
     private Isplata? IzabranaIsplata => ComboIsplata.SelectedItem as Isplata;
 
+    /// <summary>Popunjavanje liste ne sme da pokrene ponovno učitavanje radnika.</summary>
+    private bool _popunjavamIsplate;
+
     private void ComboIsplata_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
+        if (_popunjavamIsplate) return;
+
+        // Svaka isplata ima svoje radne sate (Faza 2.2), pa se tabela čita iznova — inače bi
+        // se akontacija obračunala satima konačne zarade.
+        LoadAktivneRadnike();
+
         if (IzabranaIsplata is { } isplata && !isplata.JePrva)
         {
             TxtObavestenje.Text =
-                $"Obračun se pravi u okviru isplate „{isplata.Naziv}“. Prekalkulacija dira samo njene obračune.";
+                $"Obračun se pravi u okviru isplate „{isplata.Naziv}“, sa satima unetim za nju. " +
+                "Prekalkulacija dira samo njene obračune.";
         }
     }
 
@@ -224,8 +240,10 @@ public partial class NoviObracunWindow : Window
                 .Where(r => r.Aktivan && !r.VanRadnogOdnosa && r.Godina == godina && r.Mesec == mesec)
                 .ToList();
 
-            var postojeciSati = _db.RadniSati
-                .Where(s => s.Godina == godina && s.Mesec == mesec)
+            // Sati izabrane isplate (Faza 2.2). Dok je isplata jedna, obuhvat je ceo mesec
+            // kao i pre — i redovi bez upisane isplate pripadaju prvoj.
+            var postojeciSati = IsplataService
+                .Obuhvat(_db.RadniSati, godina, mesec, IzabranaIsplata)
                 .ToDictionary(s => s.RadnikId);
 
             // Uključujemo i neaktivne radnike koji imaju istorijske podatke za ovaj period
@@ -464,6 +482,7 @@ public partial class NoviObracunWindow : Window
                     RadnikId = input.RadnikId,
                     Godina = godina,
                     Mesec = mesec,
+                    IsplataId = isplata?.IsplataId,
                     RedovniSati = input.RedovniSati,
                     BolovanjeSati = input.BolovanjeSati,
                     PrekovremeneSati = input.PrekovremeneSati,
@@ -486,12 +505,15 @@ public partial class NoviObracunWindow : Window
                     Prosek = input.Prosek
                 };
 
-                // Dodaj i u bazu radnih sati ako ne postoji
-                var postojeciSati = await _db.RadniSati
-                    .FirstOrDefaultAsync(s => s.RadnikId == input.RadnikId && s.Godina == godina && s.Mesec == mesec);
-                if (postojeciSati != null)
+                // Sate ove isplate zamenjujemo unetim; sati ostalih isplata meseca ostaju.
+                var postojeciSati = await IsplataService
+                    .Obuhvat(_db.RadniSati, godina, mesec, isplata)
+                    .Where(s => s.RadnikId == input.RadnikId)
+                    .ToListAsync();
+
+                if (postojeciSati.Count > 0)
                 {
-                    _db.RadniSati.Remove(postojeciSati);
+                    _db.RadniSati.RemoveRange(postojeciSati);
                 }
                 _db.RadniSati.Add(radniSati);
 
@@ -640,9 +662,13 @@ public partial class NoviObracunWindow : Window
 
         try
         {
-            // Potraži sate za selektovani period u bazi, joinovane sa Radnik da dobijemo BrojRadnika
-            var prethodniSatiList = await _db.RadniSati
-                .Where(s => s.Godina == prethodnaGodina && s.Mesec == prethodniMesec)
+            // Sati izvornog meseca, i to sati njegove PRVE isplate (Faza 2.2). Bez toga bi
+            // mesec sa akontacijom dao dva reda za istog radnika, a prenosi se ono što je
+            // radnik radio u mesecu — a to stoji uz konačnu zaradu.
+            var izvornaIsplata = _isplataService.Isplate(prethodnaGodina, prethodniMesec).FirstOrDefault();
+
+            var prethodniSatiList = await IsplataService
+                .Obuhvat(_db.RadniSati, prethodnaGodina, prethodniMesec, izvornaIsplata)
                 .Include(s => s.Radnik)
                 .ToListAsync();
 

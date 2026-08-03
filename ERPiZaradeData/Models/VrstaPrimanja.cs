@@ -50,6 +50,17 @@ public class VrstaPrimanja
     [MaxLength(10)]
     public string Konto { get; set; } = "";
 
+    /// <summary>
+    /// Naknada koja pada na teret RFZO i refundira se poslodavcu (Faza 2.6). Iznos takvih
+    /// stavki ulazi u obrazac OZ-10.
+    ///
+    /// Stoji ovde, a ne u kodu, iz istog razloga iz kog tu stoji i <see cref="Svp"/>: koja
+    /// naknada ide na teret Fonda propisuje Zakon o zdravstvenom osiguranju, a program vodi
+    /// zarade za više firmi. Podrazumevano je označeno samo „bolovanje preko 30 dana"; ko
+    /// refundira i naknadu za povredu na radu ili negu člana porodice, označi i njih.
+    /// </summary>
+    public bool NaTeretFonda { get; set; }
+
     /// <summary>Redosled prikaza na platnom listiću i u izveštajima.</summary>
     public int Redosled { get; set; }
 

@@ -7,7 +7,7 @@ namespace ERPiZaradeData.Models;
 /// Mesečni obračun plate — port OBRACUN.DBF + OBRACUNI.DBF (istorija)
 /// </summary>
 [Table("ObracuniPlata")]
-public class ObracunPlate
+public class ObracunPlate : IPripadaIsplati
 {
     [Key]
     public int Id { get; set; }
@@ -22,7 +22,7 @@ public class ObracunPlate
     /// Isplata kojoj obračun pripada (Faza 2.2). <c>null</c> znači <b>prvu isplatu svog
     /// perioda</b> — tako svi zatečeni obračuni, nastali pre nego što je isplata uopšte
     /// postojala, ostaju obuhvaćeni bez ijedne izmene u njima. Pravilo se primenjuje na
-    /// jednom mestu, u <c>IsplataService.ZaIsplatu</c>, da se ne bi razišlo po upitima.
+    /// jednom mestu, u <c>IsplataService.Obuhvat</c>, da se ne bi razišlo po upitima.
     /// </summary>
     public int? IsplataId { get; set; }
 

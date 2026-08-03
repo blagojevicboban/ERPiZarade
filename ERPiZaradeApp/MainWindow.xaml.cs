@@ -294,6 +294,15 @@ public partial class MainWindow : Window
     private void BtnUgovori_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnUgovori, "📝 Ugovori van radnog odnosa", new Views.Ugovori.UgovoriPage(), "Ugovor o delu, autorska naknada, privremeni i povremeni poslovi i naknade odborima — obračun naknade koja ulazi u istu PPP-PD prijavu kao zarada", helpAnchor: "Ugovori");
 
+    private void BtnKnjizenje_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnKnjizenje, "📒 Nalog za knjiženje", new Views.Knjizenje.KnjizenjePage(), "Temeljnica za glavnu knjigu — trošak po vrstama primanja i mestima troška, obaveze po ulogama iznosa, za uvoz u ERPiFinansije", helpAnchor: "Knjizenje");
+
+    private void BtnBolovanja_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnBolovanja, "🏥 Bolovanja i refundacija RFZO", new Views.Bolovanja.BolovanjaPage(), "Evidencija privremene sprečenosti za rad preko 30 dana i obrasci OZ-7 i OZ-10 za refundaciju naknade zarade iz sredstava obaveznog zdravstvenog osiguranja", helpAnchor: "Bolovanja");
+
+    private void BtnKontaKnjizenja_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnKontaKnjizenja, "📗 Konta za knjiženje", new Views.KontaKnjizenja.KontaKnjizenjaPage(), "Konta obaveza i troškova na koja se knjiži obračun — početne vrednosti su iz Kontnog okvira", helpAnchor: "KontaKnjizenja");
+
     private void BtnVrsteUgovora_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnVrsteUgovora, "📄 Šifarnik vrsta ugovora", new Views.VrsteUgovora.VrsteUgovoraPage(), "Normirani troškovi, stopa poreza i doprinosi po vrsti ugovora van radnog odnosa", helpAnchor: "VrsteUgovora");
 

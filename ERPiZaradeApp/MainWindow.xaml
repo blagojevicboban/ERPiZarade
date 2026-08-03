@@ -226,6 +226,12 @@
                         <Button x:Name="BtnUgovori" Content="📝  Ugovori van radnog odnosa"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnUgovori_Click"/>
+                        <Button x:Name="BtnKnjizenje" Content="📒  Nalog za knjiženje"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnKnjizenje_Click"/>
+                        <Button x:Name="BtnBolovanja" Content="🏥  Bolovanja i RFZO"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnBolovanja_Click"/>
 
                         <TextBlock x:Name="HeaderSifarnici" Text="ŠIFARNICI" FontSize="10" FontWeight="SemiBold"
                                    Foreground="#7986CB" Margin="24,10,0,3"/>
@@ -250,6 +256,9 @@
                         <Button x:Name="BtnSabloniUgovora" Content="🖋️  Šabloni ugovora"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnSabloniUgovora_Click"/>
+                        <Button x:Name="BtnKontaKnjizenja" Content="📗  Konta za knjiženje"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnKontaKnjizenja_Click"/>
 
                         <TextBlock x:Name="HeaderPodesavanja" Text="PODEŠAVANJA" FontSize="10" FontWeight="SemiBold"
                                    Foreground="#7986CB" Margin="24,10,0,3"/>

@@ -106,6 +106,7 @@ public class BackupService
 
             // 3. Kopiraj rezervnu kopiju preko aktivne baze podataka
             File.Copy(sourcePath, destPath, true);
+            ERPiZaradeData.PlataDbContext.UkloniReadOnlyAtribut(destPath);
 
             return true;
         }

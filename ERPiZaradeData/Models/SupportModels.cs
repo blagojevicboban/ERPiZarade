@@ -61,12 +61,25 @@ public class Kredit
 
 /// <summary>Radni sati — port RAD_SATI.DBF</summary>
 [Table("RadniSati")]
-public class RadniSat
+public class RadniSat : IPripadaIsplati
 {
     [Key] public int Id { get; set; }
     [ForeignKey(nameof(Radnik))] public int RadnikId { get; set; }
     public int Godina { get; set; }
     public int Mesec { get; set; }
+
+    /// <summary>
+    /// Isplata za koju su sati uneti (Faza 2.2). Do sada je zapis bio jedinstven po
+    /// (radnik, godina, mesec), pa je unos sati za drugu isplatu meseca prepisivao onaj za
+    /// prvu — iznosi već napravljenih obračuna su ostajali netaknuti, jer svaki obračun nosi
+    /// svoje sate u svojim kolonama, ali je ekran radnih sati pokazivao poslednji unos.
+    ///
+    /// <c>null</c> znači <b>prvu isplatu svog perioda</b>, isto kao kod
+    /// <see cref="ObracunPlate.IsplataId"/>; pravilo stoji u <c>IsplataService.Obuhvat</c>.
+    /// </summary>
+    public int? IsplataId { get; set; }
+
+    public Isplata? Isplata { get; set; }
 
     public int RedovniSati { get; set; }
     public int BolovanjeSati { get; set; }

@@ -226,6 +226,30 @@
                                     </StackPanel>
                                 </Grid>
 
+                                <!-- Refundacija naknade zarade od RFZO (obrasci OZ-7 i OZ-10) -->
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="140"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                        <TextBlock Text="Poseban račun (RFZO)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                        <TextBox x:Name="TxtPosebanRacun" Height="32" MaxLength="30"
+                                                 ToolTip="Namenski račun na koji Fond uplaćuje refundiranu naknadu zarade. Nije isti kao poslovni račun."/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Margin="0,0,8,0">
+                                        <TextBlock Text="Podračun poslovne jedinice" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                        <TextBox x:Name="TxtPodracunPoslovneJedinice" Height="32" MaxLength="30"
+                                                 ToolTip="Popunjava se samo kad ga filijala traži (obrazac OZ-7)"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Šifra delatnosti" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                        <TextBox x:Name="TxtSifraDelatnosti" Height="32" MaxLength="10"
+                                                 ToolTip="Šifra pretežne delatnosti — zaglavlje obrasca OZ-10"/>
+                                    </StackPanel>
+                                </Grid>
+
                                 <!-- Zastupnik: ugovor van radnog odnosa se zaključuje „koga zastupa…" -->
                                 <Grid Margin="0,0,0,12">
                                     <Grid.ColumnDefinitions>
@@ -279,5 +303,15 @@
             <TextBlock x:Name="TxtStatus" Text="Spreman" FontSize="12"
                        Foreground="{StaticResource TextSecondaryBrush}"/>
         </Border>
+
+        <!-- ── LOADING OVERLAY ────────────────────────────────────────── -->
+        <Grid x:Name="LoadingOverlay" Grid.RowSpan="4" Background="#60000000" Visibility="Collapsed">
+            <Border Background="White" CornerRadius="10" Padding="28,20" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal">
+                    <ProgressBar IsIndeterminate="True" Width="24" Height="24" Margin="0,0,14,0"/>
+                    <TextBlock Text="Učitavanje spiska firmi..." VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold" Foreground="#1E293B"/>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </Page>

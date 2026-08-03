@@ -45,7 +45,8 @@ public partial class PppPdPage : Page
                 vm.SelectedOznakaZaKonacnu,
                 vm.SelectedNajnizaOsnovica,
                 vm.SelectedTipIsplatioca,
-                vm.BrojKalendarskihDana
+                vm.BrojKalendarskihDana,
+                mfpPoOlaksici: vm.MfpPoOlaksici
             );
 
             Clipboard.SetText(xml);
@@ -93,7 +94,8 @@ public partial class PppPdPage : Page
                     vm.SelectedVrstaPrijave,
                     vm.SelectedOznakaZaKonacnu,
                     vm.SelectedNajnizaOsnovica,
-                    vm.SelectedTipIsplatioca
+                    vm.SelectedTipIsplatioca,
+                    mfpPoOlaksici: vm.MfpPoOlaksici
                 );
 
                 System.IO.File.WriteAllText(sfd.FileName, xml, System.Text.Encoding.UTF8);

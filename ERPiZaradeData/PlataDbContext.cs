@@ -35,6 +35,8 @@ public class PlataDbContext : DbContext
     public DbSet<VrstaPrimanja> VrstePrimanja => Set<VrstaPrimanja>();
     public DbSet<ObracunStavka> ObracunStavke => Set<ObracunStavka>();
     public DbSet<UnetoPrimanje> UnetaPrimanja => Set<UnetoPrimanje>();
+    public DbSet<PoreskaOlaksica> PoreskeOlaksice => Set<PoreskaOlaksica>();
+    public DbSet<OlaksicaMfp> OlaksicaMfpDeklaracije => Set<OlaksicaMfp>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -154,6 +156,23 @@ public class PlataDbContext : DbContext
             .WithMany()
             .HasForeignKey(p => p.VrstaPrimanjaId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Olakšica se traži po OL oznaci iz SVP šifre, pa dve iste čine šifarnik dvosmislenim
+        modelBuilder.Entity<PoreskaOlaksica>()
+            .HasIndex(o => o.Sifra)
+            .IsUnique();
+
+        // MFP deklaracije nemaju smisla bez olakšice kojoj pripadaju
+        modelBuilder.Entity<OlaksicaMfp>()
+            .HasOne(m => m.Olaksica)
+            .WithMany(o => o.MfpDeklaracije)
+            .HasForeignKey(m => m.PoreskaOlaksicaId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Jedno MFP polje se deklariše najviše jednom po olakšici
+        modelBuilder.Entity<OlaksicaMfp>()
+            .HasIndex(m => new { m.PoreskaOlaksicaId, m.Oznaka })
+            .IsUnique();
     }
 
     /// <summary>
@@ -486,6 +505,21 @@ public class PlataDbContext : DbContext
             if (nove.Count > 0)
             {
                 ctx.VrstePrimanja.AddRange(nove);
+                ctx.SaveChanges();
+            }
+        }
+        catch { }
+
+        try
+        {
+            var postojeceOlaksice = ctx.PoreskeOlaksice.Select(o => o.Sifra).ToHashSet();
+            var noveOlaksice = PoreskeOlaksiceSeed.Podrazumevane()
+                .Where(o => !postojeceOlaksice.Contains(o.Sifra))
+                .ToList();
+
+            if (noveOlaksice.Count > 0)
+            {
+                ctx.PoreskeOlaksice.AddRange(noveOlaksice);
                 ctx.SaveChanges();
             }
         }

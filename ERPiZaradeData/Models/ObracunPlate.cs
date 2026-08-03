@@ -27,6 +27,29 @@ public class ObracunPlate
     /// </summary>
     public ICollection<ObracunStavka> Stavke { get; set; } = [];
 
+    // ── Poreska olakšica (Faza 2.4) ────────────────────────
+    /// <summary>OL oznaka olakšice primenjene na ovaj obračun; prazno ako je nema.</summary>
+    [MaxLength(2)]
+    public string OlaksicaOznaka { get; set; } = "";
+
+    /// <summary>
+    /// Iznos poreza obuhvaćen olakšicom. Kod oslobođenja je to umanjenje koje je već
+    /// odbijeno od <see cref="PorezNaDohodak"/>; kod povraćaja je iznos koji se traži
+    /// natrag, a porez je plaćen u punom iznosu.
+    /// </summary>
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal OlaksicaPorez { get; set; }
+
+    /// <summary>Isto za doprinose na teret radnika.</summary>
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal OlaksicaDoprinosi { get; set; }
+
+    /// <summary>
+    /// Da li je olakšica umanjila ono što se plaća. Netačno znači povraćaj — iznosi su
+    /// plaćeni u celosti i traže se posebnim zahtevom.
+    /// </summary>
+    public bool OlaksicaUmanjujeUplatu { get; set; }
+
     // ── BRUTO ──────────────────────────────────────────────
     [Column(TypeName = "decimal(14,2)")]
     public decimal BrutoZarada { get; set; }

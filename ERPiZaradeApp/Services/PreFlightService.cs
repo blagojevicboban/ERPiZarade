@@ -93,6 +93,7 @@ public class PreFlightService
 
         ProveriDuplikate(obracuni, nalazi);
         ProveriNeoporezivePrimanja(godina, mesec, nalazi);
+        ProveriOlaksice(obracuni, nalazi);
 
         return new RezultatProvere
         {
@@ -183,6 +184,70 @@ public class PreFlightService
             {
                 yield return Nalaz(TezinaNalaza.Greska, "Istekla poreska olakšica",
                     $"Olakšica je važila do {radnik.OlaksicaVaziDo.Value:dd.MM.yyyy}, a i dalje se primenjuje.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Radnik nosi OL oznaku u SVP šifri, a olakšice nema u šifarniku ili je nepotpuna.
+    /// U oba slučaja prijava prolazi, ali bez umanjenja koje bi trebalo da nosi — a to se
+    /// otkriva tek kad Poreska uprava utvrdi razliku.
+    /// </summary>
+    private void ProveriOlaksice(List<ObracunPlate> obracuni, List<NalazProvere> nalazi)
+    {
+        var trazene = obracuni
+            .Select(o => new
+            {
+                Oznaka = OlaksicaService.OznakaIzSvp(o.Radnik?.Radno_Mesto),
+                o.Radnik
+            })
+            .Where(x => x.Oznaka.Length > 0)
+            .ToList();
+
+        if (trazene.Count == 0) return;
+
+        List<PoreskaOlaksica> sifarnik;
+        try
+        {
+            sifarnik = _db.PoreskeOlaksice
+                .AsNoTracking()
+                .Include(o => o.MfpDeklaracije)
+                .ToList();
+        }
+        catch
+        {
+            return;   // baza starije verzije nema šifarnik olakšica
+        }
+
+        foreach (var grupa in trazene.GroupBy(x => x.Oznaka))
+        {
+            var prvi = grupa.First().Radnik;
+            var olaksica = sifarnik.FirstOrDefault(o => o.Sifra == grupa.Key);
+
+            if (olaksica is not { Aktivna: true })
+            {
+                nalazi.Add(new NalazProvere
+                {
+                    Tezina = TezinaNalaza.Greska,
+                    BrojRadnika = prvi?.BrojRadnika,
+                    Radnik = prvi?.ImeIPrezime ?? "",
+                    Provera = "Olakšica nije u šifarniku",
+                    Opis = $"{grupa.Count()} radnika nosi oznaku olakšice „{grupa.Key}“ u SVP šifri, " +
+                           "a te olakšice nema u šifarniku ili je isključena — umanjenje se neće primeniti."
+                });
+                continue;
+            }
+
+            // Oslobođenje se prijavljuje kroz MFP; bez deklaracije umanjenje ostaje neprijavljeno.
+            if (olaksica.Mehanizam == MehanizamOlaksice.Oslobodjenje && olaksica.MfpDeklaracije.Count == 0)
+            {
+                nalazi.Add(new NalazProvere
+                {
+                    Tezina = TezinaNalaza.Greska,
+                    Provera = "Olakšica bez MFP deklaracije",
+                    Opis = $"„{olaksica.Naziv}“ umanjuje uplatu, a nema nijedno MFP polje — " +
+                           "umanjenje se neće prijaviti u PPP-PD."
+                });
             }
         }
     }

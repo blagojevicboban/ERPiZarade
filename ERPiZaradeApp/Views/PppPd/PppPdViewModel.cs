@@ -100,6 +100,33 @@ public class PppPdViewModel : INotifyPropertyChanged
         catch { }
     }
 
+    /// <summary>
+    /// MFP deklaracije po OL oznaci olakšice. Prijava ih uzima odavde, a ne iz koda, jer
+    /// značenje MFP polja zavisi od SVP šifre i propisuje ga katalog Poreske uprave.
+    /// </summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<OlaksicaMfp>> MfpPoOlaksici
+    {
+        get
+        {
+            try
+            {
+                return _db.PoreskeOlaksice
+                    .AsNoTracking()
+                    .Include(o => o.MfpDeklaracije)
+                    .Where(o => o.Aktivna && o.MfpDeklaracije.Count > 0)
+                    .ToDictionary(
+                        o => o.Sifra,
+                        o => (IReadOnlyList<OlaksicaMfp>)o.MfpDeklaracije.OrderBy(m => m.Oznaka).ToList(),
+                        StringComparer.Ordinal);
+            }
+            catch
+            {
+                // Baza starije verzije nema šifarnik olakšica — prijava ide bez MFP-a, kao ranije.
+                return new Dictionary<string, IReadOnlyList<OlaksicaMfp>>();
+            }
+        }
+    }
+
     private void PreuzmiSedisteIzFirme()
     {
         try

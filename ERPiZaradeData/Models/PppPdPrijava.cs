@@ -38,7 +38,11 @@ public class PppPdPrijava
     public int RedniBroj { get; set; } = 1;
 
     // ── Sadržaj prijave ──────────────────────────────────────────────
-    /// <summary>Vrsta prijave po šifarniku PU: 1=originalna, 3=izmenjena, 5=otkazana.</summary>
+    /// <summary>
+    /// Vrsta prijave po specifikaciji Poreske uprave: <b>1</b> opšta · <b>2</b> po službenoj
+    /// dužnosti · <b>3</b> samoprijavljivanje · <b>4</b> po nalazu kontrole · <b>5</b> po
+    /// odluci suda.
+    /// </summary>
     [MaxLength(2)]
     public string VrstaPrijave { get; set; } = "1";
 

@@ -235,6 +235,9 @@
                         <Button x:Name="BtnVrstePrimanja" Content="💰  Vrste primanja"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnVrstePrimanja_Click"/>
+                        <Button x:Name="BtnOlaksice" Content="🏷️  Poreske olakšice"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnOlaksice_Click"/>
 
                         <TextBlock x:Name="HeaderPodesavanja" Text="PODEŠAVANJA" FontSize="10" FontWeight="SemiBold"
                                    Foreground="#7986CB" Margin="24,10,0,3"/>

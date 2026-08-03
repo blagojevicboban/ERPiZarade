@@ -1,0 +1,103 @@
+<Page x:Class="ERPiZaradeApp.Views.Olaksice.OlaksicePage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+      Title="Poreske olakšice"
+      Background="{StaticResource SurfaceBrush}">
+
+    <Grid Margin="24,20,24,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource Card}" Padding="16,12" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" VerticalAlignment="Center" TextWrapping="Wrap" FontSize="12"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Text="Olakšica se primenjuje na radnika koji u kartonu nosi njenu oznaku u SVP šifri. Oznake i procenti se menjaju propisom — proverite ih u važećem Katalogu vrste prihoda."/>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="➕" Style="{StaticResource SecondaryButton}" Width="36" Padding="0" Margin="0,0,8,0"
+                            Click="BtnDodaj_Click" ToolTip="Dodaj olakšicu"/>
+                    <Button Content="🗑" Style="{StaticResource SecondaryButton}" Width="36" Padding="0" Margin="0,0,8,0"
+                            Click="BtnObrisi_Click" ToolTip="Obriši izabranu olakšicu"/>
+                    <Button Content="💾  Sačuvaj" Style="{StaticResource PrimaryButton}" Padding="16,6"
+                            Click="BtnSacuvaj_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="380"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource Card}" Padding="0" Margin="0,0,16,0">
+                <DataGrid x:Name="GridOlaksice" AutoGenerateColumns="False" CanUserAddRows="False"
+                          HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12"
+                          SelectionChanged="GridOlaksice_SelectionChanged">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="OL" Binding="{Binding Sifra, UpdateSourceTrigger=PropertyChanged}" Width="50"/>
+                        <DataGridTextColumn Header="Naziv" Binding="{Binding Naziv, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
+                        <DataGridTextColumn Header="Pravni osnov" Binding="{Binding PravniOsnov, UpdateSourceTrigger=PropertyChanged}" Width="130"/>
+                        <DataGridComboBoxColumn x:Name="KolonaMehanizam" Header="Mehanizam" Width="120"
+                                                SelectedItemBinding="{Binding Mehanizam, UpdateSourceTrigger=PropertyChanged}"/>
+                        <DataGridTextColumn Header="Porez %" Binding="{Binding ProcenatPoreza, StringFormat=N2, UpdateSourceTrigger=PropertyChanged}" Width="75"/>
+                        <DataGridTextColumn Header="Dopr. %" Binding="{Binding ProcenatDoprinosa, StringFormat=N2, UpdateSourceTrigger=PropertyChanged}" Width="75"/>
+                        <DataGridTemplateColumn Header="Važi do" Width="110">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <DatePicker SelectedDate="{Binding VaziDo, UpdateSourceTrigger=PropertyChanged}"
+                                                BorderThickness="0" Background="Transparent"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridCheckBoxColumn Header="Aktivna" Binding="{Binding Aktivna, UpdateSourceTrigger=PropertyChanged}" Width="65"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource Card}" Padding="12">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="MFP DEKLARACIJA" FontSize="12" FontWeight="Bold"
+                               Foreground="{StaticResource PrimaryLightBrush}" Margin="0,0,0,4"/>
+                    <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" FontSize="11" Margin="0,0,0,8"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Text="Kroz koja MFP polja se olakšica prijavljuje u PPP-PD. Šta koje polje znači zavisi od SVP šifre, pa se unosi ovde. Potrebno samo za oslobođenje."/>
+
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                        <Button Content="➕" Style="{StaticResource SecondaryButton}" Width="32" Padding="0" Margin="0,0,6,0"
+                                Click="BtnDodajMfp_Click" ToolTip="Dodaj MFP polje"/>
+                        <Button Content="🗑" Style="{StaticResource SecondaryButton}" Width="32" Padding="0"
+                                Click="BtnObrisiMfp_Click" ToolTip="Obriši izabrano MFP polje"/>
+                    </StackPanel>
+
+                    <DataGrid x:Name="GridMfp" AutoGenerateColumns="False" CanUserAddRows="False"
+                              HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
+                        <DataGrid.Columns>
+                            <DataGridComboBoxColumn x:Name="KolonaOznaka" Header="Polje" Width="80"
+                                                    SelectedItemBinding="{Binding Oznaka, UpdateSourceTrigger=PropertyChanged}"/>
+                            <DataGridComboBoxColumn x:Name="KolonaIzvor" Header="Vrednost" Width="*"
+                                                    SelectedItemBinding="{Binding Izvor, UpdateSourceTrigger=PropertyChanged}"/>
+                            <DataGridTextColumn Header="Fiksno" Binding="{Binding FiksnaVrednost, StringFormat=N2, UpdateSourceTrigger=PropertyChanged}" Width="80"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="2" Margin="0,12,0,0" Background="White" CornerRadius="6" Padding="12,6"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+            <TextBlock x:Name="StatusMessage" Text="Spreman" FontSize="12"
+                       Foreground="{StaticResource TextSecondaryBrush}"/>
+        </Border>
+    </Grid>
+</Page>

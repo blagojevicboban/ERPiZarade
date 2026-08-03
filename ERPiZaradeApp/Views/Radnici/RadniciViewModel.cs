@@ -181,15 +181,39 @@ public class RadniciViewModel : INotifyPropertyChanged
         new() { Sifra = "21", Naziv = "Stručno osposobljavanje" }
     };
 
-    public List<SvpOption> OpcijeOL { get; } = new()
+    /// <summary>
+    /// Olakšice iz šifarnika. Ranije je ovo bila lista ugrađena u kod, sa oznakama koje su se
+    /// menjale izmenama propisa — a oznaka ulazi u SVP šifru koja ide u PPP-PD, pa pogrešna
+    /// oznaka znači pogrešnu prijavu. Sada se ispravlja u šifarniku, bez izmene koda.
+    /// </summary>
+    public List<SvpOption> OpcijeOL { get; } = UcitajOpcijeOL();
+
+    private static List<SvpOption> UcitajOpcijeOL()
     {
-        new() { Sifra = "00", Naziv = "Bez poreskih olakšica" },
-        new() { Sifra = "01", Naziv = "Novozaposleni 65% (čl. 21v st.1)" },
-        new() { Sifra = "02", Naziv = "Novozaposleni 70% (čl. 21v st.2)" },
-        new() { Sifra = "03", Naziv = "Novozaposleni 75% (čl. 21v st.3)" },
-        new() { Sifra = "24", Naziv = "Kvalifikovano novozaposleno lice (čl. 21j)" },
-        new() { Sifra = "32", Naziv = "Osnivač inovativnog preduzeća" }
-    };
+        var opcije = new List<SvpOption> { new() { Sifra = "00", Naziv = "Bez poreskih olakšica" } };
+
+        try
+        {
+            using var db = PlataDbContext.Create(AppConfig.DbPath);
+            opcije.AddRange(db.PoreskeOlaksice
+                .AsNoTracking()
+                .Where(o => o.Aktivna)
+                .OrderBy(o => o.Sifra)
+                .ToList()
+                .Select(o => new SvpOption
+                {
+                    Sifra = o.Sifra,
+                    Naziv = string.IsNullOrWhiteSpace(o.PravniOsnov) ? o.Naziv : $"{o.Naziv} ({o.PravniOsnov})"
+                }));
+        }
+        catch
+        {
+            // Baza starije verzije nema šifarnik — ostaje samo „bez olakšica", pa se karton
+            // može uređivati i dok se šifarnik ne popuni.
+        }
+
+        return opcije;
+    }
 
     public List<SvpOption> OpcijeB { get; } = new()
     {

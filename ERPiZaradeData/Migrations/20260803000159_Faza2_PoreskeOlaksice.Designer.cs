@@ -3,6 +3,7 @@ using System;
 using ERPiZaradeData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ERPiZaradeData.Migrations
 {
     [DbContext(typeof(PlataDbContext))]
-    partial class PlataDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260803000159_Faza2_PoreskeOlaksice")]
+    partial class Faza2_PoreskeOlaksice
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.16");
@@ -860,20 +863,6 @@ namespace ERPiZaradeData.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("NocniSati")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<decimal>("OlaksicaDoprinosi")
-                        .HasColumnType("decimal(14,2)");
-
-                    b.Property<string>("OlaksicaOznaka")
-                        .IsRequired()
-                        .HasMaxLength(2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("OlaksicaPorez")
-                        .HasColumnType("decimal(14,2)");
-
-                    b.Property<bool>("OlaksicaUmanjujeUplatu")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Operativni")

@@ -6,6 +6,43 @@ Format je zasnovan na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) s
 
 ---
 
+## [1.8.0] - 2026-08-03
+
+> **Faza 2.4** — poreske olakšice. Analiza ih navodi kao „u praksi najčešći razlog za ručnu
+> intervenciju u obračunu".
+
+### 🏷️ Šifarnik poreskih olakšica (novi ekran)
+- **Nijedna konkretna olakšica nije ugrađena u kod.** Program vodi zarade za više firmi, pa mora da podrži i olakšice koje danas niko ne koristi, kao i one koje propis tek uvede — olakšica je zato **red u šifarniku**, isto kao vrsta primanja u Fazi 2.1.
+- Uz svaku stoje mehanizam, procenti umanjenja poreza i doprinosa, rok važenja po propisu i **MFP deklaracija** za PPP-PD prijavu.
+- Veza radnik → olakšica ide kroz **postojeću OL oznaku u SVP šifri** (pozicije 7–8 polja radnog mesta). Radnik ne dobija novo polje, pa nema ni prilike da se to dvoje raziđe.
+
+### ⚖️ Dva mehanizma koja se ne smeju pomešati
+- **Povraćaj** (čl. 21v): poslodavac plati pun iznos pa podnosi Obrazac PPD. Obračun i PPP-PD **ostaju nepromenjeni**; beleže se samo iznosi koji se traže natrag.
+- **Oslobođenje**: umanjuje se ono što se plaća. Umanjenje ulazi u obračun i prijavljuje se kroz MFP.
+
+Zamena bi značila da firma ili plati manje nego što sme, ili traži povraćaj koji joj ne sleduje.
+
+### 🧾 MFP u PPP-PD prijavi
+- `DeklarisaniMFP` se do sada emitovao **prazan**. Sada se popunjava po specifikaciji Poreske uprave: `MFP` se ponavlja po polju, sa oznakom `MFP.1`–`MFP.12` i vrednošću sa decimalnom tačkom.
+- **Šta koje MFP polje znači zavisi od SVP šifre** i propisuje ga Katalog vrste prihoda, pa se mapiranje unosi u šifarnik, a ne ugrađuje u kod.
+
+### 🐛 Lista olakšica u kartonu radnika bila je ugrađena u kod — i verovatno pogrešna
+- Karton je nudio `01/02/03` kao „Novozaposleni 65/70/75% (čl. 21v)". Po objavljenom Pravilniku o Obrascu PPD, za čl. 21v važe oznake **OL08 / OL09 / OL10**. Ta oznaka ulazi u SVP šifru koja ide u PPP-PD, pa pogrešna oznaka znači pogrešnu prijavu.
+- Lista sada dolazi **iz šifarnika**, pa se ispravlja bez izmene koda. Polazni sadržaj nosi napomenu da oznake i procente treba proveriti u važećem katalogu.
+
+### ✅ Nove kontrolne provere
+- Radnik nosi OL oznaku koje **nema u šifarniku** ili je isključena — umanjenje se neće primeniti.
+- Olakšica tipa „oslobođenje" **bez ijedne MFP deklaracije** — umanjenje se neće prijaviti.
+
+### 🧹 Ispravka pogrešnih šifara vrste prijave
+- Komentar uz `PppPdPrijava.VrstaPrijave` tvrdio je „1=originalna, 3=izmenjena, 5=otkazana". Po specifikaciji PU je: **1** opšta · **2** po službenoj dužnosti · **3** samoprijavljivanje · **4** po nalazu kontrole · **5** po odluci suda. Bitno pred Fazu 2.7 (izmenjena prijava).
+
+### 🧪 Testovi
+- 169 ukupno (18 novih): oslobođenje umanjuje porez i doprinose za tačan procenat, povraćaj **ne dira nijedan iznos**, olakšica se ne primenjuje kad je istekla po šifarniku ili po radniku, procenat sa kartona ima prednost, a bez olakšice u šifarniku obračun ostaje brojčano identičan.
+
+### ❗ Šta nedostaje
+- **Obrazac PPD (zahtev za povraćaj) se ne generiše.** Podaci postoje u obračunu, ali se PPD podnosi elektronski, na isti način kao PPP-PD — dakle XML-om čiju šemu nemam. Kao i kod bankarskog formata, ne piše se napamet: potreban je primer fajla ili specifikacija.
+
 ## [1.7.0] - 2026-08-03
 
 > **Faza 2.5** — neoporeziva primanja kao parametar. Kriterijum iz razvojne mape:

@@ -18,6 +18,51 @@ public class XmlExportService
         public override Encoding Encoding => Encoding.UTF8;
     }
 
+    /// <summary>
+    /// Multifunkcionalno polje kroz koje se prijavljuje poreska olakšica.
+    ///
+    /// Struktura je po specifikaciji Poreske uprave: <c>MFP</c> se ponavlja onoliko puta
+    /// koliko je polja popunjeno, sa oznakom <c>MFP.1</c>–<c>MFP.12</c> i vrednošću u kojoj je
+    /// decimalni razdvajač <b>tačka</b>. Šta koje polje znači zavisi od SVP šifre, pa se
+    /// mapiranje uzima iz šifarnika olakšica, a ne iz koda.
+    ///
+    /// Bez olakšice element ostaje prazan, kako je i bio.
+    /// </summary>
+    private static XElement DeklarisaniMfp(
+        ObracunPlate obracun,
+        decimal osnovicaPoreza,
+        decimal osnovicaDoprinosa,
+        IReadOnlyDictionary<string, IReadOnlyList<OlaksicaMfp>>? mfpPoOlaksici)
+    {
+        var element = new XElement(tns + "DeklarisaniMFP");
+
+        if (mfpPoOlaksici == null
+            || string.IsNullOrWhiteSpace(obracun.OlaksicaOznaka)
+            || !mfpPoOlaksici.TryGetValue(obracun.OlaksicaOznaka, out var deklaracije))
+        {
+            return element;
+        }
+
+        foreach (var deklaracija in deklaracije)
+        {
+            decimal vrednost = deklaracija.Izvor switch
+            {
+                IzvorMfp.UmanjenjePoreza => obracun.OlaksicaPorez,
+                IzvorMfp.UmanjenjeDoprinosa => obracun.OlaksicaDoprinosi,
+                IzvorMfp.OsnovicaPoreza => osnovicaPoreza,
+                IzvorMfp.OsnovicaDoprinosa => osnovicaDoprinosa,
+                IzvorMfp.FiksnaVrednost => deklaracija.FiksnaVrednost,
+                _ => 0m
+            };
+
+            element.Add(new XElement(tns + "MFP",
+                new XElement(tns + "Oznaka", deklaracija.Oznaka),
+                new XElement(tns + "Vrednost", vrednost.ToString("F2", CultureInfo.InvariantCulture))));
+        }
+
+        return element;
+    }
+
     /// <param name="sedisteFirme">
     /// Šifra opštine sedišta iz kartona firme. Namerno nema podrazumevanu vrednost —
     /// ranije je stajala literalna „079", koja je tiho davala pogrešno zaglavlje svakoj
@@ -38,7 +83,8 @@ public class XmlExportService
         string oznakaZaKonacnu = "K",
         string najnizaOsnovica = "0",
         string tipIsplatioca = "1",
-        int? brojKalendarskihDana = null)
+        int? brojKalendarskihDana = null,
+        IReadOnlyDictionary<string, IReadOnlyList<OlaksicaMfp>>? mfpPoOlaksici = null)
     {
         if (obracuni == null || obracuni.Count == 0)
             throw new ArgumentException("Lista obračuna ne može biti prazna.");
@@ -153,7 +199,7 @@ public class XmlExportService
                         new XElement(tns + "ZDR", totalZdr.ToString("F2", CultureInfo.InvariantCulture)),
                         new XElement(tns + "NEZ", totalNez.ToString("F2", CultureInfo.InvariantCulture)),
                         new XElement(tns + "PIOBen", "0.00"),
-                        new XElement(tns + "DeklarisaniMFP")
+                        DeklarisaniMfp(obracun, poreskaOsnovica, osnovicaDoprinosa, mfpPoOlaksici)
                     );
                 })
             )

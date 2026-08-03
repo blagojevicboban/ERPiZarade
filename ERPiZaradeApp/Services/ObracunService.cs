@@ -392,6 +392,28 @@ public class ObracunService
         // 8. Topli obrok i regres su već uključeni u totalBruto
 
         // 9. Net salary calculation (doprinosi i porez se odbijaju od ukupnog bruto iznosa)
+        // Poreska olakšica se prepoznaje po OL oznaci u SVP šifri iz kartona radnika.
+        var olaksica = new OlaksicaService(_db).Utvrdi(
+            radnik, radnik.Radno_Mesto, godina, mesec,
+            porez, dopPioRadnik + dopZdrRadnik + dopNezRadnik);
+
+        // Samo oslobođenje umanjuje ono što se plaća. Kod povraćaja se plaća pun iznos, pa se
+        // posebnim zahtevom traži natrag — iznosi se beleže, ali se ništa ne odbija.
+        if (olaksica is { UmanjujeUplatu: true })
+        {
+            porez = Math.Max(0m, porez - olaksica.Porez);
+
+            decimal ukupnoDoprinosa = dopPioRadnik + dopZdrRadnik + dopNezRadnik;
+            if (ukupnoDoprinosa > 0m)
+            {
+                // Umanjenje se raspoređuje srazmerno, da odnos među doprinosima ostane isti.
+                decimal faktor = Math.Max(0m, ukupnoDoprinosa - olaksica.Doprinosi) / ukupnoDoprinosa;
+                dopPioRadnik *= faktor;
+                dopZdrRadnik *= faktor;
+                dopNezRadnik *= faktor;
+            }
+        }
+
         decimal totalEmployeeDeductions = dopPioRadnik + dopZdrRadnik + dopNezRadnik + porez;
 
         // Neoporezivi deo se isplaćuje radniku u punom iznosu — nije bio ni u bruto iznosu
@@ -484,7 +506,12 @@ public class ObracunService
             BrutoOsnovica = Math.Round(brutoOsn, 2),
             BrutoPioOsnovica = Math.Round(brutPioOsn, 2),
             Operativni = radnik.Operativni,
-            MinimalnaPlataOsnovica = Math.Round(granica, 2)
+            MinimalnaPlataOsnovica = Math.Round(granica, 2),
+
+            OlaksicaOznaka = olaksica?.Olaksica.Sifra ?? "",
+            OlaksicaPorez = olaksica?.Porez ?? 0m,
+            OlaksicaDoprinosi = olaksica?.Doprinosi ?? 0m,
+            OlaksicaUmanjujeUplatu = olaksica?.UmanjujeUplatu ?? false
         };
 
         // Razlaganje bruto iznosa po vrstama primanja (Faza 2.1). Iznosi iznad se ne

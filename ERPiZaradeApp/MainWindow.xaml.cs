@@ -300,6 +300,9 @@ public partial class MainWindow : Window
     private void BtnVrstePrimanja_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnVrstePrimanja, "💰 Šifarnik vrsta primanja", new Views.VrstePrimanja.VrstePrimanjaPage(), "Vrste primanja sa SVP šifrom, poreskim tretmanom i kontom — novo primanje se dodaje bez izmene baze", helpAnchor: "VrstePrimanja");
 
+    private void BtnOlaksice_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnOlaksice, "🏷️ Šifarnik poreskih olakšica", new Views.Olaksice.OlaksicePage(), "Olakšice sa mehanizmom, procentima i MFP deklaracijom za PPP-PD prijavu", helpAnchor: "Olaksice");
+
     private void BtnFirme_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnFirme, "🏢 Upravljanje firmama", new Views.Firme.FirmePage(), "Pregled, izmena, unos novih i odabir aktivne firme za obračune i izveštaje", helpAnchor: "Firme");
 

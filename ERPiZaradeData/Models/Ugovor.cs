@@ -34,7 +34,30 @@ public enum TipPrimaocaPrihoda
     InvalidnoLice = 7,
 
     /// <summary>08 — vojni osiguranik.</summary>
-    VojniOsiguranik = 8
+    VojniOsiguranik = 8,
+
+    /// <summary>09 — lice penzioner po osnovu zaposlenosti.</summary>
+    PenzionerPoOsnovuZaposlenosti = 9,
+
+    /// <summary>10 — lice penzioner po osnovu samostalne delatnosti.</summary>
+    PenzionerPoOsnovuSamostalneDelatnosti = 10,
+
+    /// <summary>
+    /// 11 — lice kome se isplaćuju prihodi van radnog odnosa <b>na koje se ne obračunavaju i
+    /// ne plaćaju doprinosi</b> za obavezno socijalno osiguranje.
+    ///
+    /// Bez ove oznake se OVP 315–321 (prihod autora od imovinskog prava, samostalni umetnik
+    /// koji doprinose plaća po rešenju PU, maloletno lice) ne mogu prijaviti uopšte. Za te
+    /// šifre se u polja 3.12–3.16 upisuje 0,00 — a <see cref="VrstaUgovora"/> već ume da nosi
+    /// sve stope na nuli, pa je oznaka bila jedino što je nedostajalo.
+    /// </summary>
+    NemaDoprinosaVanRadnogOdnosa = 11,
+
+    /// <summary>12 — vojni penzioner.</summary>
+    VojniPenzioner = 12,
+
+    /// <summary>13 — poljoprivredni penzioner.</summary>
+    PoljoprivredniPenzioner = 13
 }
 
 /// <summary>

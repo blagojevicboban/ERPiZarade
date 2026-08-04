@@ -1,0 +1,44 @@
+<Window x:Class="ERPiZaradeApp.Views.Ugovori.NovaIsplataNaknadeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Nova isplata naknada" Height="330" Width="560"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        Background="{StaticResource SurfaceBrush}">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource Card}" Padding="12,10" Margin="0,0,0,10">
+            <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"
+                       Text="Isplata naknada je zaseban obuhvat sa svojom PPP-PD prijavom, svojim BOP-om i svojim paketom naloga. Datum isplate je datum plaćanja na prijavi (polje 1.4), a mesec iz njega je obračunski period (polje 1.2) — zato period ovde ne birate posebno, nego sledi iz datuma."/>
+        </Border>
+
+        <Border Grid.Row="1" Style="{StaticResource Card}" Padding="14">
+            <StackPanel>
+                <TextBlock Text="Datum isplate" FontSize="11" Margin="0,0,0,3"
+                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                <DatePicker x:Name="DatumIsplatePicker" Height="30" VerticalContentAlignment="Center"
+                            Margin="0,0,0,4" SelectedDateChanged="DatumIsplatePicker_SelectedDateChanged"/>
+                <TextBlock x:Name="PorukaPerioda" FontSize="11" Margin="0,0,0,12" TextWrapping="Wrap"
+                           Foreground="{StaticResource TextSecondaryBrush}"/>
+
+                <TextBlock Text="Opis (nije obavezan)" FontSize="11" Margin="0,0,0,3"
+                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                <TextBox x:Name="TxtOpis" Height="30" VerticalContentAlignment="Center" Padding="8,0"
+                         MaxLength="80"
+                         ToolTip="Npr. „Honorari za projekat X“. Prazno daje naziv „Naknade po ugovoru“."/>
+            </StackPanel>
+        </Border>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Odustani" Style="{StaticResource SecondaryButton}" Width="110" Height="32"
+                    Margin="0,0,8,0" IsCancel="True"/>
+            <Button Content="➕  Dodaj isplatu" Style="{StaticResource PrimaryButton}" Width="150" Height="32"
+                    Click="BtnDodaj_Click" IsDefault="True"/>
+        </StackPanel>
+    </Grid>
+</Window>

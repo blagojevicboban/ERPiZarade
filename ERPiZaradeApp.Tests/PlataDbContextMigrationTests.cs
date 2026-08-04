@@ -735,6 +735,66 @@ public class PlataDbContextMigrationTests : IDisposable
         Assert.Equal(primenjene.Count, primenjene.Distinct().Count());
     }
 
+    /// <summary>
+    /// Rod isplate nad <b>pravim SQLite fajlom</b>: zatečena baza dobija kolonu sa
+    /// podrazumevanom vrednošću 0, pa je svaka isplata koja je u njoj već bila — zarada.
+    /// Bez toga bi nadogradnja tiho prebacila zatečene isplate u drugi rod, a to se vidi tek
+    /// kad prijava dobije pogrešan obračunski period.
+    ///
+    /// Filtriranje po rodu se proverava upitom, a ne u memoriji: <c>Rod</c> je enum koji se
+    /// mora prevesti u SQL, a InMemory provajder to ne dokazuje.
+    /// </summary>
+    [Fact]
+    public void Faza2_RodIsplate_ZateceneIsplateOstajuZarade()
+    {
+        string putanja = NovaPutanja();
+
+        var options = new DbContextOptionsBuilder<PlataDbContext>()
+            .UseSqlite($"Data Source={putanja}")
+            .Options;
+
+        // Zatečena baza se gradi bez PlataDbContext.Create: Create pamti putanju i pri
+        // drugom pozivu preskače inicijalizaciju, pa se migracija roda ne bi ni primenila.
+        using (var staraBaza = new PlataDbContext(options))
+        {
+            // Baza se podiže na migraciju NEPOSREDNO PRE roda — tada tabela Isplate postoji,
+            // ali kolone Rod još nema. To je tačno stanje zatečene baze pri nadogradnji.
+            // Naziv se traži u istoriji, a ne prepisuje: prepisan bi zastareo pri sledećoj
+            // migraciji i test bi tiho prestao da proverava ono zbog čega postoji.
+            var migracije = staraBaza.Database.GetMigrations().ToList();
+            int indeksRoda = migracije.FindIndex(m => m.EndsWith("Faza2_RodIsplate", StringComparison.Ordinal));
+
+            Assert.True(indeksRoda > 0, "Migracija Faza2_RodIsplate nije nađena u istoriji.");
+
+            staraBaza.GetService<IMigrator>().Migrate(migracije[indeksRoda - 1]);
+
+            // Upis ide SQL-om: model već nosi Rod, pa bi ga EF upisao u kolonu koje još nema.
+            staraBaza.Database.ExecuteSqlRaw(@"
+                INSERT INTO Isplate (Godina, Mesec, RedniBroj, Vrsta, Opis, DatumIsplate, DatumKreiranja)
+                VALUES (2026, 3, 1, 0, '', '2026-04-05 00:00:00', '2026-04-05 00:00:00');");
+        }
+
+        using (var db = PlataDbContext.Create(putanja))
+        {
+            var zatecena = db.Isplate.Single();
+            Assert.Equal(RodIsplate.Zarada, zatecena.Rod);
+            Assert.True(zatecena.JePrva);
+            Assert.Equal("K", zatecena.OznakaZaKonacnuIsplatu);
+
+            // Isplata naknada uz nju: drugi rod, drugi redni broj, isti mesec.
+            var servis = new ERPiZaradeApp.Services.IsplataService(db);
+            var naknada = servis.DodajNaknadu(2026, 3, "Honorari", new DateTime(2026, 3, 20)).Isplata!;
+
+            Assert.Equal(RodIsplate.VanRadnogOdnosa, naknada.Rod);
+            Assert.Equal(2, naknada.RedniBroj);
+
+            // Upit sa filterom po rodu mora da prođe kroz SQL.
+            Assert.Single(db.Isplate.Where(i => i.Rod == RodIsplate.Zarada));
+            Assert.Single(db.Isplate.Where(i => i.Rod == RodIsplate.VanRadnogOdnosa));
+            Assert.Single(servis.Isplate(2026, 3, RodIsplate.VanRadnogOdnosa));
+        }
+    }
+
     [Fact]
     public void Create_KadaJeBazaReadOnly_UklanjaReadOnlyAtributIUspesnoInicijalizuje()
     {

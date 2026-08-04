@@ -9,9 +9,8 @@
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
     </Page.Resources>
 
-    <Page.DataContext>
-        <local:PppPdViewModel/>
-    </Page.DataContext>
+    <!-- DataContext se postavlja u konstruktoru, jer ViewModel prima rod isplate:
+         ista stranica služi i zaradama i naknadama van radnog odnosa. -->
 
     <Grid Margin="24,20,24,16">
         <Grid.RowDefinitions>
@@ -41,7 +40,9 @@
                             <TextBlock Text="Isplata:" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="{StaticResource TextSecondaryBrush}"/>
                             <ComboBox ItemsSource="{Binding Isplate}" DisplayMemberPath="Naziv"
                                       SelectedItem="{Binding IzabranaIsplata, Mode=TwoWay}" Padding="8,5"
-                                      ToolTip="Prijava se podnosi za jednu isplatu. Akontacija i konačna isplata istog meseca su dve prijave, svaka sa svojim datumom plaćanja i svojim BOP-om."/>
+                                      ToolTip="Prijava se podnosi za jednu isplatu. Akontacija i konačna isplata istog meseca su dve prijave, svaka sa svojim datumom plaćanja i svojim BOP-om. Naknade van radnog odnosa su zaseban rod isplate i imaju svoju prijavu — njihov obračunski period je mesec isplate, a ne mesec za koji se zarada isplaćuje."/>
+                            <TextBlock Text="{Binding OpisObuhvata}" FontSize="11" TextWrapping="Wrap"
+                                       Margin="0,4,0,0" Foreground="{StaticResource TextSecondaryBrush}"/>
                         </StackPanel>
 
                         <Grid Margin="0,0,0,10">
@@ -94,7 +95,9 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Margin="0,0,4,0">
                                 <TextBlock Text="Oznaka konačne:" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="{StaticResource TextSecondaryBrush}"/>
-                                <ComboBox SelectedValue="{Binding SelectedOznakaZaKonacnu}" SelectedValuePath="Tag" Padding="8,5">
+                                <ComboBox SelectedValue="{Binding SelectedOznakaZaKonacnu}" SelectedValuePath="Tag" Padding="8,5"
+                                          IsEnabled="{Binding OznakaSeBira}"
+                                          ToolTip="Oznaka konačne isplate ZARADE za obračunski period. Za naknade van radnog odnosa se ne bira — svaka njihova isplata je za sebe konačna, pa je uvek „K“.">
                                     <ComboBoxItem Content="K - Konačna" Tag="K" IsSelected="True"/>
                                     <ComboBoxItem Content="A - Akontacija" Tag="A"/>
                                 </ComboBox>

@@ -33,8 +33,16 @@ public class NaloziViewModel : INotifyPropertyChanged
     private PaketNaloga? _paket;
     private string _statusTekst = "";
 
-    public NaloziViewModel()
+    /// <summary>
+    /// Rod isplata za koje se pripremaju nalozi. Zarada i naknada van radnog odnosa se
+    /// prijavljuju zasebno, pa i uplata poreza i doprinosa ide po zasebnom BOP-u — mešanje bi
+    /// jednom uplatom pokrilo dve deklaracije.
+    /// </summary>
+    private readonly RodIsplate _rod;
+
+    public NaloziViewModel(RodIsplate rod = RodIsplate.Zarada)
     {
+        _rod = rod;
         _db = PlataDbContext.Create(AppConfig.DbPath);
         _nalogService = new NalogZaPrenosService(_db);
         _isplataService = new IsplataService(_db);
@@ -100,8 +108,11 @@ public class NaloziViewModel : INotifyPropertyChanged
 
         try
         {
-            _isplataService.Obezbedi(Godina, Mesec);
-            foreach (var i in _isplataService.Isplate(Godina, Mesec)) Isplate.Add(i);
+            // Prvu isplatu zarade program pravi sam; isplatu naknada ne — nju određuje datum
+            // plaćanja, koji se ne može pogoditi.
+            if (_rod == RodIsplate.Zarada) _isplataService.Obezbedi(Godina, Mesec);
+
+            foreach (var i in _isplataService.Isplate(Godina, Mesec, _rod)) Isplate.Add(i);
         }
         catch (Exception ex)
         {

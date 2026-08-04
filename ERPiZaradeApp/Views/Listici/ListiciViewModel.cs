@@ -253,7 +253,9 @@ public class ListiciViewModel : INotifyPropertyChanged
         try
         {
             _isplataService.Obezbedi(SelectedGodina, SelectedMesec);
-            isplate = _isplataService.Isplate(SelectedGodina, SelectedMesec).ToList();
+            // Platni listić prikazuje sate, fond i obustave, kojih kod naknade nema — primalac
+            // po ugovoru listić i ne dobija. Zato samo isplate zarade.
+            isplate = _isplataService.Isplate(SelectedGodina, SelectedMesec, RodIsplate.Zarada).ToList();
         }
         catch (Exception ex)
         {

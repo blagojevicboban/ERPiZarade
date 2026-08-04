@@ -51,6 +51,11 @@ public class UgovorRed
         TipPrimaocaPrihoda.Nerezident => "06 — nerezident",
         TipPrimaocaPrihoda.InvalidnoLice => "07 — invalidno lice",
         TipPrimaocaPrihoda.VojniOsiguranik => "08 — vojni osiguranik",
+        TipPrimaocaPrihoda.PenzionerPoOsnovuZaposlenosti => "09 — penzioner po osnovu zaposlenosti",
+        TipPrimaocaPrihoda.PenzionerPoOsnovuSamostalneDelatnosti => "10 — penzioner po osnovu samostalne delatnosti",
+        TipPrimaocaPrihoda.NemaDoprinosaVanRadnogOdnosa => "11 — van radnog odnosa, bez doprinosa",
+        TipPrimaocaPrihoda.VojniPenzioner => "12 — vojni penzioner",
+        TipPrimaocaPrihoda.PoljoprivredniPenzioner => "13 — poljoprivredni penzioner",
         _ => tip.ToString()
     };
 }
@@ -67,7 +72,17 @@ public sealed class PrimalacStavka
 {
     public required int BrojRadnika { get; init; }
     public required string ImeIPrezime { get; init; }
-    public string Naziv => $"{BrojRadnika}. {ImeIPrezime}";
+
+    /// <summary>
+    /// Da li je lice i u radnom odnosu. Zaposleni sme biti primalac po ugovoru — tada mu
+    /// šifra vrste prihoda nosi tip primaoca <c>01</c> — pa se u listi vidi šta je ko, da se
+    /// tip ne bi izabrao pogrešno.
+    /// </summary>
+    public bool URadnomOdnosu { get; init; }
+
+    public string Naziv => URadnomOdnosu
+        ? $"{BrojRadnika}. {ImeIPrezime}  (zaposlen)"
+        : $"{BrojRadnika}. {ImeIPrezime}";
 }
 
 /// <summary>Red u tabeli obračunatih naknada izabrane isplate.</summary>

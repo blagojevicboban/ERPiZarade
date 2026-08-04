@@ -12,9 +12,15 @@ namespace ERPiZaradeApp.Views.PppPd;
 
 public partial class PppPdPage : Page
 {
-    public PppPdPage()
+    /// <param name="rod">
+    /// Rod isplata koje se prijavljuju. Prijava zarade i prijava naknada van radnog odnosa su
+    /// dve različite prijave — obračunski period im je različito određen — pa se stranica
+    /// otvara sa rodom već izabranim i ne nudi isplate onog drugog.
+    /// </param>
+    public PppPdPage(RodIsplate rod = RodIsplate.Zarada)
     {
         InitializeComponent();
+        DataContext = new PppPdViewModel(rod);
     }
 
     private void BtnKopirajXml_Click(object sender, RoutedEventArgs e)

@@ -69,8 +69,17 @@ public class PppPdViewModel : INotifyPropertyChanged
     private bool _prikaziUpozorenja;
     private bool _podaciSuValidni;
 
-    public PppPdViewModel()
+    /// <summary>
+    /// Rod isplata koje ova prijava obuhvata. Zarada i naknada van radnog odnosa se
+    /// prijavljuju <b>zasebno</b>: član 11 Pravilnika obračunski period (polje 1.2) za zaradu
+    /// određuje kao mesec za koji se isplaćuje, a za prihod van radnog odnosa kao mesec
+    /// isplate — a prijava ima jedno takvo polje.
+    /// </summary>
+    private readonly RodIsplate _rod;
+
+    public PppPdViewModel(RodIsplate rod = RodIsplate.Zarada)
     {
+        _rod = rod;
         _db = PlataDbContext.Create(AppConfig.DbPath);
         _isplataService = new IsplataService(_db);
 
@@ -224,6 +233,21 @@ public class PppPdViewModel : INotifyPropertyChanged
 
             UcitajIsplate();
 
+            // Bez izabrane isplate naknada nema šta da se prijavi. Obuhvat bi u tom slučaju
+            // uzeo ceo period — dakle i zarade — i sastavio prijavu koja meša dva obračunska
+            // perioda. Zato se ovde staje, umesto da se tiho radi nad periodom.
+            if (_rod == RodIsplate.VanRadnogOdnosa && _izabranaIsplata == null)
+            {
+                Obracuni = [];
+                TotalRadnika = 0;
+                UkupnoBruto = UkupnoPorez = UkupnoDoprinosi = 0m;
+                BrojStorniranih = 0;
+                PodaciSuValidni = false;
+                StatusText = $"Za {SelectedMesec:D2}.{SelectedGodina} nema nijedne isplate naknada. " +
+                             "Napravite je u „Ugovori i naknade“ — datum isplate je datum plaćanja na prijavi.";
+                return;
+            }
+
             // Stornirani obračun se ne prijavljuje. Ako je već bio u podnetoj prijavi,
             // uklanja se izmenjenom prijavom — a izmenjena prijava je upravo ovo, bez njega.
             //
@@ -239,8 +263,17 @@ public class PppPdViewModel : INotifyPropertyChanged
                 .OrderBy(o => o.Radnik.BrojRadnika)
                 .ToListAsync();
 
-            var list = sviUPeriodu.Where(o => !o.Storniran).ToList();
-            BrojStorniranih = sviUPeriodu.Count - list.Count;
+            // Rod prijave odlučuje i šta u nju ulazi, ne samo koje se isplate nude. Obračun
+            // pogrešnog roda zatečen na isplati se izostavlja i prijavljuje — u prijavi bi
+            // nosio tuđi obračunski period, a to Poreska uprava odbija.
+            var pogresanRod = sviUPeriodu
+                .Where(o => _rod == RodIsplate.VanRadnogOdnosa ? o.UgovorId == null : o.UgovorId != null)
+                .ToList();
+
+            var svojRoda = sviUPeriodu.Except(pogresanRod).ToList();
+
+            var list = svojRoda.Where(o => !o.Storniran).ToList();
+            BrojStorniranih = svojRoda.Count - list.Count;
 
             Obracuni = new ObservableCollection<ObracunPlate>(list);
             
@@ -264,6 +297,17 @@ public class PppPdViewModel : INotifyPropertyChanged
 
             // Automatski pokreni tihu validaciju
             ValidateDataSilent();
+
+            // Posle validacije, jer ona briše spisak upozorenja pre nego što ga napuni svojim.
+            if (pogresanRod.Count > 0)
+            {
+                ValidationAlerts.Add(
+                    $"Izostavljeno je {pogresanRod.Count} obračuna pogrešnog roda — " +
+                    (_rod == RodIsplate.VanRadnogOdnosa
+                        ? "zarade se prijavljuju svojom prijavom, sa mesecom za koji se isplaćuju."
+                        : "naknade po ugovoru se prijavljuju svojom prijavom, sa mesecom isplate."));
+                PrikaziUpozorenja = true;
+            }
         }
         catch (Exception ex)
         {
@@ -425,14 +469,38 @@ public class PppPdViewModel : INotifyPropertyChanged
                 // Faze 2.2. Za dodatnu isplatu je merodavna njena vrsta — korisnik oznaku i
                 // dalje može promeniti u padajućoj listi.
                 if (!value.JePrva) SelectedOznakaZaKonacnu = value.OznakaZaKonacnuIsplatu;
+
+                OnPropertyChanged(nameof(OznakaSeBira));
+                OnPropertyChanged(nameof(OpisObuhvata));
             }
 
             _ = LoadObracuneAsync();
         }
     }
 
-    /// <summary>Selektor isplate ima smisla tek kad ih mesec ima više od jedne.</summary>
-    public bool ImaViseIsplata => _isplate.Count > 1;
+    /// <summary>
+    /// Selektor isplate ima smisla tek kad ih mesec ima više od jedne — osim kod naknada, gde
+    /// se prikazuje uvek: tamo i prazna lista nešto znači („nema isplate naknada u ovom mesecu"),
+    /// a uz nju stoji i objašnjenje obuhvata.
+    /// </summary>
+    public bool ImaViseIsplata => _isplate.Count > 1 || _rod == RodIsplate.VanRadnogOdnosa;
+
+    /// <summary>
+    /// Da li se oznaka za konačnu isplatu uopšte bira. Za naknade van radnog odnosa ne bira se:
+    /// Pravilnik tu oznaku vezuje za „konačnu isplatu <b>zarade</b> za obračunski period", a
+    /// honorar se ne isplaćuje u delovima za period — svaka njegova isplata je konačna, dakle „K".
+    /// </summary>
+    public bool OznakaSeBira => _izabranaIsplata is not { Rod: RodIsplate.VanRadnogOdnosa };
+
+    /// <summary>
+    /// Šta izabrana isplata znači za prijavu — piše se na ekranu, jer je razlika između dva roda
+    /// upravo ono što se pri unosu previdi.
+    /// </summary>
+    public string OpisObuhvata => _izabranaIsplata is { Rod: RodIsplate.VanRadnogOdnosa }
+        ? $"Naknade van radnog odnosa — zasebna prijava. Obračunski period {SelectedMesec:D2}/{SelectedGodina} " +
+          "je mesec ISPLATE, a oznaka je uvek „K“. Zarade nisu u ovoj prijavi."
+        : $"Zarade — obračunski period {SelectedMesec:D2}/{SelectedGodina} je mesec ZA KOJI se isplaćuje. " +
+          "Naknade po ugovoru idu svojom prijavom.";
 
     private void UcitajIsplate()
     {
@@ -449,8 +517,11 @@ public class PppPdViewModel : INotifyPropertyChanged
 
         try
         {
-            _isplataService.Obezbedi(SelectedGodina, SelectedMesec);
-            isplate = _isplataService.Isplate(SelectedGodina, SelectedMesec).ToList();
+            // Prvu isplatu zarade program sme da napravi sam; isplatu naknada ne — njen datum
+            // plaćanja je ono što deli prijavu od prijave i ne može se pogoditi.
+            if (_rod == RodIsplate.Zarada) _isplataService.Obezbedi(SelectedGodina, SelectedMesec);
+
+            isplate = _isplataService.Isplate(SelectedGodina, SelectedMesec, _rod).ToList();
         }
         catch (Exception ex)
         {

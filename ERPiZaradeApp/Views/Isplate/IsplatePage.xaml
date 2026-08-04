@@ -33,7 +33,7 @@
                               SelectionChanged="ComboPeriod_SelectionChanged"/>
                 </StackPanel>
 
-                <TextBlock Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap" FontSize="12"
+                <TextBlock x:Name="OpisEkrana" Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap" FontSize="12"
                            Margin="24,0,16,0" Foreground="{StaticResource TextSecondaryBrush}"
                            Text="Mesec sa jednom isplatom radi kao i do sada. Druga isplata se dodaje kad se zarada isplaćuje u više navrata — akontacija pa konačna, bonus, 13. plata. Svaka isplata ima svoju PPP-PD prijavu, svoj BOP i svoj paket naloga."/>
 
@@ -48,7 +48,7 @@
                 <TextBlock Text="Nova isplata:" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"
                            Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,12,0"/>
 
-                <TextBlock Text="Vrsta" FontSize="12" VerticalAlignment="Center"
+                <TextBlock x:Name="LabelVrsta" Text="Vrsta" FontSize="12" VerticalAlignment="Center"
                            Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,6,0"/>
                 <ComboBox x:Name="ComboVrsta" Width="150" Height="30" VerticalContentAlignment="Center"
                           DisplayMemberPath="Naziv" Margin="0,0,16,0"

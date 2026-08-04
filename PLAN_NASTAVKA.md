@@ -4,7 +4,7 @@
 > [`ANALIZA_I_PREDLOZI_FUNKCIONALNOSTI.md`](ANALIZA_I_PREDLOZI_FUNKCIONALNOSTI.md) i beleži
 > šta je urađeno, šta je namerno odloženo i **na čemu se stalo zbog podataka koji nedostaju**.
 >
-> Stanje na dan **04.08.2026**, verzija **1.15.0**, 337 testova (uz 69 u ERPiFinansije 1.2.0).
+> Stanje na dan **04.08.2026**, verzija **1.16.0**, 352 testa (uz 69 u ERPiFinansije 1.2.0).
 
 ---
 
@@ -30,6 +30,7 @@
 | **3.1** | Automatsko knjiženje u ERPiFinansije | ✅ | 1.14.0 |
 | **2.6** | Bolovanja preko 30 dana, RFZO obrasci (OZ-7, OZ-10) | ✅ | 1.15.0 |
 | — | Knjiženje refundacije (225 / 454, 455, 456) | ✅ | 1.15.0 |
+| — | Odvajanje isplata van radnog odnosa (`Isplata.Rod`), podela menija | ✅ | 1.16.0 |
 | **3.2** | Preuzimanje putnih naloga iz ERPiFinansije | ⬜ | |
 | **4** | Kadrovski modul | ⬜ | |
 | **5** | Web ESS | ⬜ preispitati | |
@@ -49,6 +50,7 @@ struktura je spremna i nedostaje samo zapisivač/čitač.
 | **OL oznake olakšica** | Karton je nudio `01/02/03` za čl. 21v; po Pravilniku o Obrascu PPD važe **OL08/OL09/OL10**. Lista je izvađena iz koda u šifarnik, pa se ispravlja bez nove verzije. | Provera u važećem Katalogu vrste prihoda i ispravka u šifarniku „Poreske olakšice". |
 | **JIPD podnetih prijava** | Izmenjena prijava se poziva na JIPD prijave koju menja, a JIPD dodeljuje PU pri prijemu. Polje postoji uz prijavu, ali se ne popunjava samo — čitanje iz `EPoreziImportService` čeka isti XML kao i BOP. | Isti preuzet XML iz reda iznad. |
 | **XML „Potvrda o ostvarenoj zaradi" za eBolovanje** | Portal prima podatke o zaradi iz 12 meseci i **učitavanjem XML fajla**, ali šema nije javno objavljena — ni u korisničkom uputstvu ni na sajtu RFZO. Pet polja koja portal traži (mesec i godina, ukupan broj plaćenih časova, neto, bruto, datum isplate) su tačno kolone obrasca OZ-7, pa `Oz7Obrazac` već nosi sve što treba; nedostaje samo zapisivač. | Jedan primer XML-a ili šema — najlakše iz samog portala, ako tamo postoji šablon za preuzimanje. Bez toga se format ne piše napamet, isto pravilo kao kod Halcom fajla. |
+| **Polja 3.7, 3.8 i 3.8a kod naknada** | Pravilnik uz 3.7 kaže „obavezno se popunjava za konačan obračun **zarade**", a primeri Poreske uprave za autorske naknade te kolone ostavljaju **prazne**. `XmlExportService` ih za `JeVanRadnogOdnosa` šalje kao **0**. Da li XSD traži izostavljanje elementa ili prihvata nulu — ne piše se napamet. | Isti preuzet XML kao za BOP i JIPD. |
 | **OVP oznake za deo vrsta ugovora** | Potvrđeno je 601/602/603 (ugovor o delu i naknade odborima), 301/302/303 (autorske naknade 50% i 43%) i 150/151 (PP poslovi). Za autorsku naknadu sa **34%** normiranih troškova OVP nije potvrđen i ostavljen je **prazan** — obračun prolazi, ali kontrolna provera javlja grešku. Ostaje i da se potvrdi koji tip primaoca ide uz PP poslove. | Provera u važećem Katalogu vrste prihoda i unos u šifarnik „Vrste ugovora". Bez nove verzije. |
 
 ---
@@ -130,8 +132,8 @@ Ovo su svesne odluke sa razlogom; nova sesija ih lako „popravi" u pogrešnom s
 13. **Naknada van radnog odnosa je `ObracunPlate`, ne novi entitet.** Nosi ista polja kao
     zarada (bruto, porez, doprinosi, neto), pa PPP-PD prijava, nalozi i godišnja potvrda rade
     nad njom bez ijedne izmene. Razlikuje je samo `UgovorId`. Zaseban entitet bi značio drugi
-    tok kroz svaki od tih izvoza — a prijava se ionako podnosi **jedna po isplati**, sa svim
-    prihodima tog dana.
+    tok kroz svaki od tih izvoza. Ono što se **odvaja jeste isplata**, ne obračun — vidi
+    tačku 38.
 
 14. **Šifra vrste prihoda za ugovore se sastavlja, ne upisuje.** Struktura `V-PP-OVP-OL-B` je
     propisana i stabilna; menja se sadržaj. U šifarniku stoji samo `VrstaUgovora.Ovp` (tri
@@ -252,6 +254,36 @@ Ovo su svesne odluke sa razlogom; nova sesija ih lako „popravi" u pogrešnom s
     taj mesec, a program je nema. Prazan red se prijavljuje i popunjava rukom; upisan iznos
     „za svaki slučaj" ušao bi u prosek po kome se naknada isplaćuje.
 
+38. **Rod isplate je jedini razdvajač zarade i naknade.** Član 11 Pravilnika obračunski period
+    (polje 1.2) za zaradu određuje kao mesec *za koji* se isplaćuje, a za prihod van radnog
+    odnosa kao mesec **isplate** — a prijava ima jedno takvo polje, jedan datum plaćanja i
+    jednu oznaku K/A. Ne dodavati `VrstaIsplate.Naknada`: rod bi se tada čitao sa dva mesta
+    koja mogu protivrečiti jedno drugom, isti duplikat kao oznaka olakšice iz tačke 2.
+
+39. **Redni broj 1 pripada zaradi.** `IsplataService.Obezbedi` ga rezerviše i pravi **samo**
+    isplatu roda `Zarada`; isplata naknada se nikad ne pravi sama, jer joj je datum plaćanja
+    ono što deli prijavu od prijave. To je ono što drži `Isplata.JePrva` tačnim — obračuni bez
+    `IsplataId` su uvek zarade.
+
+40. **`PppPdPrijava` ne dobija rod.** Redni broj je jedinstven u mesecu kroz oba roda i već je
+    veza ka isplati (tačka 10). Mesec izgleda kao „1. Konačna zarada", „2. Naknade po ugovoru".
+
+41. **Lica su jedan registar.** Zaposleni sme biti isplaćen po ugovoru — šifra vrste prihoda za
+    to je `1 01 601 00 0`, gde `01` znači „zaposleni". `PppPoService` grupiše po `BrojRadnika`
+    kroz sve obračune, pa bi zaseban registar primalaca istom licu izdao **dve** godišnje
+    potvrde. Ne praviti tabelu „Primaoci" — „👤 Primaoci po ugovoru" je pogled, ne registar.
+
+42. **`Radnik.VanRadnogOdnosa` znači samo „nije u radnom odnosu".** Ko je primalac kaže ugovor
+    (`Ugovor.BrojRadnika` + `TipPrimaoca`). Ne vraćati oznaku kao uslov za izbor primaoca i ne
+    postavljati je licu u radnom odnosu: prvo onemogućava honorar zaposlenom, drugo ga tiho
+    izbacuje iz obračuna plate, radnih sati i listića. Iz istog razloga kontrolna provera o
+    neoznačenom kartonu **ćuti** za tipove primaoca 01 i 02.
+
+43. **Karton koji `ObezbediKarton` prepisuje mora biti veran.** Otkako i zaposleni sme biti
+    primalac, taj karton može biti prvi zapis lica u mesecu — i onaj koji obračun zarade posle
+    zatekne. Ne skraćivati kopiju „jer naknadi treba samo JMBG i račun": bez koeficijenta i
+    osnovne plate bi tom licu zarada tog meseca ispala pogrešna.
+
 ---
 
 ## 5. Način rada koji se pokazao dobrim
@@ -306,13 +338,25 @@ Ovo su svesne odluke sa razlogom; nova sesija ih lako „popravi" u pogrešnom s
   Isto se može uraditi i u „Radnici", ali tek pošto se karton otvori dugmetom **„Izmeni"** —
   polja su van režima izmene onemogućena, pa čekboks tamo ne reaguje.
 - Proveriti da se označeno lice posle toga **ne pojavljuje** u „Obračun plate", „Radni sati"
-  ni „Platni listići", a da su mu zatečene zarade ostale netaknute.
-- Tek onda ugovor: „📝 Ugovori van radnog odnosa" → izabrati vrstu, primaoca, tip primaoca i
+  ni „Platni listići", a da su mu zatečene zarade ostale netaknute. Za lice **koje jeste u
+  radnom odnosu** oznaka se ne postavlja i u kartonu mu se ništa ne menja — ono sme biti i
+  primalac po ugovoru, i tada mu se zarada obračunava kao i pre.
+- Tek onda ugovor: „📝 Ugovori i naknade" → **prvo napraviti isplatu naknada** dugmetom ➕
+  (traži se samo datum kada honorar ide na račun), pa izabrati vrstu, primaoca, tip primaoca i
   iznos. Računica se vidi **pre** upisa — proveriti brojeve rukom na jednom primeru (bruto
   50.000 po ugovoru o delu daje neto 32.400 uz porez 8.000 i PIO 9.600), pa tek onda 🧮.
-- Posle obračuna naknade proveriti da se u PPP-PD prijavi te isplate pojavio **novi red** sa
-  svojom SVP šifrom i nulama u satima, a da je **red zarade ostao brojčano isti**, i da je u
-  nalozima za prenos naknada dobila svrhu po predmetu ugovora.
+- **Od 1.16.0 se naknada prijavljuje zasebno.** Posle obračuna otvoriti „📋 PPP-PD — naknade"
+  i potvrditi tri stvari: da je u prijavi **samo** red naknade sa svojom SVP šifrom i nulama u
+  satima, da je **obračunski period mesec isplate** (a ne mesec zarade), i da je oznaka
+  konačne isplate zaključana na „K". Zatim otvoriti „📋 PPP-PD — zarade" i potvrditi da je
+  **red zarade ostao brojčano isti** i da naknade tamo nema.
+- U „🏦 Nalozi za prenos" iz grupe naknada proveriti da je naknada dobila svrhu po predmetu
+  ugovora i šifru plaćanja iz šifarnika vrsta ugovora.
+- **Zaposleni sa ugovorom o delu (novo u 1.16.0).** Izabrati zaposlenog kao primaoca i tip
+  primaoca **„01 — zaposleno lice"**. Posle obračuna proveriti da je taj radnik i dalje u
+  „Obračun plate" sa istom zaradom, da kontrolna provera **ne** javlja da lice nije označeno,
+  i da mu u PPP-PO za tu godinu stoji **jedna** potvrda sa dva reda — `1 01 101 00 0` za
+  zaradu i `1 01 601 00 0` za honorar.
 - **Za generator ugovora prvo popuniti zastupnika** u kartonu firme (Firme → Zastupnik i
   Funkcija zastupnika). Bez toga generisani dokument prijavljuje `{FirmaZastupnik}` kao
   nepopunjeno polje i ostavlja ga vidljivim u tekstu — što je namerno.

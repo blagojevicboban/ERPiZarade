@@ -86,7 +86,9 @@ public partial class NoviObracunWindow : Window
             _popunjavamIsplate = true;
 
             _isplataService.Obezbedi(godina, mesec);
-            var isplate = _isplataService.Isplate(godina, mesec);
+            // Ovaj ekran obračunava zaradu iz sati i koeficijenata; naknada po ugovoru nastaje
+            // zasebnom radnjom nad ugovorom, pa se isplate naknada ovde ne nude.
+            var isplate = _isplataService.Isplate(godina, mesec, RodIsplate.Zarada);
 
             ComboIsplata.ItemsSource = isplate;
             ComboIsplata.SelectedItem = isplate.FirstOrDefault();
@@ -665,7 +667,9 @@ public partial class NoviObracunWindow : Window
             // Sati izvornog meseca, i to sati njegove PRVE isplate (Faza 2.2). Bez toga bi
             // mesec sa akontacijom dao dva reda za istog radnika, a prenosi se ono što je
             // radnik radio u mesecu — a to stoji uz konačnu zaradu.
-            var izvornaIsplata = _isplataService.Isplate(prethodnaGodina, prethodniMesec).FirstOrDefault();
+            var izvornaIsplata = _isplataService
+                .Isplate(prethodnaGodina, prethodniMesec, RodIsplate.Zarada)
+                .FirstOrDefault();
 
             var prethodniSatiList = await IsplataService
                 .Obuhvat(_db.RadniSati, prethodnaGodina, prethodniMesec, izvornaIsplata)

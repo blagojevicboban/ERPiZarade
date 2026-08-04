@@ -123,8 +123,15 @@ public class UgovorObracunTests
         return ugovor;
     }
 
-    private static Isplata DodajIsplatu(PlataDbContext db)
-        => new IsplataService(db).Obezbedi(Godina, Mesec);
+    /// <summary>
+    /// Isplata naknada — jedina na koju naknada po ugovoru sme. Isplata zarade ima drugačije
+    /// određen obračunski period (mesec <i>za koji</i>, a ne mesec isplate), pa bi naknada na
+    /// njoj dala prijavu sa pogrešnim poljem 1.2.
+    /// </summary>
+    private static Isplata DodajIsplatu(PlataDbContext db, int dan = 15)
+        => new IsplataService(db)
+            .DodajNaknadu(Godina, Mesec, "", new DateTime(Godina, Mesec, dan))
+            .Isplata!;
 
     // ── Računica ─────────────────────────────────────────────────────
 
@@ -241,6 +248,11 @@ public class UgovorObracunTests
         Assert.Equal("105602000", SvpService.Sastavi(TipPrimaocaPrihoda.NijeOsiguranPoDrugomOsnovu, "602"));
         Assert.Equal("101301000", SvpService.Sastavi(TipPrimaocaPrihoda.Zaposleni, "301"));
 
+        // Dvocifreni tipovi primaoca (09–13) moraju stati u pozicije 2–3 bez pomeranja OVP-a.
+        // Oznaka 11 je jedina po kojoj se prijavljuju OVP 315–321, gde doprinosa nema.
+        Assert.Equal("111315000", SvpService.Sastavi(TipPrimaocaPrihoda.NemaDoprinosaVanRadnogOdnosa, "315"));
+        Assert.Equal("113601000", SvpService.Sastavi(TipPrimaocaPrihoda.PoljoprivredniPenzioner, "601"));
+
         // Struktura je ista kao kod zarade, što potvrđuje da je razlaganje ispravno.
         Assert.Equal(SvpService.RedovnaZarada, SvpService.Sastavi(TipPrimaocaPrihoda.Zaposleni, "101"));
     }
@@ -339,22 +351,46 @@ public class UgovorObracunTests
 
     /// <summary>
     /// Isti ugovor se sme isplatiti u ratama — svaka u svojoj isplati, sa svojom prijavom.
+    /// Dva datuma su dve prijave, jer prijava nosi jedno polje 1.4 Datum plaćanja.
     /// </summary>
     [Fact]
     public void Obracunaj_UDveIsplateIstogMeseca_DajeDvaObracuna()
     {
         using var db = NoviKontekst();
         var ugovor = DodajUgovor(db, VrstaUgovorODelu());
-        var isplateServis = new IsplataService(db);
-        var prva = isplateServis.Obezbedi(Godina, Mesec);
-        var druga = isplateServis.Dodaj(Godina, Mesec, VrstaIsplate.Ostalo, "Druga rata", new DateTime(Godina, Mesec, 20));
+        var prva = DodajIsplatu(db, dan: 10);
+        var druga = DodajIsplatu(db, dan: 20);
+
+        Assert.NotEqual(prva.IsplataId, druga.IsplataId);
 
         var servis = new UgovorObracunService(db);
         Assert.True(servis.Obracunaj(ugovor.UgovorId, prva.IsplataId, 25000m, false).Uspesno);
-        Assert.True(servis.Obracunaj(ugovor.UgovorId, druga.Isplata!.IsplataId, 25000m, false).Uspesno);
+        Assert.True(servis.Obracunaj(ugovor.UgovorId, druga.IsplataId, 25000m, false).Uspesno);
 
         Assert.Equal(2, db.ObracuniPlata.Count());
         Assert.Equal(50000m, db.ObracuniPlata.Sum(o => o.BrutoZarada));
+    }
+
+    /// <summary>
+    /// Naknada na isplatu zarade ne sme. Obračunski period zarade je mesec <b>za koji</b> se
+    /// isplaćuje, a naknade mesec <b>isplate</b> — prijava ima jedno polje 1.2, pa bi jedno od
+    /// to dvoje bilo pogrešno. Greška se javlja pre upisa, dok je ispravka još jeftina.
+    /// </summary>
+    [Fact]
+    public void Obracunaj_NaIsplatuZarade_NijeDozvoljeno()
+    {
+        using var db = NoviKontekst();
+        var ugovor = DodajUgovor(db, VrstaUgovorODelu());
+        var zarada = new IsplataService(db).Obezbedi(Godina, Mesec);
+
+        Assert.Equal(RodIsplate.Zarada, zarada.Rod);
+
+        var rezultat = new UgovorObracunService(db)
+            .Obracunaj(ugovor.UgovorId, zarada.IsplataId, 50000m, false);
+
+        Assert.False(rezultat.Uspesno);
+        Assert.Contains("isplata zarade", rezultat.Poruka);
+        Assert.Empty(db.ObracuniPlata);
     }
 
     /// <summary>
@@ -378,16 +414,24 @@ public class UgovorObracunTests
 
     // ── PPP-PD prijava ───────────────────────────────────────────────
 
-    private static XDocument Prijava(PlataDbContext db)
+    /// <summary>
+    /// Prijava za jednu isplatu. Kad <paramref name="isplata"/> nije zadata, uzima sve obračune
+    /// — tako se proverava sadržaj, a ne obuhvat.
+    /// </summary>
+    private static XDocument Prijava(PlataDbContext db, Isplata? isplata = null)
     {
-        var obracuni = db.ObracuniPlata
+        var upit = db.ObracuniPlata
             .Include(o => o.Radnik)
-            .Include(o => o.Ugovor!).ThenInclude(u => u.VrstaUgovora)
-            .ToList();
+            .Include(o => o.Ugovor!).ThenInclude(u => u.VrstaUgovora);
+
+        var obracuni = isplata == null
+            ? upit.ToList()
+            : IsplataService.Obuhvat(upit, isplata.Godina, isplata.Mesec, isplata).ToList();
 
         string xml = new XmlExportService().GeneratePppPdXml(
-            obracuni, new DateTime(Godina, Mesec, 30),
-            "100000001", "12345678", "TEST DOO", "013", "011/000-000", "Ulica 1", "test@test.rs");
+            obracuni, isplata?.DatumIsplate ?? new DateTime(Godina, Mesec, 30),
+            "100000001", "12345678", "TEST DOO", "013", "011/000-000", "Ulica 1", "test@test.rs",
+            oznakaZaKonacnu: isplata?.OznakaZaKonacnuIsplatu ?? "K");
 
         return XDocument.Parse(xml);
     }
@@ -421,11 +465,15 @@ public class UgovorObracunTests
     }
 
     /// <summary>
-    /// Kontrolni test: uvođenje naknada ne sme da promeni nijedan broj zarade u istoj
-    /// prijavi. Taj test hvata više grešaka nego onaj koji proverava novo pravilo.
+    /// Zarada i naknada idu u <b>dve različite prijave</b>, i to je jezgro razdvajanja: član 11
+    /// Pravilnika obračunski period (polje 1.2) za zaradu određuje kao mesec <i>za koji</i> se
+    /// isplaćuje, a za prihod van radnog odnosa kao mesec isplate. Prijava ima jedno takvo polje.
+    ///
+    /// Uz to je i kontrolni test: prijava zarade posle uvođenja naknade mora biti <b>brojčano
+    /// ista</b> kao pre nje. Taj test hvata više grešaka nego onaj koji proverava novo pravilo.
     /// </summary>
     [Fact]
-    public void PppPd_ZaradaUIstojPrijavi_OstajeNepromenjena()
+    public void PppPd_ZaradaINaknada_IduUDveRazlicitePrijave()
     {
         using var db = NoviKontekst();
 
@@ -459,23 +507,71 @@ public class UgovorObracunTests
         });
         db.SaveChanges();
 
-        var samoZarada = Prijava(db).Descendants(Tns + "PodaciOPrihodima").Single();
+        var isplataZarade = new IsplataService(db).Obezbedi(Godina, Mesec);
+
+        var samoZarada = Prijava(db, isplataZarade).Descendants(Tns + "PodaciOPrihodima").Single();
         string osnovicaDoprinosaPre = samoZarada.Element(Tns + "OsnovicaDoprinosi")!.Value;
         string sviPre = samoZarada.ToString();
 
-        // Naknada po ugovoru ulazi u istu prijavu.
+        // Naknada po ugovoru ide u SVOJU isplatu, dakle i u svoju prijavu.
         var ugovor = DodajUgovor(db, VrstaUgovorODelu());
-        var isplata = DodajIsplatu(db);
-        new UgovorObracunService(db).Obracunaj(ugovor.UgovorId, isplata.IsplataId, 50000m, false);
+        var isplataNaknade = DodajIsplatu(db);
+        new UgovorObracunService(db).Obracunaj(ugovor.UgovorId, isplataNaknade.IsplataId, 50000m, false);
 
-        var prihodi = Prijava(db).Descendants(Tns + "PodaciOPrihodima").ToList();
-        Assert.Equal(2, prihodi.Count);
+        // Prijava zarade: i dalje jedan red, i to isti do poslednje cifre.
+        var prijavaZarade = Prijava(db, isplataZarade);
+        var zaradaPosle = prijavaZarade.Descendants(Tns + "PodaciOPrihodima").Single();
 
-        var zaradaPosle = prihodi.Single(p => p.Element(Tns + "SVP")!.Value == SvpService.RedovnaZarada);
-
-        // Osnovica doprinosa zarade se i dalje izvodi iz zbira PIO doprinosa: 24.000 / 0,24.
-        Assert.Equal("100000.00", osnovicaDoprinosaPre);
+        Assert.Equal("100000.00", osnovicaDoprinosaPre);   // izvedena iz 24.000 / 0,24
         Assert.Equal(sviPre, zaradaPosle.ToString());
+        Assert.Equal(SvpService.RedovnaZarada, zaradaPosle.Element(Tns + "SVP")!.Value);
+
+        // Prijava naknade: takođe jedan red, i to onaj drugi.
+        var prijavaNaknade = Prijava(db, isplataNaknade);
+        var naknadaPosle = prijavaNaknade.Descendants(Tns + "PodaciOPrihodima").Single();
+
+        Assert.Equal("101601000", naknadaPosle.Element(Tns + "SVP")!.Value);
+        Assert.Equal("50000.00", naknadaPosle.Element(Tns + "Bruto")!.Value);
+
+        // Datum plaćanja je datum svoje isplate, a ne zarade — polje 1.4 nosi jedan datum.
+        Assert.Equal(
+            isplataNaknade.DatumIsplate.ToString("yyyy-MM-dd"),
+            prijavaNaknade.Descendants(Tns + "DatumPlacanja").Single().Value);
+
+        // Oznaka konačne isplate je „K": ona se po Pravilniku odnosi na konačnu isplatu ZARADE
+        // za obračunski period, a svaka isplata honorara je za sebe konačna.
+        Assert.Equal("K", isplataNaknade.OznakaZaKonacnuIsplatu);
+    }
+
+    /// <summary>
+    /// Obračunski period naknade je <b>mesec isplate</b>, a zarade mesec za koji se isplaćuje.
+    /// Julska zarada isplaćena u avgustu i honorar isplaćen istog dana daju dva različita polja
+    /// 1.2 — i upravo zato ne mogu u istu prijavu.
+    /// </summary>
+    [Fact]
+    public void PppPd_ObracunskiPeriodNaknade_JeMesecIsplateANeMesecZarade()
+    {
+        using var db = NoviKontekst();
+        var ugovor = DodajUgovor(db, VrstaUgovorODelu());
+
+        // Zarada za 07/2026, honorar isplaćen 10.08.2026.
+        var isplateServis = new IsplataService(db);
+        var zarada = isplateServis.Obezbedi(2026, 7);
+        var naknada = isplateServis.DodajNaknadu(2026, 7, "", new DateTime(2026, 8, 10)).Isplata!;
+
+        // Period isplate naknade sledi datum, ma šta bilo prosleđeno.
+        Assert.Equal(2026, naknada.Godina);
+        Assert.Equal(8, naknada.Mesec);
+        Assert.Equal(7, zarada.Mesec);
+
+        new UgovorObracunService(db).Obracunaj(ugovor.UgovorId, naknada.IsplataId, 50000m, false);
+
+        var obracun = db.ObracuniPlata.Single(o => o.UgovorId != null);
+        Assert.Equal(8, obracun.Mesec);
+
+        Assert.Equal(
+            "2026-08",
+            Prijava(db, naknada).Descendants(Tns + "ObracunskiPeriod").Single().Value);
     }
 
     // ── Nalozi za prenos ─────────────────────────────────────────────
@@ -596,5 +692,151 @@ public class UgovorObracunTests
         // Vrsta bez potvrđenog OVP-a mora reći zašto je prazan.
         foreach (var bezOvp in vrste.Where(v => string.IsNullOrWhiteSpace(v.Ovp)))
             Assert.False(string.IsNullOrWhiteSpace(bezOvp.Napomena));
+    }
+
+    // ── Zaposleni kao primalac po ugovoru ────────────────────────────
+
+    /// <summary>Karton zaposlenog — aktivan i BEZ oznake „van radnog odnosa".</summary>
+    private static Radnik DodajZaposlenog(PlataDbContext db, int brojRadnika = 9)
+    {
+        var radnik = new Radnik
+        {
+            BrojRadnika = brojRadnika,
+            ImeIPrezime = $"Zaposleni {brojRadnika}",
+            Jmbg = "0101990710016",
+            Radno_Mesto = SvpService.RedovnaZarada,
+            BankovniRacun = $"160-333333333{brojRadnika}-11",
+            SifraOpstine = "013",
+            Aktivan = true,
+            VanRadnogOdnosa = false,
+            Koeficijent = 2.5m,
+            OsnovnaPlata = 80000m,
+            Godina = Godina,
+            Mesec = Mesec
+        };
+
+        db.Radnici.Add(radnik);
+        db.SaveChanges();
+        return radnik;
+    }
+
+    /// <summary>
+    /// Lice u radnom odnosu sme biti isplaćeno po ugovoru — šifra vrste prihoda za to je
+    /// <c>1 01 601 00 0</c>, gde <c>01</c> znači „zaposleni". Do sada je taj slučaj padao na
+    /// kontrolnoj proveri, iako je propisom predviđen.
+    /// </summary>
+    [Fact]
+    public void ZaposleniSaUgovorom_ProlaziBezNalazaOOznaci()
+    {
+        using var db = NoviKontekst();
+        var zaposleni = DodajZaposlenog(db);
+
+        var ugovor = DodajUgovor(db, VrstaUgovorODelu(),
+            brojRadnika: zaposleni.BrojRadnika, tip: TipPrimaocaPrihoda.Zaposleni);
+
+        var isplata = DodajIsplatu(db);
+        var servis = new UgovorObracunService(db);
+
+        Assert.True(servis.Obracunaj(ugovor.UgovorId, isplata.IsplataId, 50000m, false).Uspesno);
+
+        // Šifra vrste prihoda nosi tip primaoca 01 — to je ono što slučaj i čini legitimnim.
+        var naknada = db.ObracuniPlata
+            .Include(o => o.Ugovor!).ThenInclude(u => u.VrstaUgovora)
+            .Include(o => o.Radnik)
+            .Single(o => o.UgovorId != null);
+
+        Assert.Equal("101601000", SvpService.Odredi(naknada));
+
+        // Provera ćuti: lice JESTE i radnik, pa je nalaz o neoznačenom kartonu netačan.
+        Assert.DoesNotContain(servis.Proveri(Godina, Mesec),
+            n => n.Provera == "Primalac nije označen kao lice van radnog odnosa");
+    }
+
+    /// <summary>
+    /// Obračun naknade ne sme da izbaci zaposlenog iz zarade: karton mu ostaje aktivan i bez
+    /// oznake, pa ga ekrani zarade i dalje nude. Ranije ga je označavanje primaoca skidalo sa
+    /// platnog spiska — tiho, i u svim mesecima.
+    /// </summary>
+    [Fact]
+    public void ZaposleniSaUgovorom_OstajeURadnomOdnosu()
+    {
+        using var db = NoviKontekst();
+        var zaposleni = DodajZaposlenog(db);
+
+        var ugovor = DodajUgovor(db, VrstaUgovorODelu(),
+            brojRadnika: zaposleni.BrojRadnika, tip: TipPrimaocaPrihoda.Zaposleni);
+
+        new UgovorObracunService(db).Obracunaj(ugovor.UgovorId, DodajIsplatu(db).IsplataId, 50000m, false);
+
+        var karton = db.Radnici.Single(r => r.BrojRadnika == zaposleni.BrojRadnika && r.Mesec == Mesec);
+
+        Assert.False(karton.VanRadnogOdnosa);
+        Assert.True(karton.Aktivan);
+
+        // Ekrani zarade traže upravo ovo dvoje.
+        Assert.Single(db.Radnici.Where(r => r.Aktivan && !r.VanRadnogOdnosa && r.Mesec == Mesec));
+    }
+
+    /// <summary>
+    /// Karton koji se prepisuje u mesec isplate mora biti <b>verna</b> kopija. Otkako i
+    /// zaposleni sme biti primalac, taj karton može biti prvi zapis lica u mesecu — i onaj
+    /// koji obračun zarade posle zatekne. Osakaćena kopija bi mu dala nulti koeficijent.
+    /// </summary>
+    [Fact]
+    public void ObezbediKarton_ZaZaposlenog_PrepisujeIPodatkeZarade()
+    {
+        using var db = NoviKontekst();
+        var zaposleni = DodajZaposlenog(db);
+
+        var karton = new UgovorObracunService(db).ObezbediKarton(zaposleni.BrojRadnika, Godina, Mesec + 1);
+
+        Assert.NotNull(karton);
+        Assert.Equal(2.5m, karton!.Koeficijent);
+        Assert.Equal(80000m, karton.OsnovnaPlata);
+        Assert.Equal(SvpService.RedovnaZarada, karton.Radno_Mesto);
+        Assert.True(karton.Aktivan);
+        Assert.False(karton.VanRadnogOdnosa);
+    }
+
+    /// <summary>
+    /// Godišnja PPP-PO potvrda je po <b>licu</b>, ne po rodu isplate: zaposleni sa honorarom
+    /// dobija JEDNU potvrdu sa dva reda. Zbog toga primaoci i ne mogu biti zaseban registar —
+    /// dva zapisa istog lica dala bi mu dve potvrde.
+    /// </summary>
+    [Fact]
+    public void PppPo_ZaposleniSaUgovorom_DobijaJednuPotvrduSaDvaReda()
+    {
+        using var db = NoviKontekst();
+        var zaposleni = DodajZaposlenog(db);
+
+        // Zarada iz radnog odnosa.
+        db.ObracuniPlata.Add(new ObracunPlate
+        {
+            RadnikId = zaposleni.Id,
+            Godina = Godina,
+            Mesec = Mesec,
+            BrutoZarada = 100000m,
+            PoreskaOsnovica = 71577m,
+            PorezNaDohodak = 7157.70m,
+            DoprinosPioRadnik = 14000m,
+            RedovniSati = 176,
+            NetoIsplata = 73692.30m
+        });
+        db.SaveChanges();
+
+        // Honorar po ugovoru, u svojoj isplati.
+        var ugovor = DodajUgovor(db, VrstaUgovorODelu(),
+            brojRadnika: zaposleni.BrojRadnika, tip: TipPrimaocaPrihoda.Zaposleni);
+
+        new UgovorObracunService(db).Obracunaj(ugovor.UgovorId, DodajIsplatu(db).IsplataId, 50000m, false);
+
+        var rezultat = new PppPoService(db).Pripremi(Godina);
+
+        var obrazac = Assert.Single(rezultat.Obrasci);
+        Assert.Equal(zaposleni.BrojRadnika, obrazac.Radnik.BrojRadnika);
+
+        Assert.Contains(obrazac.Redovi, r => r.Svp == SvpService.RedovnaZarada);
+        Assert.Contains(obrazac.Redovi, r => r.Svp == "101601000");
+        Assert.Equal(150000m, obrazac.UkupnoBruto);
     }
 }

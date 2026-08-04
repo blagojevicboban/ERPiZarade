@@ -33,8 +33,15 @@ public class KnjizenjeViewModel : INotifyPropertyChanged
     private NalogZaKnjizenje? _nalog;
     private string _statusTekst = "";
 
-    public KnjizenjeViewModel()
+    /// <summary>
+    /// Rod isplata koje se knjiže. Trošak naknade ide na konto iz šifarnika vrsta ugovora, a
+    /// trošak zarade na konto vrste primanja — dva naloga, kao i dve prijave.
+    /// </summary>
+    private readonly RodIsplate _rod;
+
+    public KnjizenjeViewModel(RodIsplate rod = RodIsplate.Zarada)
     {
+        _rod = rod;
         _db = PlataDbContext.Create(AppConfig.DbPath);
         _knjizenje = new KnjizenjeService(_db);
         _isplataService = new IsplataService(_db);
@@ -139,8 +146,11 @@ public class KnjizenjeViewModel : INotifyPropertyChanged
 
         try
         {
-            _isplataService.Obezbedi(Godina, Mesec);
-            foreach (var i in _isplataService.Isplate(Godina, Mesec)) Isplate.Add(i);
+            // Prvu isplatu zarade program pravi sam; isplatu naknada ne — nju određuje datum
+            // plaćanja, koji se ne može pogoditi.
+            if (_rod == RodIsplate.Zarada) _isplataService.Obezbedi(Godina, Mesec);
+
+            foreach (var i in _isplataService.Isplate(Godina, Mesec, _rod)) Isplate.Add(i);
         }
         catch (Exception ex)
         {

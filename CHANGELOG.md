@@ -6,6 +6,92 @@ Format je zasnovan na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) s
 
 ---
 
+## [1.16.0] - 2026-08-04
+
+> **Isplate van radnog odnosa odvojene su od zarada.** Do sada su naknade po ugovoru ulazile u
+> **istu** PPP-PD prijavu kao zarada — a po propisu ne smeju. Uz to je otklonjeno i to što se
+> zaposlenom nije mogao obračunati ugovor o delu, iako je propisom predviđen.
+
+### ⚖️ Zašto — član 11 Pravilnika o poreskoj prijavi za porez po odbitku
+
+Polje **1.2 Obračunski period** se za dva roda prihoda popunjava različito:
+
+- **zarada** — „mesec i godina *za koji* se vrši isplata zarade";
+- **van radnog odnosa** — mesec **isplate**, jer meseca „za koji" nema.
+
+Prijava ima **jedno** polje 1.2, **jedno** polje 1.4 (datum plaćanja) i jednu oznaku K/A, pa
+julska zarada isplaćena u avgustu i honorar isplaćen istog dana ne mogu u istu prijavu: prva
+nosi period 07, drugi 08. Oznaka „K" se uz to odnosi na konačnu isplatu **zarade**, pa honorar
+u prijavi akontacije dobija „A", što za njega ne znači ništa.
+
+### 💸 Rod isplate
+
+- `Isplata` dobija **rod**: `Zarada` ili `VanRadnogOdnosa`. Podrazumevano je zarada, pa se
+  **nijedna zatečena isplata ne menja** i mesec sa jednom isplatom radi kao u 1.15.0.
+- Za rod van radnog odnosa `Godina`/`Mesec` znače **mesec isplate** — to je obračunski period
+  njene prijave. Datum isplate ga i određuje: unese se datum, a period sledi iz njega.
+- Mesec sme imati **koliko treba** isplata naknada — svaki datum je svoja prijava. Ograničenje
+  „jedna konačna zarada mesečno" postoji zbog obustava i na naknade se ne odnosi.
+- Oznaka konačne isplate je za naknade **uvek „K"** i na ekranu zaključana.
+- **Redni broj 1 ostaje zaradi**, čime obračuni bez upisane isplate i dalje pripadaju njoj.
+- Obračun naknade na isplatu zarade se **odbija pre upisa**, a zatečeno mešanje hvata nova
+  kontrolna provera **„Pomešani rodovi u istoj isplati"**.
+
+### 🧭 Meni podeljen na dva puta kroz posao
+
+Grupa „ŠTAMPA" — koja odavno nije bila štampa nego ceo put od obračuna do knjiženja — podeljena
+je na **ISPLATE ZARADA**, **ISPLATE VAN RADNOG ODNOSA** i **IZVEŠTAJI**.
+
+- PPP-PD, nalozi za prenos, nalog za knjiženje i isplate u mesecu pojavljuju se **u obe grupe**,
+  otvoreni sa rodom već izabranim — pogrešan rod se tako ne može ni izabrati.
+- „Vrste ugovora" i „Šabloni ugovora" preselili su se iz ŠIFARNICI u novu grupu, a „Obračun
+  plate" iz EVIDENCIJA u ISPLATE ZARADA.
+- **PPP-PO ostaje van oba roda**, u IZVEŠTAJI: godišnja potvrda obuhvata sve prihode jednog
+  lica, i zaradu i honorar.
+
+### 👤 Zaposleni sme biti primalac po ugovoru
+
+Šifra vrste prihoda za honorar zaposlenog je `1 01 601 00 0`, gde `01` znači „zaposleni". Dva
+mesta su to do sada onemogućavala:
+
+- ekran ugovora je nudio **samo** lica sa oznakom „van radnog odnosa", pa se zaposleni nije
+  mogao ni izabrati;
+- označavanje postojećeg kartona kao primaoca upisivalo je oznaku u **sve** periode tog lica —
+  čime bi zaposleni tiho nestao iz obračuna plate, radnih sati i platnih listića.
+
+Sada oznaka `VanRadnogOdnosa` znači **samo** „nije u radnom odnosu"; ko je primalac kaže sam
+ugovor. Za lice u radnom odnosu se pri izboru **ništa ne menja u kartonu**, a kontrolna provera
+o neoznačenom kartonu ćuti za tipove primaoca **01** i **02**, gde je lice legitimno i radnik.
+Karton koji se prepisuje u mesec isplate je od sada **verna** kopija — ranije je izostavljao
+koeficijent i osnovnu platu, što bi zaposlenom dalo pogrešnu zaradu u tom mesecu.
+
+### 👥 Novi ekran „Primaoci po ugovoru"
+
+Pogled nad **istim** registrom kao „Radnici", sa brojem ugovora, brojem isplata i isplaćenim
+bruto iznosom. Registar se namerno **ne deli**: `PppPoService` grupiše po broju radnika kroz sve
+obračune, pa bi zaseban registar primalaca istom licu izdao **dve** godišnje potvrde umesto
+jedne. Lice koje je i zaposleno i primalac se ovde vidi sa oznakom „i u radnom odnosu".
+
+### 🏷️ Tipovi primaoca prihoda dopunjeni do 13
+
+Pravilnik uz polje 3.6 nabraja **13** oznaka vrste primaoca; šifarnik je imao prvih osam.
+Dodate su **09** (penzioner po osnovu zaposlenosti), **10** (penzioner po osnovu samostalne
+delatnosti), **11** (van radnog odnosa, bez doprinosa), **12** (vojni penzioner) i **13**
+(poljoprivredni penzioner).
+
+Oznaka **11** je bila stvarna prepreka: bez nje se OVP 315–321 — prihod autora od imovinskog
+prava, samostalni umetnik koji doprinose plaća po rešenju PU, maloletno lice — nisu mogli
+prijaviti uopšte.
+
+### 🧪 Testovi
+- 337 → **352**. Novi drže: da zatečene isplate posle migracije ostaju zarade (nad **pravim
+  SQLite fajlom**), da obračunski period naknade bude mesec isplate, da zarada i naknada daju
+  **dve različite prijave** dok prijava zarade ostaje brojčano ista, i da zaposleni sa ugovorom
+  o delu dobije obračun, **ostane** u obračunu zarade i dobije **jednu** PPP-PO potvrdu sa dva
+  reda.
+
+---
+
 ## [1.15.0] - 2026-08-04
 
 > **Faza 2.6** — bolovanja preko 30 dana i obrasci kojima se od RFZO traži refundacija

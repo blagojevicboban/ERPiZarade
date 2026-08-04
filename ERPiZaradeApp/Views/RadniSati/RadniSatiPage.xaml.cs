@@ -145,7 +145,9 @@ public partial class RadniSatiPage : Page
         {
             var servis = new IsplataService(_db);
             servis.Obezbedi(godina, mesec);
-            var isplate = servis.Isplate(godina, mesec);
+            // Samo isplate zarade: naknada po ugovoru se ne meri satima, pa isplata naknada
+            // na ovom ekranu nema šta da ponudi.
+            var isplate = servis.Isplate(godina, mesec, RodIsplate.Zarada);
 
             _popunjavamIsplate = true;
             ComboIsplata.ItemsSource = isplate;

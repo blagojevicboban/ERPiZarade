@@ -171,6 +171,19 @@ public class UgovorObracunService
         if (isplata == null)
             return new RezultatUgovora { Poruka = "Isplata nije pronađena." };
 
+        // Naknada ide isključivo na isplatu svog roda. Na isplati zarade bi joj obračunski
+        // period postao mesec ZA KOJI se zarada isplaćuje, a njen period je mesec isplate —
+        // dva perioda ne staju u jedno polje 1.2, pa bi prijava bila pogrešna.
+        if (!isplata.JeVanRadnogOdnosa)
+        {
+            return new RezultatUgovora
+            {
+                Poruka = $"„{isplata.Naziv}“ je isplata zarade i ne može nositi naknadu po ugovoru. " +
+                         "Naknada se prijavljuje zasebnom prijavom, sa mesecom isplate kao obračunskim " +
+                         "periodom — napravite isplatu naknada za datum kada honorar zaista ide na račun."
+            };
+        }
+
         if (iznos <= 0)
             return new RezultatUgovora { Poruka = "Iznos naknade mora biti veći od nule." };
 
@@ -284,6 +297,10 @@ public class UgovorObracunService
 
         if (poslednji == null) return null;
 
+        // Kopija mora biti VERNA, a ne samo dovoljna za isplatu naknade. Otkako i zaposleni
+        // sme biti primalac po ugovoru, ovaj karton može biti prvi zapis tog lica u mesecu —
+        // i onaj koji obračun zarade posle zatekne. Osakaćena kopija bi mu tada dala nulti
+        // koeficijent i pogrešnu platu.
         var novi = new Radnik
         {
             Godina = godina,
@@ -291,6 +308,7 @@ public class UgovorObracunService
             BrojRadnika = poslednji.BrojRadnika,
             ImeIPrezime = poslednji.ImeIPrezime,
             Jmbg = poslednji.Jmbg,
+            Lbo = poslednji.Lbo,
             MaticniBroj = poslednji.MaticniBroj,
             DatumRodjenja = poslednji.DatumRodjenja,
             MestoRodjenja = poslednji.MestoRodjenja,
@@ -298,10 +316,24 @@ public class UgovorObracunService
             Mesto = poslednji.Mesto,
             SifraOpstine = poslednji.SifraOpstine,
             Email = poslednji.Email,
+            DatumZaposlenja = poslednji.DatumZaposlenja,
+            DatumPrestanka = poslednji.DatumPrestanka,
+            Kategorija = poslednji.Kategorija,
+            Radno_Mesto = poslednji.Radno_Mesto,
+            BrojRadneJedinice = poslednji.BrojRadneJedinice,
+            MinuliRadGodine = poslednji.MinuliRadGodine,
+            Koeficijent = poslednji.Koeficijent,
+            Koeficijent1 = poslednji.Koeficijent1,
+            OsnovnaPlata = poslednji.OsnovnaPlata,
+            StopaPio = poslednji.StopaPio,
+            StopaZdravstvo = poslednji.StopaZdravstvo,
+            StopaNezaposlenost = poslednji.StopaNezaposlenost,
             BankovniRacun = poslednji.BankovniRacun,
             NazivBanke = poslednji.NazivBanke,
             Aktivan = poslednji.Aktivan,
             VanRadnogOdnosa = poslednji.VanRadnogOdnosa,
+            LicnoOslobodjenje = poslednji.LicnoOslobodjenje,
+            Operativni = poslednji.Operativni,
             SifraMestaTroska = poslednji.SifraMestaTroska,
             DatumUnosa = DateTime.Now
         };
@@ -379,7 +411,15 @@ public class UgovorObracunService
 
             // Primalac po ugovoru najčešće nije zaposlen, pa se lako previdi da mu karton
             // nije označen — a onda ga obračun zarade zahvata i traži od njega sate i fond.
-            if (o.Radnik is { VanRadnogOdnosa: false })
+            //
+            // Tipovi 01 i 02 su izuzetak, i to propisan: zaposleni i osnivač zaposlen u svom
+            // društvu SMEJU biti isplaćeni po ugovoru, i tada su legitimno i radnici. Za njih
+            // oznaka ne treba, pa bi nalaz bio netačan — a netačno upozorenje nauči korisnika
+            // da nalaze preskače.
+            bool smeBitiZaposlen = o.Ugovor!.TipPrimaoca
+                is TipPrimaocaPrihoda.Zaposleni or TipPrimaocaPrihoda.OsnivacZaposlenUSvomDrustvu;
+
+            if (o.Radnik is { VanRadnogOdnosa: false } && !smeBitiZaposlen)
             {
                 nalazi.Add(new NalazProvere
                 {

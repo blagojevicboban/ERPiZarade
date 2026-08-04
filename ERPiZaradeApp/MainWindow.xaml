@@ -190,9 +190,6 @@
                         <Button x:Name="BtnPrimanja" Content="🎁  Ostala primanja"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnPrimanja_Click"/>
-                        <Button x:Name="BtnObracun" Content="📊  Obračun plate"
-                                Style="{StaticResource NavButton}"
-                                Click="BtnObracun_Click"/>
                         <Button x:Name="BtnPorezi" Content="⚖️  Porezi i parametri"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnPorezi_Click"/>
@@ -203,35 +200,72 @@
                                 Style="{StaticResource NavButton}"
                                 Click="BtnPlatniRazredi_Click"/>
 
-                        <TextBlock x:Name="HeaderStampa" Text="ŠTAMPA" FontSize="10" FontWeight="SemiBold"
+                        <!-- Dva roda isplate su dva odvojena puta kroz posao: obračunski period
+                             im je različito određen, pa svaki ima svoju PPP-PD prijavu, svoj BOP
+                             i svoj nalog za knjiženje. Zato su i u meniju odvojeni — pogrešan rod
+                             se tako ne može ni izabrati. -->
+                        <TextBlock x:Name="HeaderIsplateZarada" Text="ISPLATE ZARADA" FontSize="10" FontWeight="SemiBold"
                                    Foreground="#7986CB" Margin="24,10,0,3"/>
-                        <Button x:Name="BtnListici" Content="🧾  Platni listići"
-                                Style="{StaticResource NavButton}"
-                                Click="BtnListici_Click"/>
-                        <Button x:Name="BtnStampe" Content="📑  Izveštaji &amp; rekapit."
-                                Style="{StaticResource NavButton}"
-                                Click="BtnStampe_Click"/>
-                        <Button x:Name="BtnPppPd" Content="📋  PPP-PD"
-                                Style="{StaticResource NavButton}"
-                                Click="BtnPppPd_Click"/>
-                        <Button x:Name="BtnPppPo" Content="🧾  PPP-PO (godišnja)"
-                                Style="{StaticResource NavButton}"
-                                Click="BtnPppPo_Click"/>
-                        <Button x:Name="BtnNalozi" Content="🏦  Nalozi za prenos"
-                                Style="{StaticResource NavButton}"
-                                Click="BtnNalozi_Click"/>
                         <Button x:Name="BtnIsplate" Content="💸  Isplate u mesecu"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnIsplate_Click"/>
-                        <Button x:Name="BtnUgovori" Content="📝  Ugovori van radnog odnosa"
+                        <Button x:Name="BtnObracun" Content="📊  Obračun plate"
                                 Style="{StaticResource NavButton}"
-                                Click="BtnUgovori_Click"/>
-                        <Button x:Name="BtnKnjizenje" Content="📒  Nalog za knjiženje"
+                                Click="BtnObracun_Click"/>
+                        <Button x:Name="BtnListici" Content="🧾  Platni listići"
                                 Style="{StaticResource NavButton}"
-                                Click="BtnKnjizenje_Click"/>
+                                Click="BtnListici_Click"/>
                         <Button x:Name="BtnBolovanja" Content="🏥  Bolovanja i RFZO"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnBolovanja_Click"/>
+                        <Button x:Name="BtnPppPd" Content="📋  PPP-PD — zarade"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnPppPd_Click"/>
+                        <Button x:Name="BtnNalozi" Content="🏦  Nalozi za prenos"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnNalozi_Click"/>
+                        <Button x:Name="BtnKnjizenje" Content="📒  Nalog za knjiženje"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnKnjizenje_Click"/>
+
+                        <TextBlock x:Name="HeaderVanRadnogOdnosa" Text="ISPLATE VAN RADNOG ODNOSA" FontSize="10" FontWeight="SemiBold"
+                                   Foreground="#7986CB" Margin="24,10,0,3" TextWrapping="Wrap"/>
+                        <Button x:Name="BtnPrimaoci" Content="👤  Primaoci po ugovoru"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnPrimaoci_Click"/>
+                        <Button x:Name="BtnIsplateNaknada" Content="💸  Isplate naknada"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnIsplateNaknada_Click"/>
+                        <Button x:Name="BtnUgovori" Content="📝  Ugovori i naknade"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnUgovori_Click"/>
+                        <Button x:Name="BtnVrsteUgovora" Content="📄  Vrste ugovora"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnVrsteUgovora_Click"/>
+                        <Button x:Name="BtnSabloniUgovora" Content="🖋️  Šabloni ugovora"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnSabloniUgovora_Click"/>
+                        <Button x:Name="BtnPppPdNaknade" Content="📋  PPP-PD — naknade"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnPppPdNaknade_Click"/>
+                        <Button x:Name="BtnNaloziNaknada" Content="🏦  Nalozi za prenos"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnNaloziNaknada_Click"/>
+                        <Button x:Name="BtnKnjizenjeNaknada" Content="📒  Nalog za knjiženje"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnKnjizenjeNaknada_Click"/>
+
+                        <!-- PPP-PO ne ide ni u jednu grupu roda: godišnja potvrda obuhvata SVE
+                             prihode jednog lica u godini — i zaradu i honorar — pa bi deljenje
+                             po rodu istom licu dalo dve potvrde. -->
+                        <TextBlock x:Name="HeaderIzvestaji" Text="IZVEŠTAJI" FontSize="10" FontWeight="SemiBold"
+                                   Foreground="#7986CB" Margin="24,10,0,3"/>
+                        <Button x:Name="BtnStampe" Content="📑  Izveštaji &amp; rekapit."
+                                Style="{StaticResource NavButton}"
+                                Click="BtnStampe_Click"/>
+                        <Button x:Name="BtnPppPo" Content="🧾  PPP-PO (godišnja)"
+                                Style="{StaticResource NavButton}"
+                                Click="BtnPppPo_Click"/>
 
                         <TextBlock x:Name="HeaderSifarnici" Text="ŠIFARNICI" FontSize="10" FontWeight="SemiBold"
                                    Foreground="#7986CB" Margin="24,10,0,3"/>
@@ -250,12 +284,6 @@
                         <Button x:Name="BtnOlaksice" Content="🏷️  Poreske olakšice"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnOlaksice_Click"/>
-                        <Button x:Name="BtnVrsteUgovora" Content="📄  Vrste ugovora"
-                                Style="{StaticResource NavButton}"
-                                Click="BtnVrsteUgovora_Click"/>
-                        <Button x:Name="BtnSabloniUgovora" Content="🖋️  Šabloni ugovora"
-                                Style="{StaticResource NavButton}"
-                                Click="BtnSabloniUgovora_Click"/>
                         <Button x:Name="BtnKontaKnjizenja" Content="📗  Konta za knjiženje"
                                 Style="{StaticResource NavButton}"
                                 Click="BtnKontaKnjizenja_Click"/>

@@ -135,6 +135,16 @@ public partial class PrimalacWindow : Window
 
     // ── Označavanje postojećeg kartona ───────────────────────────────
 
+    /// <summary>
+    /// Uzima izabrano lice za primaoca. Oznaka <see cref="Radnik.VanRadnogOdnosa"/> se pri tom
+    /// postavlja <b>samo licu koje nije zaposleno</b>.
+    ///
+    /// Zaposleni sme biti isplaćen po ugovoru — šifra vrste prihoda za to je
+    /// <c>1 01 601 00 0</c>. Da mu se pri izboru postavi oznaka, nestao bi iz obračuna plate,
+    /// radnih sati i platnih listića, a to nije ono što je korisnik tražio: on je hteo da mu
+    /// obračuna honorar, ne da ga skine sa platnog spiska. Da je lice primalac beleži sam
+    /// ugovor (<see cref="Ugovor.BrojRadnika"/>), pa oznaka za to nije ni potrebna.
+    /// </summary>
     private void BtnOznaci_Click(object sender, RoutedEventArgs e)
     {
         if (GridRadnici.SelectedItem is not Radnik izabrani)
@@ -143,24 +153,35 @@ public partial class PrimalacWindow : Window
             return;
         }
 
-        if (MessageBox.Show(
-                $"Označiti „{izabrani.ImeIPrezime}\" kao primaoca po ugovoru?\n\n" +
-                "Posle toga ga ekrani zarade neće nuditi za obračun plate, radne sate ni platni listić. " +
-                "Već obračunate zarade ostaju netaknute.",
-                "Potvrda", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+        // Aktivan karton bez oznake je lice u radnom odnosu. Njemu se ništa ne menja.
+        bool uRadnomOdnosu = izabrani.Aktivan;
+
+        string pitanje = uRadnomOdnosu
+            ? $"Uzeti „{izabrani.ImeIPrezime}\" za primaoca po ugovoru?\n\n" +
+              "Lice je u radnom odnosu, pa mu se u kartonu NIŠTA ne menja — i dalje se obračunava " +
+              "zarada, radni sati i platni listić. Uz ugovor izaberite tip primaoca „01 — zaposleni“."
+            : $"Označiti „{izabrani.ImeIPrezime}\" kao lice van radnog odnosa?\n\n" +
+              "Posle toga ga ekrani zarade neće nuditi za obračun plate, radne sate ni platni listić. " +
+              "Već obračunate zarade ostaju netaknute.";
+
+        if (MessageBox.Show(pitanje, "Potvrda", MessageBoxButton.YesNo, MessageBoxImage.Question)
+            != MessageBoxResult.Yes)
         {
             return;
         }
 
         try
         {
-            // Oznaka se postavlja na SVE periode tog lica: karton je periodičan, a to da neko
-            // nije u radnom odnosu nije svojstvo meseca. Da se postavi samo na jedan, ekrani
-            // zarade bi ga u ostalim mesecima i dalje nudili.
-            var svi = _db.Radnici.Where(r => r.BrojRadnika == izabrani.BrojRadnika).ToList();
-            foreach (var r in svi) r.VanRadnogOdnosa = true;
+            if (!uRadnomOdnosu)
+            {
+                // Oznaka se postavlja na SVE periode tog lica: karton je periodičan, a to da
+                // neko nije u radnom odnosu nije svojstvo meseca. Da se postavi samo na jedan,
+                // ekrani zarade bi ga u ostalim mesecima i dalje nudili.
+                var svi = _db.Radnici.Where(r => r.BrojRadnika == izabrani.BrojRadnika).ToList();
+                foreach (var r in svi) r.VanRadnogOdnosa = true;
 
-            _db.SaveChanges();
+                _db.SaveChanges();
+            }
 
             BrojRadnika = izabrani.BrojRadnika;
             DialogResult = true;

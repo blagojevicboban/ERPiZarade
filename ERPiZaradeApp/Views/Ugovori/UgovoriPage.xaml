@@ -32,16 +32,22 @@
                     <ComboBox x:Name="ComboMesec" Width="70" Height="30" VerticalContentAlignment="Center"
                               SelectionChanged="ComboPeriod_SelectionChanged" Margin="0,0,16,0"/>
 
-                    <TextBlock Text="Isplata" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"
+                    <TextBlock Text="Isplata naknada" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"
                                Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,8,0"/>
                     <ComboBox x:Name="ComboIsplata" Width="220" Height="30" VerticalContentAlignment="Center"
-                              DisplayMemberPath="Naziv" SelectionChanged="ComboIsplata_SelectionChanged"
-                              ToolTip="Isplata kojoj naknada pripada. Svaka isplata ima svoju PPP-PD prijavu i svoj datum plaćanja, pa naknada isplaćena drugog dana ide u svoju isplatu."/>
+                              DisplayMemberPath="Naziv" SelectionChanged="ComboIsplata_SelectionChanged" Margin="0,0,8,0"
+                              ToolTip="Isplata naknada kojoj obračun pripada. Svaka ima svoju PPP-PD prijavu, svoj datum plaćanja i svoj BOP, pa naknada isplaćena drugog dana ide u svoju isplatu. Isplate zarade se ovde ne nude."/>
+                    <Button Content="➕" Style="{StaticResource SecondaryButton}" Width="36" Padding="0" Margin="0,0,8,0"
+                            Click="BtnNovaIsplata_Click"
+                            ToolTip="Nova isplata naknada — unosi se datum kada honorar ide na račun. Taj datum je datum plaćanja na PPP-PD prijavi, a mesec iz njega je obračunski period prijave."/>
+                    <Button Content="🗑" Style="{StaticResource SecondaryButton}" Width="36" Padding="0"
+                            Click="BtnObrisiIsplatu_Click"
+                            ToolTip="Obriši izabranu isplatu naknada — moguće samo za poslednju u mesecu, i samo dok nema nijedan obračun ni podnetu prijavu."/>
                 </StackPanel>
 
                 <TextBlock Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap" FontSize="12"
                            Margin="24,0,16,0" Foreground="{StaticResource TextSecondaryBrush}"
-                           Text="Naknada po ugovoru ulazi u istu PPP-PD prijavu i isti paket naloga kao zarada te isplate — samo sa svojom šifrom vrste prihoda i bez sati."/>
+                           Text="Naknada van radnog odnosa se prijavljuje ZASEBNOM PPP-PD prijavom, nezavisno od zarade: njen obračunski period je mesec isplate, a kod zarade mesec za koji se isplaćuje."/>
 
                 <Button Grid.Column="2" Content="💾  Sačuvaj" Style="{StaticResource PrimaryButton}" Padding="16,6"
                         Click="BtnSacuvaj_Click"/>

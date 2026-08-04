@@ -15,16 +15,26 @@ namespace ERPiZaradeApp.Views.Isplate;
 ///
 /// Ekran postoji zbog jedne stvari koja se ranije nije mogla zapisati: da mesec ima više
 /// isplata. Sve dok ih ima jednu, ovde se vidi tačno ono što je i pre bilo — jedan red.
+///
+/// Prikazuje <b>jedan rod</b> isplata, jer su zarada i naknada van radnog odnosa dva zasebna
+/// toka: svaki sa svojom PPP-PD prijavom, svojim BOP-om i svojim paketom naloga.
 /// </summary>
 public partial class IsplatePage : Page
 {
     private PlataDbContext _db;
     private IsplataService _servis;
     private ObservableCollection<IsplataRed> _redovi = [];
+    private readonly RodIsplate _rod;
 
-    public IsplatePage()
+    /// <param name="rod">
+    /// Rod isplata koje se prikazuju. Vrsta isplate (akontacija, bonus, 13. plata) postoji
+    /// samo kod zarade; kod naknada se unosi samo datum, jer je on ono što deli prijavu od
+    /// prijave.
+    /// </param>
+    public IsplatePage(RodIsplate rod = RodIsplate.Zarada)
     {
         InitializeComponent();
+        _rod = rod;
         _db = PlataDbContext.Create(AppConfig.DbPath);
         _servis = new IsplataService(_db);
 
@@ -37,6 +47,16 @@ public partial class IsplatePage : Page
             new() { Vrsta = VrstaIsplate.Ostalo }
         };
         ComboVrsta.SelectedIndex = 0;
+
+        if (_rod == RodIsplate.VanRadnogOdnosa)
+        {
+            // Vrsta isplate opisuje zaradu; honorar nema akontaciju ni trinaestu platu.
+            ComboVrsta.Visibility = Visibility.Collapsed;
+            LabelVrsta.Visibility = Visibility.Collapsed;
+            OpisEkrana.Text = "Svaka isplata naknada ima svoju PPP-PD prijavu, svoj BOP i svoj paket naloga. " +
+                              "Datum isplate je datum plaćanja na prijavi (polje 1.4), a mesec iz njega njen " +
+                              "obračunski period (polje 1.2) — zato se mesec ne bira posebno, nego sledi iz datuma.";
+        }
 
         PopuniPeriod();
         Ucitaj();
@@ -73,11 +93,13 @@ public partial class IsplatePage : Page
     {
         try
         {
-            _servis.Obezbedi(Godina, Mesec);
+            // Prvu isplatu zarade program pravi sam; isplatu naknada ne — nju određuje datum
+            // plaćanja, koji se ne može pogoditi.
+            if (_rod == RodIsplate.Zarada) _servis.Obezbedi(Godina, Mesec);
 
             var redovi = new List<IsplataRed>();
 
-            foreach (var isplata in _servis.Isplate(Godina, Mesec))
+            foreach (var isplata in _servis.Isplate(Godina, Mesec, _rod))
             {
                 var obracuni = IsplataService
                     .Obuhvat(_db.ObracuniPlata, Godina, Mesec, isplata)
@@ -105,12 +127,16 @@ public partial class IsplatePage : Page
 
             DatumNove.SelectedDate = new DateTime(Godina, Mesec, DateTime.DaysInMonth(Godina, Mesec));
 
-            int bezIsplate = _db.ObracuniPlata
-                .Count(o => o.Godina == Godina && o.Mesec == Mesec && o.IsplataId == null);
+            // Obračuni bez upisane isplate su uvek zarade, pa se broje samo na tom rodu.
+            int bezIsplate = _rod == RodIsplate.Zarada
+                ? _db.ObracuniPlata.Count(o => o.Godina == Godina && o.Mesec == Mesec && o.IsplataId == null)
+                : 0;
 
             StatusMessage.Text = bezIsplate > 0
                 ? $"{_redovi.Count} isplata za {Mesec:D2}/{Godina}. Obračuna bez upisane isplate: {bezIsplate} — pripadaju prvoj isplati; dugme 🔗 to i upisuje."
-                : $"{_redovi.Count} isplata za {Mesec:D2}/{Godina}.";
+                : _redovi.Count == 0 && _rod == RodIsplate.VanRadnogOdnosa
+                    ? $"Za {Mesec:D2}/{Godina} nema nijedne isplate naknada. Dodajte je unosom datuma isplate."
+                    : $"{_redovi.Count} isplata za {Mesec:D2}/{Godina}.";
         }
         catch (Exception ex)
         {
@@ -120,15 +146,31 @@ public partial class IsplatePage : Page
 
     private void BtnDodaj_Click(object sender, RoutedEventArgs e)
     {
-        if (ComboVrsta.SelectedItem is not VrstaIsplateStavka stavka)
-        {
-            StatusMessage.Text = "Izaberite vrstu isplate.";
-            return;
-        }
+        RezultatIsplate rezultat;
 
-        var rezultat = _servis.Dodaj(
-            Godina, Mesec, stavka.Vrsta, TxtOpis.Text,
-            DatumNove.SelectedDate ?? new DateTime(Godina, Mesec, DateTime.DaysInMonth(Godina, Mesec)));
+        if (_rod == RodIsplate.VanRadnogOdnosa)
+        {
+            // Datum je ovde jedini obavezan podatak — bez njega nema ni polja 1.4 ni perioda.
+            if (DatumNove.SelectedDate is not DateTime datum)
+            {
+                StatusMessage.Text = "Unesite datum isplate — on je datum plaćanja na PPP-PD prijavi.";
+                return;
+            }
+
+            rezultat = _servis.DodajNaknadu(datum.Year, datum.Month, TxtOpis.Text, datum);
+        }
+        else
+        {
+            if (ComboVrsta.SelectedItem is not VrstaIsplateStavka stavka)
+            {
+                StatusMessage.Text = "Izaberite vrstu isplate.";
+                return;
+            }
+
+            rezultat = _servis.Dodaj(
+                Godina, Mesec, stavka.Vrsta, TxtOpis.Text,
+                DatumNove.SelectedDate ?? new DateTime(Godina, Mesec, DateTime.DaysInMonth(Godina, Mesec)));
+        }
 
         StatusMessage.Text = rezultat.Poruka;
 

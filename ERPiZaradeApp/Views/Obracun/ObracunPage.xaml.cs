@@ -566,7 +566,7 @@ public partial class ObracunPage : Page
             // Obračun bez upisane isplate pripada prvoj, po istom pravilu kao svuda.
             var isplata = o.IsplataId.HasValue
                 ? db.Isplate.FirstOrDefault(i => i.IsplataId == o.IsplataId.Value)
-                : new Services.IsplataService(db).Isplate(o.Godina, o.Mesec).FirstOrDefault();
+                : new Services.IsplataService(db).Isplate(o.Godina, o.Mesec, RodIsplate.Zarada).FirstOrDefault();
 
             var rezultat = storniraj
                 ? servis.Storniraj(o.Godina, o.Mesec, brojRadnika, razlog, isplata)

@@ -86,9 +86,11 @@ public partial class UgovoriPage : Page
     {
         try
         {
-            _isplateServis.Obezbedi(Godina, Mesec);
-
-            var isplate = _isplateServis.Isplate(Godina, Mesec).ToList();
+            // Samo isplate naknada. Naknada na isplati zarade dobila bi obračunski period
+            // meseca ZA KOJI se zarada isplaćuje, a njen period je mesec isplate — zato se
+            // isplate zarade ovde uopšte ne nude. Ne poziva se ni Obezbedi: isplata naknada
+            // ne nastaje sama, jer joj je datum plaćanja ono što deli prijavu od prijave.
+            var isplate = _isplateServis.Isplate(Godina, Mesec, RodIsplate.VanRadnogOdnosa).ToList();
             ComboIsplata.ItemsSource = isplate;
             ComboIsplata.SelectedItem = isplate.FirstOrDefault(i => i.IsplataId == _izabranaIsplata?.IsplataId)
                                         ?? isplate.FirstOrDefault();
@@ -111,22 +113,32 @@ public partial class UgovoriPage : Page
     }
 
     /// <summary>
-    /// Primaoci su lica označena poljem „Van radnog odnosa" u kartonu. Karton je periodičan,
-    /// pa se uzima poslednji zapis svakog lica — ime se ne menja od meseca do meseca.
+    /// Primaoci su <b>sva aktivna lica</b>, a ne samo ona označena poljem „Van radnog odnosa".
+    ///
+    /// Lice u radnom odnosu sme biti isplaćeno po ugovoru — šifra vrste prihoda za to je
+    /// <c>1 01 601 00 0</c>, gde <c>01</c> znači „zaposleni", i <see cref="TipPrimaocaPrihoda"/>
+    /// tu vrednost nudi. Dok je ovde stajao filter po oznaci, ta se šifra nije mogla ni
+    /// napraviti: zaposleni se nije mogao izabrati.
+    ///
+    /// Karton je periodičan, pa se uzima poslednji zapis svakog lica — ime se ne menja od
+    /// meseca do meseca.
     /// </summary>
     private void PopuniPrimaoce()
     {
         var izabrani = (ComboPrimalac.SelectedItem as PrimalacStavka)?.BrojRadnika;
 
+        // Bivši zaposleni (neaktivan karton) se ne nudi, osim ako je označen kao lice van
+        // radnog odnosa — takvi i jesu neaktivni u smislu zarade, a primaoci jesu.
         var primaoci = _db.Radnici
-            .Where(r => r.VanRadnogOdnosa)
+            .Where(r => r.VanRadnogOdnosa || r.Aktivan)
             .OrderByDescending(r => r.Godina).ThenByDescending(r => r.Mesec)
             .ToList()
             .GroupBy(r => r.BrojRadnika)
             .Select(g => new PrimalacStavka
             {
                 BrojRadnika = g.Key,
-                ImeIPrezime = g.First().ImeIPrezime
+                ImeIPrezime = g.First().ImeIPrezime,
+                URadnomOdnosu = !g.First().VanRadnogOdnosa
             })
             .OrderBy(p => p.BrojRadnika)
             .ToList();
@@ -183,11 +195,82 @@ public partial class UgovoriPage : Page
             : $"{redovi.Count} ugovora; {bezSvp} bez šifre vrste prihoda — dopunite OVP u šifarniku vrsta ugovora.";
     }
 
+    /// <summary>
+    /// Nova isplata naknada. Traži se <b>datum isplate</b>, jer je on datum plaćanja na PPP-PD
+    /// prijavi (polje 1.4) i jedino po čemu se jedna prijava razlikuje od druge; mesec iz njega
+    /// je obračunski period te prijave (polje 1.2).
+    /// </summary>
+    private void BtnNovaIsplata_Click(object sender, RoutedEventArgs e)
+    {
+        var prozor = new NovaIsplataNaknadeWindow(Godina, Mesec) { Owner = Window.GetWindow(this) };
+        if (prozor.ShowDialog() != true) return;
+
+        var rezultat = _isplateServis.DodajNaknadu(
+            prozor.DatumIsplate.Year, prozor.DatumIsplate.Month, prozor.Opis, prozor.DatumIsplate);
+
+        StatusMessage.Text = rezultat.Poruka;
+
+        if (!rezultat.Uspesno)
+        {
+            MessageBox.Show(rezultat.Poruka, "Isplata nije dodata", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        // Datum može da odvede u drugi mesec od izabranog — period se tada pomera za njim,
+        // jer je mesec isplate obračunski period prijave, a ne stvar izbora na ekranu.
+        if (prozor.DatumIsplate.Year != Godina || prozor.DatumIsplate.Month != Mesec)
+        {
+            if (!ComboGodina.Items.Contains(prozor.DatumIsplate.Year))
+                ComboGodina.Items.Add(prozor.DatumIsplate.Year);
+
+            ComboGodina.SelectedItem = prozor.DatumIsplate.Year;
+            ComboMesec.SelectedItem = prozor.DatumIsplate.Month;
+        }
+
+        _izabranaIsplata = rezultat.Isplata;
+        Ucitaj();
+    }
+
+    /// <summary>
+    /// Briše izabranu isplatu naknada. Sva ograničenja stoje u <c>IsplataService.Obrisi</c> —
+    /// briše se samo poslednja u mesecu, i samo dok nema ni obračuna ni prijave — pa se ovde
+    /// ne ponavljaju: prepisano pravilo je ono koje se prvo razilazi.
+    /// </summary>
+    private void BtnObrisiIsplatu_Click(object sender, RoutedEventArgs e)
+    {
+        if (_izabranaIsplata == null)
+        {
+            StatusMessage.Text = "Nema izabrane isplate naknada.";
+            return;
+        }
+
+        if (MessageBox.Show(
+                $"Obrisati isplatu „{_izabranaIsplata.Naziv}“ od {_izabranaIsplata.DatumIsplate:dd.MM.yyyy}?",
+                "Potvrda", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        var rezultat = _isplateServis.Obrisi(_izabranaIsplata.IsplataId);
+        StatusMessage.Text = rezultat.Poruka;
+
+        if (!rezultat.Uspesno)
+        {
+            MessageBox.Show(rezultat.Poruka, "Isplata nije obrisana",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        _izabranaIsplata = null;
+        Ucitaj();
+    }
+
     private void UcitajNaknade()
     {
         if (_izabranaIsplata == null)
         {
             GridNaknade.ItemsSource = null;
+            NaslovNaknada.Text = "OBRAČUNATE NAKNADE — nema isplate naknada u ovom mesecu (➕ da je dodate)";
             return;
         }
 

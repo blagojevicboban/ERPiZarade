@@ -131,13 +131,19 @@ public partial class PomocPage : Page
         {
             Naslov = "📝 Ugovori van radnog odnosa",
             Sadrzaj =
-                "Meni '📝 Ugovori van radnog odnosa' vodi ugovor o delu, autorske naknade, privremene i povremene poslove i naknade članovima upravnog i nadzornog odbora.\n\n" +
-                "• Primalac je karton radnika sa oznakom 'Van radnog odnosa'. Najbrže se unosi dugmetom '＋ novi' pored padajuće liste primalaca — otvara unos novog kartona ili označavanje postojećeg (penzioner, bivši zaposleni). Isto se može uraditi i u meniju 'Radnici', ali tek pošto se karton otvori dugmetom 'Izmeni': van režima izmene su polja onemogućena i čekboks ne reaguje.\n" +
-                "• Iz kartona se uzimaju JMBG, opština prebivališta i tekući račun; ekrani zarade označeno lice posle toga ne nude za obračun plate, radne sate ni platni listić. Već obračunate zarade ostaju netaknute.\n" +
+                "Meni 'ISPLATE VAN RADNOG ODNOSA' vodi ugovor o delu, autorske naknade, privremene i povremene poslove i naknade članovima upravnog i nadzornog odbora.\n\n" +
+                "ZAŠTO JE ODVOJENO OD ZARADE:\n" +
+                "• Naknada van radnog odnosa se prijavljuje ZASEBNOM PPP-PD prijavom, nezavisno od zarade. Po članu 11 Pravilnika o poreskoj prijavi za porez po odbitku, u polje 1.2 Obračunski period se kod zarade upisuje mesec ZA KOJI se isplaćuje, a kod prihoda van radnog odnosa mesec ISPLATE. Prijava ima jedno takvo polje, jedan datum plaćanja i jednu oznaku K/A — pa julska zarada isplaćena u avgustu i honorar isplaćen istog dana ne mogu u istu prijavu.\n" +
+                "• Zato svaka isplata naknada ima svoju prijavu, svoj BOP, svoj paket naloga i svoj nalog za knjiženje. Oznaka konačne isplate je uvek 'K': ona se po Pravilniku odnosi na konačnu isplatu ZARADE za period, a svaka isplata honorara je za sebe konačna.\n\n" +
+                "KAKO SE RADI:\n" +
+                "• Prvo napravite ISPLATU NAKNADA — dugmetom '➕' na ekranu ugovora ili u '💸 Isplate naknada'. Traži se samo datum kada honorar ide na račun: on je datum plaćanja na prijavi, a mesec iz njega njen obračunski period. Zato se mesec ne bira posebno, nego sledi iz datuma.\n" +
+                "• Primalac može biti bilo koje lice iz evidencije — i ono koje NIJE u radnom odnosu (penzioner, bivši zaposleni) i ZAPOSLENI. Zaposleni sme biti isplaćen po ugovoru; šifra vrste prihoda tada nosi tip primaoca '01 — zaposleni'. Njemu se u kartonu ništa ne menja: i dalje mu se obračunava zarada, radni sati i platni listić.\n" +
+                "• Lice koje nije u radnom odnosu se označava dugmetom '＋ novi' pored padajuće liste primalaca — otvara unos novog kartona ili označavanje postojećeg. Tek tada ga ekrani zarade prestaju da nude za obračun plate. Već obračunate zarade ostaju netaknute.\n" +
+                "• Iz kartona se uzimaju JMBG, opština prebivališta i tekući račun. Spisak svih primalaca sa brojem ugovora i isplaćenim iznosom je u '👤 Primaoci po ugovoru'.\n" +
                 "• Računica ima četiri koraka: osnovica = bruto − normirani troškovi, porez = osnovica × stopa, doprinosi = osnovica × stope, neto = bruto − porez − doprinosi na teret primaoca. Primer za ugovor o delu: bruto 50.000 → normirani troškovi 20% = 10.000 → osnovica 40.000 → porez 20% = 8.000 i PIO 24% = 9.600 → neto 32.400.\n" +
                 "• Ako je naknada ugovorena 'na ruke', čekirajte 'neto' — bruto se dobija preračunom, tačno u dinar.\n" +
-                "• Naknada se vezuje za ISPLATU, ne za mesec: ulazi u istu PPP-PD prijavu i isti paket naloga kao zarada te isplate, samo sa svojom šifrom vrste prihoda i bez sati. Naknada isplaćena drugog datuma ide u svoju isplatu, jer svaka isplata ima svoj datum plaćanja i svoj BOP.\n" +
                 "• Isti ugovor može biti isplaćen u ratama — po jedna u svakoj isplati. Dva obračuna po istom ugovoru u ISTOJ isplati nisu dozvoljena, jer bi dala dva reda za isto lice u jednoj prijavi.\n" +
+                "• Godišnja PPP-PO potvrda je po LICU, ne po vrsti prihoda: zaposleni sa honorarom dobija JEDNU potvrdu, sa redom za zaradu i redom za naknadu.\n" +
                 "• Prekalkulacija zarada ne dira obračunate naknade — one nastaju zasebnom radnjom nad ugovorom.\n" +
                 "• Platni listić se za naknadu ne pravi: on prikazuje sate, fond i obustave, kojih ovde nema.\n\n" +
                 "ŠTA IDE VAN PROGRAMA:\n" +

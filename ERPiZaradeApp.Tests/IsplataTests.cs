@@ -596,4 +596,172 @@ public class IsplataTests
 
         Assert.Contains(nalazi, n => n.Provera == "Isti BOP na više isplata" && n.Tezina == TezinaNalaza.Greska);
     }
+
+    // ── Rod isplate ──────────────────────────────────────────────────
+
+    /// <summary>
+    /// Kontrolni test: rod ne menja ništa za zatečene podatke. Isplata napravljena kao i do
+    /// sada je zarada, nosi obračune bez upisane isplate i daje istu oznaku „K".
+    /// </summary>
+    [Fact]
+    public void Rod_ZatecenaIsplata_JeZaradaIPonasaSeIsto()
+    {
+        using var db = NoviKontekst();
+        var servis = Servis(db);
+
+        var prva = servis.Obezbedi(Godina, Mesec);
+
+        Assert.Equal(RodIsplate.Zarada, prva.Rod);
+        Assert.True(prva.JePrva);
+        Assert.False(prva.JeVanRadnogOdnosa);
+        Assert.True(prva.NosiObustave);
+        Assert.Equal("K", prva.OznakaZaKonacnuIsplatu);
+
+        // Obračun bez upisane isplate i dalje pripada njoj — to drži da mesec sa jednom
+        // isplatom radi kao pre.
+        DodajObracun(db, 1);
+        Assert.Single(IsplataService.Obuhvat(db.ObracuniPlata, Godina, Mesec, prva));
+    }
+
+    /// <summary>
+    /// Isplata naknada je zaseban rod: ne nosi obustave, oznaka joj je uvek „K", i period joj
+    /// je mesec <b>isplate</b> — pa ga datum sme i da pomeri u drugi mesec.
+    /// </summary>
+    [Fact]
+    public void DodajNaknadu_PraviIsplatuSvogRodaSaPeriodomPoDatumu()
+    {
+        using var db = NoviKontekst();
+        var servis = Servis(db);
+
+        // Period se zadaje kao april, ali datum isplate je u maju — merodavan je datum.
+        var rezultat = servis.DodajNaknadu(Godina, Mesec, "Honorari", new DateTime(Godina, Mesec + 1, 12));
+
+        Assert.True(rezultat.Uspesno, rezultat.Poruka);
+
+        var naknada = rezultat.Isplata!;
+        Assert.Equal(RodIsplate.VanRadnogOdnosa, naknada.Rod);
+        Assert.True(naknada.JeVanRadnogOdnosa);
+        Assert.False(naknada.NosiObustave);
+        Assert.Equal("K", naknada.OznakaZaKonacnuIsplatu);
+        Assert.Equal(Mesec + 1, naknada.Mesec);
+        Assert.Equal(new DateTime(Godina, Mesec + 1, 12), naknada.DatumIsplate);
+    }
+
+    /// <summary>
+    /// Isplata naknada nikad nije „prva" u smislu obuhvata, pa ne pokupi obračune bez upisane
+    /// isplate. Bez toga bi zarade iz starijih baza upale u prijavu honorara.
+    /// </summary>
+    [Fact]
+    public void IsplataNaknada_NePokupljaObracuneBezUpisaneIsplate()
+    {
+        using var db = NoviKontekst();
+        var servis = Servis(db);
+
+        DodajObracun(db, 1);                       // zatečena zarada, bez IsplataId
+        var naknada = servis.DodajNaknadu(Godina, Mesec, "", new DateTime(Godina, Mesec, 15)).Isplata!;
+
+        Assert.False(naknada.JePrva);
+        Assert.Empty(IsplataService.Obuhvat(db.ObracuniPlata, Godina, Mesec, naknada));
+
+        // A prva isplata zarade ih i dalje nosi.
+        var zarada = servis.Isplate(Godina, Mesec, RodIsplate.Zarada).Single();
+        Assert.Single(IsplataService.Obuhvat(db.ObracuniPlata, Godina, Mesec, zarada));
+    }
+
+    /// <summary>
+    /// Mesec sme imati više isplata naknada — svaki datum je svoja prijava. Ograničenje „jedna
+    /// konačna zarada mesečno" postoji zbog obustava i na naknade se ne odnosi.
+    /// </summary>
+    [Fact]
+    public void DodajNaknadu_ViseIsplataUIstomMesecu_JeDozvoljeno()
+    {
+        using var db = NoviKontekst();
+        var servis = Servis(db);
+
+        var prva = servis.DodajNaknadu(Godina, Mesec, "", new DateTime(Godina, Mesec, 10));
+        var druga = servis.DodajNaknadu(Godina, Mesec, "", new DateTime(Godina, Mesec, 20));
+
+        Assert.True(prva.Uspesno, prva.Poruka);
+        Assert.True(druga.Uspesno, druga.Poruka);
+
+        // Redni broj 1 ostaje zaradi — Obezbedi ga rezerviše, i to drži Isplata.JePrva tačnim.
+        var isplate = servis.Isplate(Godina, Mesec);
+        Assert.Equal(3, isplate.Count);
+        Assert.Equal(RodIsplate.Zarada, isplate[0].Rod);
+        Assert.Equal(1, isplate[0].RedniBroj);
+        Assert.Equal([2, 3], isplate.Where(i => i.JeVanRadnogOdnosa).Select(i => i.RedniBroj));
+    }
+
+    /// <summary>Isplata bez datuma se odbija — datum je polje 1.4 i deli prijavu od prijave.</summary>
+    [Fact]
+    public void DodajNaknadu_BezDatuma_SeOdbija()
+    {
+        using var db = NoviKontekst();
+
+        var rezultat = Servis(db).DodajNaknadu(Godina, Mesec, "", default);
+
+        Assert.False(rezultat.Uspesno);
+        Assert.Contains("datum", rezultat.Poruka, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Filtriranje po rodu je ono čime ekrani razdvajaju svoje isplate: obračun plate i radni
+    /// sati vide samo zarade, ugovori samo naknade.
+    /// </summary>
+    [Fact]
+    public void Isplate_FiltriraPoRodu()
+    {
+        using var db = NoviKontekst();
+        var servis = Servis(db);
+
+        servis.Dodaj(Godina, Mesec, VrstaIsplate.Akontacija, "", new DateTime(Godina, Mesec, 5));
+        servis.DodajNaknadu(Godina, Mesec, "", new DateTime(Godina, Mesec, 15));
+
+        Assert.Equal(3, servis.Isplate(Godina, Mesec).Count);
+        Assert.Equal(2, servis.Isplate(Godina, Mesec, RodIsplate.Zarada).Count);
+        Assert.Single(servis.Isplate(Godina, Mesec, RodIsplate.VanRadnogOdnosa));
+    }
+
+    /// <summary>
+    /// Naknada zatečena na isplati zarade je greška, a ne upozorenje: njena prijava bi nosila
+    /// obračunski period meseca za koji se zarada isplaćuje umesto meseca isplate.
+    /// </summary>
+    [Fact]
+    public void Provere_NaknadaNaIsplatiZarade_JeGreska()
+    {
+        using var db = NoviKontekst();
+        var servis = Servis(db);
+
+        var zarada = servis.Obezbedi(Godina, Mesec);
+        servis.DodajNaknadu(Godina, Mesec, "", new DateTime(Godina, Mesec, 15));
+
+        // Naknada upisana na isplatu zarade — ono što UgovorObracunService više ne dozvoljava,
+        // ali što u zatečenoj bazi može da stoji.
+        var obracun = DodajObracun(db, 1, zarada.IsplataId);
+        obracun.UgovorId = 1;
+        db.SaveChanges();
+
+        var nalazi = servis.Proveri(Godina, Mesec);
+
+        Assert.Contains(nalazi, n => n.Provera == "Pomešani rodovi u istoj isplati"
+                                     && n.Tezina == TezinaNalaza.Greska);
+    }
+
+    /// <summary>Isto i obrnuto: zarada na isplati naknada.</summary>
+    [Fact]
+    public void Provere_ZaradaNaIsplatiNaknada_JeGreska()
+    {
+        using var db = NoviKontekst();
+        var servis = Servis(db);
+
+        servis.Obezbedi(Godina, Mesec);
+        var naknada = servis.DodajNaknadu(Godina, Mesec, "", new DateTime(Godina, Mesec, 15)).Isplata!;
+
+        DodajObracun(db, 1, naknada.IsplataId);   // zarada, bez UgovorId
+
+        var nalazi = servis.Proveri(Godina, Mesec);
+
+        Assert.Contains(nalazi, n => n.Provera == "Pomešani rodovi u istoj isplati"
+                                     && n.Tezina == TezinaNalaza.Greska);
+    }
 }

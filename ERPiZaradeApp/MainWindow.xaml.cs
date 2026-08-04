@@ -1,9 +1,12 @@
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using ERPiZaradeApp.Views.Pomoc;
 using ERPiZaradeApp.Views.Radnici;
+using ERPiZaradeData.Models;
 
 namespace ERPiZaradeApp;
 
@@ -217,32 +220,31 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>
+    /// Skuplja i širi bočnu traku. Naslovi grupa se traže po imenu koje počinje sa „Header",
+    /// a ne nabrajaju jedan po jedan: nabrojan spisak se razilazi sa menijem čim se doda ili
+    /// preimenuje grupa — što se i desilo kad je „ŠTAMPA" podeljena po rodu isplate.
+    /// </summary>
     private void BtnToggleSidebar_Click(object sender, RoutedEventArgs e)
     {
-        if (SidebarColumn.Width.Value > 100)
-        {
-            SidebarColumn.Width = new GridLength(64);
-            TxtBrandTitle.Visibility = Visibility.Collapsed;
-            TxtBrandSubtitle.Visibility = Visibility.Collapsed;
-            HeaderRadnaTabla.Visibility = Visibility.Collapsed;
-            HeaderObracuni.Visibility = Visibility.Collapsed;
-            HeaderEvidencija.Visibility = Visibility.Collapsed;
-            HeaderStampa.Visibility = Visibility.Collapsed;
-            HeaderSifarnici.Visibility = Visibility.Collapsed;
-            HeaderPodesavanja.Visibility = Visibility.Collapsed;
-        }
-        else
-        {
-            SidebarColumn.Width = new GridLength(220);
-            TxtBrandTitle.Visibility = Visibility.Visible;
-            TxtBrandSubtitle.Visibility = Visibility.Visible;
-            HeaderRadnaTabla.Visibility = Visibility.Visible;
-            HeaderObracuni.Visibility = Visibility.Visible;
-            HeaderEvidencija.Visibility = Visibility.Visible;
-            HeaderStampa.Visibility = Visibility.Visible;
-            HeaderSifarnici.Visibility = Visibility.Visible;
-            HeaderPodesavanja.Visibility = Visibility.Visible;
-        }
+        bool skupljena = SidebarColumn.Width.Value > 100;
+        var vidljivost = skupljena ? Visibility.Collapsed : Visibility.Visible;
+
+        SidebarColumn.Width = new GridLength(skupljena ? 64 : 220);
+        TxtBrandTitle.Visibility = vidljivost;
+        TxtBrandSubtitle.Visibility = vidljivost;
+
+        foreach (var naslov in NasloviGrupa()) naslov.Visibility = vidljivost;
+    }
+
+    /// <summary>Naslovi grupa u bočnoj traci, po redosledu u kom stoje u meniju.</summary>
+    private IEnumerable<TextBlock> NasloviGrupa()
+    {
+        var panel = (FrameworkElement)HeaderRadnaTabla.Parent;
+
+        return LogicalTreeHelper.GetChildren(panel)
+            .OfType<TextBlock>()
+            .Where(t => t.Name.StartsWith("Header", StringComparison.Ordinal));
     }
 
     private void NavigateTo(Button btn, string title, Page page, string subtitle = "", string helpAnchor = "")
@@ -277,7 +279,10 @@ public partial class MainWindow : Window
         => NavigateTo(BtnStampe, "📑 Knjigovodstveni izveštaji i rekapitulacije", new Views.Stampe.StampePage(), "Generisanje i štampa mesečnih platnih spiskova po radnim jedinicama i zbirnih rekapitulacija", helpAnchor: "Stampe");
 
     private void BtnPppPd_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnPppPd, "📋 Poreska uprava — PPP-PD prijava", new Views.PppPd.PppPdPage(), "Pregled, pre-validacija poreskih osnovica i generisanje XML datoteke poreske deklaracije za Poresku Upravu Republike Srbije", helpAnchor: "PppPd");
+        => NavigateTo(BtnPppPd, "📋 PPP-PD — zarade", new Views.PppPd.PppPdPage(RodIsplate.Zarada), "Prijava za isplate zarade. Obračunski period je mesec ZA KOJI se zarada isplaćuje; naknade po ugovoru idu svojom prijavom", helpAnchor: "PppPd");
+
+    private void BtnPppPdNaknade_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnPppPdNaknade, "📋 PPP-PD — naknade van radnog odnosa", new Views.PppPd.PppPdPage(RodIsplate.VanRadnogOdnosa), "Zasebna prijava za naknade po ugovoru. Obračunski period je mesec ISPLATE, a oznaka konačne isplate je uvek „K“", helpAnchor: "PppPd");
 
     private void BtnPrimanja_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnPrimanja, "🎁 Ostala primanja", new Views.Primanja.PrimanjaPage(), "Prevoz, jubilarne nagrade, solidarne pomoći — prekoračenje neoporezivog limita automatski postaje oporezivo", helpAnchor: "Primanja");
@@ -286,16 +291,28 @@ public partial class MainWindow : Window
         => NavigateTo(BtnPppPo, "🧾 PPP-PO — godišnja potvrda o plaćenim porezima i doprinosima", new Views.PppPo.PppPoPage(), "Potvrda koju je poslodavac dužan da uruči radniku do 31. januara za prethodnu godinu", helpAnchor: "PppPo");
 
     private void BtnNalozi_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnNalozi, "🏦 Nalozi za prenos", new Views.Nalozi.NaloziPage(), "Priprema naloga za isplatu neto zarada i jedinstvene uplate poreza i doprinosa po BOP-u iz prihvaćene PPP-PD prijave", helpAnchor: "Nalozi");
+        => NavigateTo(BtnNalozi, "🏦 Nalozi za prenos — zarade", new Views.Nalozi.NaloziPage(RodIsplate.Zarada), "Priprema naloga za isplatu neto zarada i jedinstvene uplate poreza i doprinosa po BOP-u iz prihvaćene PPP-PD prijave", helpAnchor: "Nalozi");
+
+    private void BtnNaloziNaknada_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnNaloziNaknada, "🏦 Nalozi za prenos — naknade van radnog odnosa", new Views.Nalozi.NaloziPage(RodIsplate.VanRadnogOdnosa), "Nalozi za isplatu naknada primaocima i uplatu poreza i doprinosa po BOP-u SVOJE prijave — nikad zajedno sa zaradom", helpAnchor: "Nalozi");
 
     private void BtnIsplate_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnIsplate, "💸 Isplate u mesecu", new Views.Isplate.IsplatePage(), "Akontacija, konačna isplata, bonus i 13. plata kao zasebne isplate istog meseca — svaka sa svojom PPP-PD prijavom i svojim nalozima", helpAnchor: "Isplate");
+        => NavigateTo(BtnIsplate, "💸 Isplate zarade u mesecu", new Views.Isplate.IsplatePage(RodIsplate.Zarada), "Akontacija, konačna isplata, bonus i 13. plata kao zasebne isplate istog meseca — svaka sa svojom PPP-PD prijavom i svojim nalozima", helpAnchor: "Isplate");
+
+    private void BtnIsplateNaknada_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnIsplateNaknada, "💸 Isplate naknada van radnog odnosa", new Views.Isplate.IsplatePage(RodIsplate.VanRadnogOdnosa), "Svaki datum isplate honorara je svoja prijava: datum je polje 1.4, a mesec iz njega obračunski period u polju 1.2", helpAnchor: "Isplate");
+
+    private void BtnPrimaoci_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnPrimaoci, "👤 Primaoci po ugovoru", new Views.Ugovori.PrimaociPage(), "Lica kojima se isplaćuje po ugovorima van radnog odnosa — pogled nad istim registrom kao „Radnici“, jer zaposleni sme biti i primalac", helpAnchor: "Ugovori");
 
     private void BtnUgovori_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnUgovori, "📝 Ugovori van radnog odnosa", new Views.Ugovori.UgovoriPage(), "Ugovor o delu, autorska naknada, privremeni i povremeni poslovi i naknade odborima — obračun naknade koja ulazi u istu PPP-PD prijavu kao zarada", helpAnchor: "Ugovori");
+        => NavigateTo(BtnUgovori, "📝 Ugovori i naknade van radnog odnosa", new Views.Ugovori.UgovoriPage(), "Ugovor o delu, autorska naknada, privremeni i povremeni poslovi i naknade odborima — naknada se prijavljuje ZASEBNOM PPP-PD prijavom, sa mesecom isplate kao obračunskim periodom", helpAnchor: "Ugovori");
 
     private void BtnKnjizenje_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(BtnKnjizenje, "📒 Nalog za knjiženje", new Views.Knjizenje.KnjizenjePage(), "Temeljnica za glavnu knjigu — trošak po vrstama primanja i mestima troška, obaveze po ulogama iznosa, za uvoz u ERPiFinansije", helpAnchor: "Knjizenje");
+        => NavigateTo(BtnKnjizenje, "📒 Nalog za knjiženje — zarade", new Views.Knjizenje.KnjizenjePage(RodIsplate.Zarada), "Temeljnica za glavnu knjigu — trošak po vrstama primanja i mestima troška, obaveze po ulogama iznosa, za uvoz u ERPiFinansije", helpAnchor: "Knjizenje");
+
+    private void BtnKnjizenjeNaknada_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(BtnKnjizenjeNaknada, "📒 Nalog za knjiženje — naknade van radnog odnosa", new Views.Knjizenje.KnjizenjePage(RodIsplate.VanRadnogOdnosa), "Trošak naknade ide na konto iz šifarnika vrsta ugovora, a ne na konto zarade", helpAnchor: "Knjizenje");
 
     private void BtnBolovanja_Click(object sender, RoutedEventArgs e)
         => NavigateTo(BtnBolovanja, "🏥 Bolovanja i refundacija RFZO", new Views.Bolovanja.BolovanjaPage(), "Evidencija privremene sprečenosti za rad preko 30 dana i obrasci OZ-7 i OZ-10 za refundaciju naknade zarade iz sredstava obaveznog zdravstvenog osiguranja", helpAnchor: "Bolovanja");

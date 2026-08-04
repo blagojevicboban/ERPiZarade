@@ -49,31 +49,49 @@ public class IsplataService
             : uPeriodu.Where(o => o.IsplataId == id);
     }
 
-    /// <summary>Isplate perioda, po rednom broju.</summary>
-    public IReadOnlyList<Isplata> Isplate(int godina, int mesec)
+    /// <summary>
+    /// Isplate perioda, po rednom broju. Kad je <paramref name="rod"/> zadat, vraća samo
+    /// isplate tog roda — tako ekrani zarade ne nude isplate naknada i obrnuto.
+    /// </summary>
+    public IReadOnlyList<Isplata> Isplate(int godina, int mesec, RodIsplate? rod = null)
         => _db.Isplate
             .Where(i => i.Godina == godina && i.Mesec == mesec)
+            .Where(i => rod == null || i.Rod == rod)
             .OrderBy(i => i.RedniBroj)
             .ToList();
 
     /// <summary>
-    /// Prva isplata perioda; pravi je ako je nema. Poziva se sa svakog ekrana koji radi nad
-    /// periodom, pa se isplata pojavljuje sama za sve mesece koji su postojali ranije.
+    /// Prva isplata <b>zarade</b> u periodu; pravi je ako je nema. Poziva se sa svakog ekrana
+    /// koji radi nad periodom, pa se isplata pojavljuje sama za sve mesece koji su postojali
+    /// ranije.
+    ///
+    /// Traži se izričito rod <see cref="RodIsplate.Zarada"/> zato što ova isplata nosi i sve
+    /// zapise bez <c>IsplataId</c> (vidi <see cref="Isplata.JePrva"/>), a oni su uvek zarade.
+    /// Isplata naknada se ovom metodom <b>ne pravi</b>: njen datum plaćanja deli prijavu od
+    /// prijave i program ga ne može pogoditi.
     /// </summary>
     public Isplata Obezbedi(int godina, int mesec)
     {
         var prva = _db.Isplate
-            .Where(i => i.Godina == godina && i.Mesec == mesec)
+            .Where(i => i.Godina == godina && i.Mesec == mesec && i.Rod == RodIsplate.Zarada)
             .OrderBy(i => i.RedniBroj)
             .FirstOrDefault();
 
         if (prva != null) return prva;
 
+        // Broj 1 pripada zaradi jer Dodaj i DodajNaknadu pozivaju ovu metodu pre nego što
+        // upišu bilo šta. Sledeći slobodan broj se ipak traži, da upis mimo servisa ne bi
+        // oborio jedinstveni indeks (Godina, Mesec, RedniBroj).
+        int zauzet = _db.Isplate
+            .Where(i => i.Godina == godina && i.Mesec == mesec)
+            .Max(i => (int?)i.RedniBroj) ?? 0;
+
         prva = new Isplata
         {
             Godina = godina,
             Mesec = mesec,
-            RedniBroj = 1,
+            RedniBroj = zauzet + 1,
+            Rod = RodIsplate.Zarada,
             Vrsta = VrstaIsplate.KonacnaZarada,
             DatumIsplate = PoslednjiDanMeseca(godina, mesec)
         };
@@ -84,8 +102,8 @@ public class IsplataService
     }
 
     /// <summary>
-    /// Dodaje narednu isplatu u mesecu. Redni broj se dodeljuje sam — on je istovremeno
-    /// veza ka PPP-PD prijavi, pa se ne prepušta unosu.
+    /// Dodaje narednu isplatu <b>zarade</b> u mesecu. Redni broj se dodeljuje sam — on je
+    /// istovremeno veza ka PPP-PD prijavi, pa se ne prepušta unosu.
     /// </summary>
     public RezultatIsplate Dodaj(int godina, int mesec, VrstaIsplate vrsta, string opis, DateTime datumIsplate)
     {
@@ -97,9 +115,12 @@ public class IsplataService
         Obezbedi(godina, mesec);
 
         // Obustave se skidaju na konačnoj zaradi. Dve konačne zarade u istom mesecu značile
-        // bi da se ista rata kredita skine dvaput, pa se druga ne dozvoljava.
+        // bi da se ista rata kredita skine dvaput, pa se druga ne dozvoljava. Provera gleda
+        // samo rod zarade: isplata naknada vrstu ne koristi i ne sme da je blokira.
         if (vrsta == VrstaIsplate.KonacnaZarada
-            && _db.Isplate.Any(i => i.Godina == godina && i.Mesec == mesec && i.Vrsta == VrstaIsplate.KonacnaZarada))
+            && _db.Isplate.Any(i => i.Godina == godina && i.Mesec == mesec
+                                    && i.Rod == RodIsplate.Zarada
+                                    && i.Vrsta == VrstaIsplate.KonacnaZarada))
         {
             return new RezultatIsplate
             {
@@ -109,6 +130,54 @@ public class IsplataService
             };
         }
 
+        return Upisi(godina, mesec, RodIsplate.Zarada, vrsta, opis, datumIsplate);
+    }
+
+    /// <summary>
+    /// Dodaje isplatu <b>naknada po ugovorima van radnog odnosa</b>.
+    ///
+    /// Ovo je zasebna isplata, a ne vrsta isplate zarade, zato što joj je obračunski period
+    /// drugačije određen: član 11 Pravilnika za zaradu traži mesec <i>za koji</i> se isplaćuje,
+    /// a honorar takvog meseca nema — njegov period je mesec isplate. Zato
+    /// <paramref name="godina"/> i <paramref name="mesec"/> ovde znače <b>mesec isplate</b> i
+    /// izvode se iz <paramref name="datumIsplate"/> ako se razilaze.
+    ///
+    /// Mesec ih sme imati koliko treba: svaki datum isplate je svoja prijava, jer prijava nosi
+    /// jedno polje 1.4. Ograničenje „jedna konačna zarada mesečno" se na njih ne odnosi —
+    /// obustave one ne nose nikada.
+    /// </summary>
+    public RezultatIsplate DodajNaknadu(int godina, int mesec, string opis, DateTime datumIsplate)
+    {
+        if (godina <= 0 || mesec is < 1 or > 12)
+            return new RezultatIsplate { Poruka = "Period nije ispravan." };
+
+        if (datumIsplate == default)
+        {
+            return new RezultatIsplate
+            {
+                Poruka = "Isplata naknada mora imati datum isplate — on je datum plaćanja na " +
+                         "PPP-PD prijavi (polje 1.4) i deli jednu prijavu od druge."
+            };
+        }
+
+        // Period naknade JESTE mesec isplate, pa se ne prepušta izboru na ekranu: pogrešan
+        // period je prijava sa pogrešnim poljem 1.2, a to se vidi tek kad je odbijena.
+        if (datumIsplate.Year != godina || datumIsplate.Month != mesec)
+        {
+            godina = datumIsplate.Year;
+            mesec = datumIsplate.Month;
+        }
+
+        // Broj 1 ostaje zaradi; vidi Obezbedi i Isplata.JePrva.
+        Obezbedi(godina, mesec);
+
+        return Upisi(godina, mesec, RodIsplate.VanRadnogOdnosa, VrstaIsplate.Ostalo, opis, datumIsplate);
+    }
+
+    /// <summary>Upis isplate; zajednički za oba roda, da se dodela rednog broja piše jednom.</summary>
+    private RezultatIsplate Upisi(
+        int godina, int mesec, RodIsplate rod, VrstaIsplate vrsta, string opis, DateTime datumIsplate)
+    {
         int sledeci = _db.Isplate
             .Where(i => i.Godina == godina && i.Mesec == mesec)
             .Max(i => (int?)i.RedniBroj) ?? 0;
@@ -118,6 +187,7 @@ public class IsplataService
             Godina = godina,
             Mesec = mesec,
             RedniBroj = sledeci + 1,
+            Rod = rod,
             Vrsta = vrsta,
             Opis = Skrati(opis ?? "", 80),
             DatumIsplate = datumIsplate == default ? PoslednjiDanMeseca(godina, mesec) : datumIsplate
@@ -126,8 +196,12 @@ public class IsplataService
         _db.Isplate.Add(isplata);
         _db.SaveChanges();
 
+        string sta = rod == RodIsplate.VanRadnogOdnosa
+            ? $"naknade po ugovoru ({isplata.DatumIsplate:dd.MM.yyyy})"
+            : Isplata.NazivVrste(vrsta);
+
         AuditService.Zabelezi(_db, godina, mesec, AkcijaObracuna.IsplataDodata,
-            $"{isplata.RedniBroj}. isplata — {Isplata.NazivVrste(vrsta)}" +
+            $"{isplata.RedniBroj}. isplata — {sta}" +
             (string.IsNullOrWhiteSpace(isplata.Opis) ? "" : $" ({isplata.Opis})"));
 
         return new RezultatIsplate
@@ -231,8 +305,11 @@ public class IsplataService
     {
         var prva = Obezbedi(godina, mesec);
 
+        // Naknada po ugovoru se ovde ne dira: ona svoju isplatu upisuje izričito i pripada
+        // isplati roda VanRadnogOdnosa. Da se neka zatekne bez isplate, vezivanje za prvu
+        // isplatu zarade bi je uvuklo u pogrešnu prijavu — pa je bolje da je uhvati provera.
         var obracuni = _db.ObracuniPlata
-            .Where(o => o.Godina == godina && o.Mesec == mesec && o.IsplataId == null)
+            .Where(o => o.Godina == godina && o.Mesec == mesec && o.IsplataId == null && o.UgovorId == null)
             .ToList();
 
         foreach (var o in obracuni) o.IsplataId = prva.IsplataId;
@@ -262,15 +339,52 @@ public class IsplataService
 
         foreach (var isplata in isplate)
         {
-            int broj = Obuhvat(_db.ObracuniPlata, godina, mesec, isplata).Count(o => !o.Storniran);
+            var uIsplati = Obuhvat(_db.ObracuniPlata, godina, mesec, isplata)
+                .Where(o => !o.Storniran)
+                .Select(o => new { o.UgovorId })
+                .ToList();
 
-            if (broj == 0)
+            int broj = uIsplati.Count;
+
+            // Rod isplate određuje obračunski period i oznaku K/A njene prijave. Naknada na
+            // isplati zarade dobila bi period meseca ZA KOJI se zarada isplaćuje umesto meseca
+            // isplate, a zarada na isplati naknada obrnuto — u oba slučaja prijava sa pogrešnim
+            // poljem 1.2, što se vidi tek kad je Poreska uprava odbije.
+            int nesvrstanih = isplata.JeVanRadnogOdnosa
+                ? uIsplati.Count(o => o.UgovorId == null)
+                : uIsplati.Count(o => o.UgovorId != null);
+
+            if (nesvrstanih > 0)
             {
                 nalazi.Add(new NalazProvere
                 {
+                    Tezina = TezinaNalaza.Greska,
+                    Provera = "Pomešani rodovi u istoj isplati",
+                    Opis = isplata.JeVanRadnogOdnosa
+                        ? $"„{isplata.Naziv}“ je isplata naknada, a nosi {nesvrstanih} obračuna zarade. " +
+                          "Zarada i naknada ne mogu u istu prijavu — obračunski period im se razlikuje."
+                        : $"„{isplata.Naziv}“ je isplata zarade, a nosi {nesvrstanih} naknada po ugovoru. " +
+                          "Prebacite ih na isplatu naknada; njihov obračunski period je mesec isplate, " +
+                          "a ne mesec za koji se zarada isplaćuje."
+                });
+            }
+
+            if (broj == 0)
+            {
+                // Prvu isplatu zarade pravi Obezbedi sam, čim se otvori bilo koji ekran nad
+                // periodom. U mesecu u kom su isplaćene samo naknade ona ostaje prazna, i to
+                // nije greška nego tačan opis stanja — pa se i kaže tako.
+                bool samoNaknade = isplata is { JePrva: true, Rod: RodIsplate.Zarada }
+                                   && isplate.Any(i => i.JeVanRadnogOdnosa);
+
+                nalazi.Add(new NalazProvere
+                {
                     Tezina = TezinaNalaza.Upozorenje,
-                    Provera = "Isplata bez obračuna",
-                    Opis = $"„{isplata.Naziv}“ nema nijedan obračun — za nju se ne formira ni prijava ni nalog."
+                    Provera = samoNaknade ? "Mesec bez isplate zarade" : "Isplata bez obračuna",
+                    Opis = samoNaknade
+                        ? $"„{isplata.Naziv}“ nema nijedan obračun — u ovom mesecu su isplaćene samo " +
+                          "naknade po ugovoru. Za nju se ne formira ni prijava ni nalog."
+                        : $"„{isplata.Naziv}“ nema nijedan obračun — za nju se ne formira ni prijava ni nalog."
                 });
                 continue;
             }

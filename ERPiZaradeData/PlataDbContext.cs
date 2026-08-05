@@ -163,9 +163,13 @@ public class PlataDbContext : DbContext
             .HasIndex(s => new { s.ObracunPlateId, s.VrstaPrimanjaId })
             .IsUnique();
 
-        // Uneto primanje: jedan iznos po radniku, periodu i vrsti
+        // Uneto primanje: jedan iznos po radniku, periodu, vrsti i isplati (Faza 3.2 dodala
+        // IsplataId — pre toga je mesec imao samo jednu isplatu pa kolona nije ni postojala).
+        // Napomena: SQLite/EF Core tretira NULL kao „različit od svega" u unique indeksu, pa
+        // dva reda sa IsplataId == null za istog radnika/vrstu/period ovim indeksom NE bi bila
+        // uhvaćena kao duplikat — to i dalje hvata provera u PrimanjaPage pre snimanja.
         modelBuilder.Entity<UnetoPrimanje>()
-            .HasIndex(p => new { p.RadnikId, p.Godina, p.Mesec, p.VrstaPrimanjaId })
+            .HasIndex(p => new { p.RadnikId, p.Godina, p.Mesec, p.VrstaPrimanjaId, p.IsplataId })
             .IsUnique();
 
         modelBuilder.Entity<UnetoPrimanje>()
@@ -179,6 +183,17 @@ public class PlataDbContext : DbContext
             .WithMany()
             .HasForeignKey(p => p.VrstaPrimanjaId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Isplata → UnetoPrimanje, isti obrazac kao Isplata → ObracunPlate: primanje je unos
+        // (pravilo #20), pa IsplataService.Obrisi sme da ga povuče sa sobom kad briše isplatu.
+        modelBuilder.Entity<UnetoPrimanje>()
+            .HasOne(p => p.Isplata)
+            .WithMany()
+            .HasForeignKey(p => p.IsplataId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<UnetoPrimanje>()
+            .HasIndex(p => p.IsplataId);
 
         // Olakšica se traži po OL oznaci iz SVP šifre, pa dve iste čine šifarnik dvosmislenim
         modelBuilder.Entity<PoreskaOlaksica>()

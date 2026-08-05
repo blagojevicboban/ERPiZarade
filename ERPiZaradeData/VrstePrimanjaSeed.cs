@@ -34,6 +34,9 @@ public static class VrstePrimanjaSeed
     public const string Regres = "REG";
     public const string BrutoDodatak = "VAR";
 
+    /// <summary>Prekoračenje neoporezive dnevnice, preuzeto iz putnog naloga (Faza 3.2).</summary>
+    public const string DnevnicaPrekoracenje = "DNP";
+
     private const string SvpZarada = "101101000";
     private const string SvpBolovanje = "109101000";
 
@@ -79,7 +82,16 @@ public static class VrstePrimanjaSeed
         Neoporeziva("PRV", "Naknada troškova prevoza", 300),
         Neoporeziva("JUB", "Jubilarna nagrada",        310),
         Neoporeziva("SOL", "Solidarna pomoć",          320),
-        Neoporeziva("POK", "Poklon deci zaposlenih",   330)
+        Neoporeziva("POK", "Poklon deci zaposlenih",   330),
+
+        // ── Već isplaćeno van obračuna (Faza 3.2) ────────────────────
+        // Prekoračenje neoporezive dnevnice stiže iz ERPiFinansije već izračunato — ceo
+        // uvezeni iznos JE oporezivi deo, limit je primenjen tamo (NeoporeziviLimit ovde je
+        // zato 0, za razliku od Neoporeziva() grupe iznad). Radnik ga je već primio kroz
+        // putni nalog, pa VecIsplacenoVanObracuna sprečava da ga ObracunService isplati
+        // drugi put kroz platni spisak. Konto ostaje prazan — videti PLAN_NASTAVKA.md,
+        // Faza 3.2, otvoreno pitanje o dvostrukom knjiženju iste dnevnice u dva sistema.
+        VecIsplaceno(DnevnicaPrekoracenje, "Prekoračenje neoporezive dnevnice", 340)
     ];
 
     private static VrstaPrimanja Sistemska(
@@ -110,6 +122,28 @@ public static class VrstePrimanjaSeed
             // Nula znači da gornje granice nema — ceo iznos je neoporeziv. Limiti su
             // promenljivi propisom, pa se ne ugrađuju u kod nego unose u šifarnik; dok se
             // ne unesu, kontrolne provere na to upozoravaju.
+            NeoporeziviLimit = 0m,
+            Redosled = redosled,
+            Aktivna = true,
+            JeSistemska = false
+        };
+
+    /// <summary>
+    /// Vrsta primanja čiji je ceo uneti iznos već oporeziv (limit je primenjen na izvoru, van
+    /// ovog programa) i čiju glavnicu je radnik već primio van platnog spiska — videti
+    /// <see cref="VrstaPrimanja.VecIsplacenoVanObracuna"/>. Nije sistemska iz istog razloga kao
+    /// <see cref="Neoporeziva"/>: engine je ne računa sam, stiže uvozom ili ručnim unosom.
+    /// </summary>
+    private static VrstaPrimanja VecIsplaceno(string sifra, string naziv, int redosled)
+        => new()
+        {
+            Sifra = sifra,
+            Naziv = naziv,
+            Svp = SvpZarada,
+            Konto = "",
+            Oporezivo = true,
+            UlaziUOsnovicuDoprinosa = true,
+            VecIsplacenoVanObracuna = true,
             NeoporeziviLimit = 0m,
             Redosled = redosled,
             Aktivna = true,

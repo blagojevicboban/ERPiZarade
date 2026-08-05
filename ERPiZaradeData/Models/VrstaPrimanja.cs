@@ -61,6 +61,15 @@ public class VrstaPrimanja
     /// </summary>
     public bool NaTeretFonda { get; set; }
 
+    /// <summary>
+    /// Iznos je radniku već isplaćen van ovog obračuna (npr. prekoračenje dnevnice, isplaćeno
+    /// gotovinom ili na račun kroz putni nalog u ERPiFinansije — Faza 3.2). Ulazi u bruto,
+    /// poresku osnovicu i osnovicu doprinosa kao i svako drugo primanje, ali se <b>ne</b>
+    /// isplaćuje ponovo kroz platni spisak — <see cref="ObracunService"/> ga oduzima od neto
+    /// isplate posle što uveća poresku osnovicu, jer bi inače taj novac otišao radniku dvaput.
+    /// </summary>
+    public bool VecIsplacenoVanObracuna { get; set; }
+
     /// <summary>Redosled prikaza na platnom listiću i u izveštajima.</summary>
     public int Redosled { get; set; }
 
@@ -120,7 +129,7 @@ public class ObracunStavka
 /// <see cref="RadniSat"/> i u <see cref="ObracunPlate"/>.
 /// </summary>
 [Table("UnetaPrimanja")]
-public class UnetoPrimanje
+public class UnetoPrimanje : IPripadaIsplati
 {
     [Key]
     public int UnetoPrimanjeId { get; set; }
@@ -130,6 +139,16 @@ public class UnetoPrimanje
 
     public int Godina { get; set; }
     public int Mesec { get; set; }
+
+    /// <summary>
+    /// Isplata kojoj primanje pripada (Faza 3.2). <c>null</c> znači <b>prvu isplatu svog
+    /// perioda</b> — isto pravilo kao <see cref="ObracunPlate.IsplataId"/>, primenjeno na
+    /// jednom mestu u <c>IsplataService.Obuhvat</c>. Bez ovoga bi isti unos ušao i u akontaciju
+    /// i u konačnu zaradu istog meseca — dvaput obračunat.
+    /// </summary>
+    public int? IsplataId { get; set; }
+
+    public Isplata? Isplata { get; set; }
 
     [ForeignKey(nameof(VrstaPrimanja))]
     public int VrstaPrimanjaId { get; set; }

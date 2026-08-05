@@ -31,6 +31,8 @@
                             Click="BtnDodaj_Click" ToolTip="Dodaj primanje"/>
                     <Button Content="🗑" Style="{StaticResource SecondaryButton}" Width="36" Padding="0" Margin="0,0,8,0"
                             Click="BtnObrisi_Click" ToolTip="Obriši izabrano primanje"/>
+                    <Button Content="📥" Style="{StaticResource SecondaryButton}" Width="36" Padding="0" Margin="0,0,8,0"
+                            Click="BtnUvozPutnihNaloga_Click" ToolTip="Uvoz prekoračenja dnevnice iz ERPiFinansije"/>
                     <Button Content="💾  Sačuvaj" Style="{StaticResource PrimaryButton}" Padding="16,6"
                             Click="BtnSacuvaj_Click"/>
                 </StackPanel>

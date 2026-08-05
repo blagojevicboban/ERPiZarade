@@ -4,7 +4,7 @@
 > [`ANALIZA_I_PREDLOZI_FUNKCIONALNOSTI.md`](ANALIZA_I_PREDLOZI_FUNKCIONALNOSTI.md) i beleži
 > šta je urađeno, šta je namerno odloženo i **na čemu se stalo zbog podataka koji nedostaju**.
 >
-> Stanje na dan **04.08.2026**, verzija **1.16.0**, 352 testa (uz 69 u ERPiFinansije 1.2.0).
+> Stanje na dan **05.08.2026**, verzija **1.17.0**, 366 testa (uz 134 u ERPiFinansije 1.6.0).
 
 ---
 
@@ -31,7 +31,7 @@
 | **2.6** | Bolovanja preko 30 dana, RFZO obrasci (OZ-7, OZ-10) | ✅ | 1.15.0 |
 | — | Knjiženje refundacije (225 / 454, 455, 456) | ✅ | 1.15.0 |
 | — | Odvajanje isplata van radnog odnosa (`Isplata.Rod`), podela menija | ✅ | 1.16.0 |
-| **3.2** | Preuzimanje putnih naloga iz ERPiFinansije | ⬜ | |
+| **3.2** | Prekoračenje dnevnice iz ERPiFinansije ulazi u zaradu | ✅ struktura, ⬜ potvrda knjigovođe | 1.17.0 |
 | **4** | Kadrovski modul | ⬜ | |
 | **5** | Web ESS | ⬜ preispitati | |
 
@@ -52,16 +52,23 @@ struktura je spremna i nedostaje samo zapisivač/čitač.
 | **XML „Potvrda o ostvarenoj zaradi" za eBolovanje** | Portal prima podatke o zaradi iz 12 meseci i **učitavanjem XML fajla**, ali šema nije javno objavljena — ni u korisničkom uputstvu ni na sajtu RFZO. Pet polja koja portal traži (mesec i godina, ukupan broj plaćenih časova, neto, bruto, datum isplate) su tačno kolone obrasca OZ-7, pa `Oz7Obrazac` već nosi sve što treba; nedostaje samo zapisivač. | Jedan primer XML-a ili šema — najlakše iz samog portala, ako tamo postoji šablon za preuzimanje. Bez toga se format ne piše napamet, isto pravilo kao kod Halcom fajla. |
 | **Polja 3.7, 3.8 i 3.8a kod naknada** | Pravilnik uz 3.7 kaže „obavezno se popunjava za konačan obračun **zarade**", a primeri Poreske uprave za autorske naknade te kolone ostavljaju **prazne**. `XmlExportService` ih za `JeVanRadnogOdnosa` šalje kao **0**. Da li XSD traži izostavljanje elementa ili prihvata nulu — ne piše se napamet. | Isti preuzet XML kao za BOP i JIPD. |
 | **OVP oznake za deo vrsta ugovora** | Potvrđeno je 601/602/603 (ugovor o delu i naknade odborima), 301/302/303 (autorske naknade 50% i 43%) i 150/151 (PP poslovi). Za autorsku naknadu sa **34%** normiranih troškova OVP nije potvrđen i ostavljen je **prazan** — obračun prolazi, ali kontrolna provera javlja grešku. Ostaje i da se potvrdi koji tip primaoca ide uz PP poslove. | Provera u važećem Katalogu vrste prihoda i unos u šifarnik „Vrste ugovora". Bez nove verzije. |
+| **Bruto/neto tretman prekoračenja dnevnice (Faza 3.2)** | `ObracunService` tretira uvezeni iznos kao **bruto** (porez/doprinosi se računaju direktno na njega). Domaći izvori govore samo o „porez i doprinosi na prekoračenje", bez bruto-uvećanja — ali ovo nije potvrđeno kod knjigovođe, a direktno utiče na iznos koji se prijavljuje. Kod nosi objašnjenje uz `vecIsplaceno` u `ObracunService.cs`. | Potvrda knjigovođe pre prvog stvarnog uvoza. |
+| **Konto za „DNP" (prekoračenje dnevnice)** | Ostavljen prazan namerno — puna dnevnica je već proknjižena u ERPiFinansije (5330/4650); dodatno knjiženje u „Nalog za knjiženje" zarada bi isti novac proknjižilo dvaput. Nije jasno da li „DNP" treba potpuno izostaviti iz `KnjizenjeService.DodajTroskoveZarada` (kao `NaTeretFonda` stavke) ili mu treba poseban konto koji jasno odvaja „već isplaćeno drugim putem" od pravog novog troška. | Odluka knjigovođe; videti „Vrste primanja" šifarnik. |
+| **Datum koji određuje mesec prekoračenja dnevnice** | `PutniNaloziZaZaradeWriter` (ERPiFinansije) koristi `DatumPovratka` sa puta kao proxy za datum isplate dnevnice — taj program nema poseban datum isplate. | Potvrda da je to zaista trenutak isplate u praksi, ili dodavanje pravog polja. |
 
 ---
 
 ## 3. Sledeći koraci, po preporučenom redosledu
 
-### 3.1. Faza 3.2 — preuzimanje putnih naloga iz ERPiFinansije *(preporučeno prvo)*
+### 3.1. Faza 3.2 — ✅ urađeno u 1.17.0, čeka potvrdu knjigovođe
 
-Dnevnice i putni troškovi već postoje u ERPiFinansije (`PutniNalog`); ERPiZarade treba da
-**preuzme oporezivi deo**, ne da ga računa iznova. Smer je obrnut od 3.1, ali je pravilo isto:
-iznos se prepisuje sa mesta gde nastaje.
+Prekoračenje neoporezive dnevnice (samo u zemlji) se sad prenosi iz `PutniNalog`
+(ERPiFinansije) u konačnu zaradu radnika preko JSON izvoza/uvoza i JMBG-a. ERPiZarade
+**preuzima oporezivi deo**, ne računa ga iznova — isti princip kao Faza 3.1, u suprotnom smeru.
+Struktura je gotova i testirana (366 + 134 testa), ali tri stvari čekaju potvrdu pre nego što
+se prvi pravi fajl uveze — videti tabelu „Blokirano" iznad (bruto/neto tretman, konto za
+„DNP", datum koji određuje mesec). Detalji, obrazloženja i sve odluke: plan fajl korišćen pri
+implementaciji je sačuvan u `C:\Users\Admin\.claude\plans\daj-predloge-i-da-cryptic-steele.md`.
 
 ### 3.2. Namerno odloženo
 
@@ -284,6 +291,24 @@ Ovo su svesne odluke sa razlogom; nova sesija ih lako „popravi" u pogrešnom s
     zatekne. Ne skraćivati kopiju „jer naknadi treba samo JMBG i račun": bez koeficijenta i
     osnovne plate bi tom licu zarada tog meseca ispala pogrešna.
 
+44. **`UnetoPrimanje` pripada isplati, ne samo periodu (Faza 3.2).** Bez `IsplataId` bi isti
+    uneti iznos ušao i u akontaciju i u konačnu zaradu istog meseca — dvaput obračunat. Ide
+    kroz `IsplataService.Obuhvat<UnetoPrimanje>` isto kao obračun i radni sat (pravilo #22);
+    ne prepisivati taj upit ponovo. Zatečeni redovi su migracijom vezani za prvu isplatu
+    perioda, isti obrazac kao `Faza2_RadniSatiPoIsplati`.
+
+45. **„Već isplaćeno van obračuna" je svojstvo vrste primanja, ne posebna grana koda.**
+    `VrstaPrimanja.VecIsplacenoVanObracuna` (npr. prekoračenje dnevnice) ulazi u bruto i
+    osnovice kao svako drugo primanje, ali se oduzima od `NetoIsplata` — jedno polje, jedna
+    formula u `ObracunService`, ne novi tip primanja ni poseban tok kroz obračun. Ne dodavati
+    `if (vrsta.Sifra == "DNP")` na drugim mestima — sledeća „već isplaćena" vrsta (ako se
+    pojavi) mora proći kroz isto polje, ne kroz novu proveru po šifri.
+
+46. **Rod isplate ostaje jedini razdvajač zarade od naknade i posle Faze 3.2.** Prekoračenje
+    dnevnice je deo redovne zarade (OVP 110, ista SVP kao osnovna zarada), pa ide na isplatu
+    roda `Zarada`, nikad na `VanRadnogOdnosa` — nema veze sa ugovorima van radnog odnosa iako
+    oba „dolaze iz drugog programa". Ne mešati ta dva toka.
+
 ---
 
 ## 5. Način rada koji se pokazao dobrim
@@ -427,3 +452,21 @@ Ovo su svesne odluke sa razlogom; nova sesija ih lako „popravi" u pogrešnom s
   papiru. Obrasci odavde služe da se brojevi provere pre unosa; u portalu se period i uzrok
   preuzimaju iz doznake, a podaci o zaradi iz 12 meseci traže se samo kod **prve** isplate za to
   bolovanje i unose ručno ili XML fajlom.
+- **Pre prvog stvarnog uvoza dnevnice (Faza 3.2), potvrditi sa knjigovođom** tri stvari iz
+  tabele „Blokirano": da li se prekoračenje sme tretirati kao bruto, koji konto ide na „DNP", i
+  da li je datum povratka sa puta zaista trenutak isplate dnevnice u praksi firme. Bez toga
+  ne uvoziti u pravu bazu — samo probno, na test firmi.
+- **U ERPiFinansije**, u kartonu putnog naloga uneti **JMBG radnika** i **šifarnik „Neoporezivi
+  iznos dnevnice"** (Podešavanja) pre prvog izvoza — bez limita izvoz javlja grešku po nalogu.
+- Napraviti putni nalog sa dnevnicom **iznad** 3.471 RSD za zemlju, proknjižiti ga, pa u „Putni
+  nalozi" → „📤 Izvoz za zarade" izabrati mesec **isplate** (datum povratka sa puta) i proveriti
+  da se prikazan iznos prekoračenja poklapa sa ručnim računom (dnevnica − broj dnevnica × limit).
+- U ERPiZarade, „Primanja" → „📥" učitati izvezen fajl i proveriti da je radnik tačno prepoznat
+  po JMBG-u, da nalog bez JMBG-a bude prijavljen kao greška, i da ponovni uvoz istog fajla javi
+  „već uvezen" umesto da udvostruči iznos.
+- Posle uvoza **ponovo obračunati konačnu zaradu** tog radnika i proveriti: bruto i osnovica
+  doprinosa su uvećani za prekoračenje, **neto na platnom listiću nije** uvećan za taj iznos
+  (radnik ga je već primio kroz putni nalog), a PPP-PD za taj mesec pokazuje uvećan bruto pod
+  istom SVP šifrom kao redovna zarada (ne poseban red).
+- Otvoriti „Isplate u mesecu" za period **pre** ponovnog obračuna i proveriti da kontrolna
+  provera javi „Prekoračenje dnevnice bez obračuna" — pa da nalaz nestane posle obračuna.

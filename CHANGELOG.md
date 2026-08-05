@@ -6,6 +6,71 @@ Format je zasnovan na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) s
 
 ---
 
+## [1.17.0] - 2026-08-05
+
+> **Prekoračenje neoporezive dnevnice iz ERPiFinansije sad ulazi u zaradu (Faza 3.2).** Deo
+> dnevnice za službeni put u zemlji iznad zakonskog neoporezivog iznosa (2026: 3.471 RSD) po
+> zakonu je deo zarade radnika, ne trošak firme — a radnik ga je već primio kroz putni nalog.
+
+### 💸 Uvoz iz ERPiFinansije (`PutniNaloziImportService`, novi ekran u „Primanja")
+
+- ERPiFinansije (od 1.6.0) računa prekoračenje po nalogu (isplaćena dnevnica minus zakonski
+  limit × broj dnevnica) i izvozi ga u JSON za period isplate — knjigovođa ga uvozi kroz novo
+  dugme „📥" na ekranu „Primanja".
+- Uparivanje radnika ide **isključivo preko JMBG-a** (novo polje na putnom nalogu u
+  ERPiFinansije) — bez pogađanja po imenu. Kontrolne provere zaustavljaju uvoz kad JMBG
+  nedostaje, ne postoji ili pripada više radnika u istom mesecu, kad je fajl pogrešnog formata
+  ili novije verzije, i kad je nalog već ranije uvezen.
+- Prekoračenje ide **isključivo na konačnu zaradu** meseca, nikad na akontaciju — pravi se sama
+  (isto pravilo kao svuda) ako mesec još nema nijednu isplatu; ako mesec ima isplate a nijedna
+  nije konačna zarada, uvoz se zaustavlja umesto da pogodi pogrešnu.
+- Dva putna naloga istog radnika u istom mesecu se **spajaju** u jedan red — isto pravilo koje
+  ekran „Primanja" već traži za svaku vrstu primanja.
+
+### 🧮 „Već isplaćeno van obračuna" — nova mehanika u `ObracunService`
+
+Radnik dnevnicu dobija odmah, gotovinom ili na račun, kroz sam putni nalog — pre nego što
+obračun zarade uopšte postoji. Da se prekoračenje prosto doda kao obično oporezivo primanje,
+`NetoIsplata` formula bi taj novac isplatila **drugi put** kroz platni spisak.
+
+- Nova `VrstaPrimanja.VecIsplacenoVanObracuna`: iznos i dalje ulazi u bruto, poresku osnovicu i
+  osnovicu doprinosa (ispravno za PPP-PD), ali se **ne dodaje** u `NetoIsplata` — porez i
+  doprinosi na taj deo efektivno padaju na ostatak plate istog meseca, isto kao da je
+  prekoračenje bio običan gross bonus isplaćen kroz platu, samo je glavnica već stigla drugim
+  kanalom.
+- Nova sistemska vrsta primanja **„DNP" — Prekoračenje neoporezive dnevnice** (šifarnik „Vrste
+  primanja"), sa `NeoporeziviLimit = 0` jer je limit već primenjen na strani ERPiFinansije.
+- **Konto za DNP ostaje prazan** dok se ne potvrdi da li se prekoračenje uopšte knjiži na
+  strani zarada — puni iznos dnevnice je već proknjižen u ERPiFinansije (5330/4650); dodatno
+  knjiženje u „Nalog za knjiženje" zarada bi isti novac proknjižilo dvaput. `KnjizenjeService`
+  već baca grešku za praznu vrstu koja se koristi u obračunu, pa je prazno bezbedno dok se ne
+  odluči.
+- **Tretman bruto/neto nije potvrđen kod knjigovođe** — kod pretpostavlja da je uvezeni iznos
+  bruto (porez/doprinosi se računaju direktno na njega), ne neto koje bi trebalo bruto-uvećati.
+  Videti `PLAN_NASTAVKA.md`, Faza 3.2, otvorena pitanja.
+
+### 🔧 Popravka: `UnetoPrimanje` sad zna za isplatu
+
+Do sada je `UnetoPrimanje` bio vezan samo za (radnik, period), bez `IsplataId` — mesec sa dve
+isplate (akontacija + konačna zarada) bi isti uneti iznos obračunao **dvaput**. Popravljeno je
+uzgred jer je preduslov za tačan uvoz dnevnice: `UnetoPrimanje` sad implementira
+`IPripadaIsplati` i prolazi kroz `IsplataService.Obuhvat`, isto kao obračun i radni sat.
+Migracija zatečene redove vezuje za prvu isplatu perioda (isti obrazac kao `Faza2_RadniSatiPoIsplati`).
+
+### ✅ Nova kontrolna provera
+
+„Prekoračenje dnevnice bez obračuna" (`PreFlightService`) — upozorava kad je primanje uvezeno,
+a obračun te isplate još ne postoji ili nije osvežen; bez ove provere bi zaboravljen ponovni
+obračun ostavio radnikovu zaradu kratku za tačno taj iznos, nezapaženo.
+
+### Obim
+
+Samo dnevnice **u zemlji** i samo **prekoračenje dnevnice** (ne i drugi troškovi putnog naloga
+— gorivo, smeštaj, prevoz ostaju čist trošak firme). Inostranstvo i JSON/REST živa sinhronizacija
+ostaju van obima. Detaljan plan i otvorena pitanja: `PLAN_NASTAVKA.md`, Faza 3.2.
+
+---
+
 ## [1.16.0] - 2026-08-04
 
 > **Isplate van radnog odnosa odvojene su od zarada.** Do sada su naknade po ugovoru ulazile u

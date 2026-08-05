@@ -96,6 +96,20 @@ public partial class PrimanjaPage : Page
         StatusMessage.Text = "Primanje će biti obrisano po snimanju.";
     }
 
+    private void BtnUvozPutnihNaloga_Click(object sender, RoutedEventArgs e)
+    {
+        if (PeriodZakljucan()) return;
+
+        var win = new UvozPutnihNalogaWindow(_db) { Owner = Window.GetWindow(this) };
+        win.ShowDialog();
+
+        if (win.Uvezeno)
+        {
+            _db = PlataDbContext.Create(AppConfig.DbPath);
+            Ucitaj();
+        }
+    }
+
     private void BtnSacuvaj_Click(object sender, RoutedEventArgs e)
     {
         if (PeriodZakljucan()) return;
@@ -109,10 +123,12 @@ public partial class PrimanjaPage : Page
             return;
         }
 
-        // Isti radnik i ista vrsta u istom periodu su jedan iznos — dva reda bi značila da
-        // se primanje isplaćuje dvaput, a limit bi se primenio na svaki posebno.
+        // Isti radnik, ista vrsta i ista isplata su jedan iznos — dva reda bi značila da se
+        // primanje isplaćuje dvaput, a limit bi se primenio na svaki posebno. IsplataId ulazi
+        // u poređenje od Faze 3.2, jer dva reda sa različitom isplatom (npr. jedan uz
+        // akontaciju, jedan uz konačnu zaradu) jesu legitimno dva različita unosa.
         var duplikat = _primanja
-            .GroupBy(p => new { p.RadnikId, p.VrstaPrimanjaId })
+            .GroupBy(p => new { p.RadnikId, p.VrstaPrimanjaId, p.IsplataId })
             .FirstOrDefault(g => g.Count() > 1);
 
         if (duplikat != null)

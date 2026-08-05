@@ -37,7 +37,13 @@ public class ObracunService
     /// istu ratu platio više puta u istom mesecu. Podrazumevano je tačno, pa se obračun
     /// meseca sa jednom isplatom ne menja.
     /// </param>
-    public ObracunPlate Calculate(Radnik radnik, RadniSat sati, int godina, int mesec, decimal vrednostBoda, int fondCasova, bool saObustavama = true)
+    /// <param name="isplata">
+    /// Isplata kojoj obračun pripada (Faza 2.2/3.2). Određuje koja uneta primanja ulaze u
+    /// obračun — <see cref="IsplataService.Obuhvat{T}"/> — tako da isti unos ne uđe i u
+    /// akontaciju i u konačnu zaradu istog meseca. <c>null</c> znači ceo period, kao pre
+    /// Faze 2.2, i ne menja rezultat dok mesec ima jednu isplatu.
+    /// </param>
+    public ObracunPlate Calculate(Radnik radnik, RadniSat sati, int godina, int mesec, decimal vrednostBoda, int fondCasova, bool saObustavama = true, Isplata? isplata = null)
     {
         // 1. Calculate tenure (minuli rad)
         int yearsOfTenure = 0;
@@ -141,7 +147,7 @@ public class ObracunService
         // Primanja uneta kroz šifarnik (prevoz, jubilarna nagrada, solidarna pomoć…).
         // Prekoračenje neoporezivog limita po zakonu postaje oporezivo, pa se dodaje u
         // osnovicu; neoporezivi deo se samo isplaćuje i ne ulazi ni u porez ni u doprinose.
-        var unetaPrimanja = UcitajUnetaPrimanja(radnik.Id, godina, mesec);
+        var unetaPrimanja = UcitajUnetaPrimanja(radnik.Id, godina, mesec, isplata);
 
         decimal neoporezivoZaIsplatu = unetaPrimanja.Sum(p => p.NeoporeziviDeo);
         decimal dodatnoUOsnovicuDoprinosa = unetaPrimanja.Where(p => p.UlaziUOsnovicuDoprinosa).Sum(p => p.OporeziviDeo);
@@ -425,11 +431,27 @@ public class ObracunService
 
         decimal totalEmployeeDeductions = dopPioRadnik + dopZdrRadnik + dopNezRadnik + porez;
 
+        // Primanja koja je radnik već primio van ovog obračuna (Faza 3.2 — npr. prekoračenje
+        // dnevnice, isplaćeno kroz putni nalog) ulaze gore u bruto i osnovice — ispravno za
+        // PPP-PD i doprinose — ali se ovde moraju izuzeti iz platnog spiska; inače bi taj novac
+        // otišao radniku drugi put.
+        //
+        // Pretpostavka koja ovde stoji: uvezeni iznos je BRUTO (porez i doprinosi se računaju
+        // na njega isto kao na svaku drugu oporezivu stavku), ne NETO koje bi trebalo posebno
+        // bruto-uvećati. To znači da porez i doprinosi na taj deo efektivno „padnu" na ostatak
+        // plate istog meseca — radnik njima vraća deo poreske obaveze na novac koji je već
+        // primio. Ovo NIJE potvrđeno kod knjigovođe (videti PLAN_NASTAVKA.md, Faza 3.2,
+        // otvoreno pitanje o bruto/neto tretmanu) — ako se pokaže da propis traži bruto-
+        // uvećanje (Bruto = Neto/(1-efektivna stopa)), ovde treba dodati tu računicu pre nego
+        // što se iznos preda u totalBruto gore.
+        decimal vecIsplaceno = unetaPrimanja.Where(p => p.VecIsplacenoVanObracuna).Sum(p => p.OporeziviDeo);
+
         // Neoporezivi deo se isplaćuje radniku u punom iznosu — nije bio ni u bruto iznosu
         // ni u osnovicama, pa se dodaje tek ovde. Deo koji se samo oporezuje već je oporezovan
         // gore, a isplaćuje se uz zaradu.
         decimal netoIsplata = totalBruto + dodatnoSamoOporezivo + neoporezivoZaIsplatu
-                              - totalEmployeeDeductions - kreditiObustava - samodoprinosiIznos;
+                              - totalEmployeeDeductions - kreditiObustava - samodoprinosiIznos
+                              - vecIsplaceno;
         if (netoIsplata < 0m) netoIsplata = 0m;
 
         var obracun = new ObracunPlate
@@ -586,27 +608,33 @@ public class ObracunService
         public required decimal Iznos { get; init; }
         public required decimal OporeziviDeo { get; init; }
         public required bool UlaziUOsnovicuDoprinosa { get; init; }
+        public required bool VecIsplacenoVanObracuna { get; init; }
 
         public decimal NeoporeziviDeo => Iznos - OporeziviDeo;
     }
 
     /// <summary>
-    /// Učitava primanja uneta za radnika u periodu i deli svako na neoporezivi i oporezivi
-    /// deo prema šifarniku.
+    /// Učitava primanja uneta za radnika u periodu (i isplati, Faza 3.2) i deli svako na
+    /// neoporezivi i oporezivi deo prema šifarniku.
     ///
     /// Pravilo: kod oporezive vrste ceo iznos je oporeziv. Kod neoporezive, oporezivo je samo
     /// <b>prekoračenje</b> neoporezivog limita. Limit nula znači da gornje granice nema —
     /// takva vrsta se prijavljuje u kontrolnim proverama, da se ne bi tiho izostavio limit
     /// koji propis predviđa.
+    ///
+    /// Obuhvat po isplati ide preko <see cref="IsplataService.Obuhvat{T}"/> — jedino mesto gde
+    /// pravilo „šta pripada isplati" sme da živi (isto kao za obračun i radni sat).
     /// </summary>
-    private List<PodeljenoPrimanje> UcitajUnetaPrimanja(int radnikId, int godina, int mesec)
+    private List<PodeljenoPrimanje> UcitajUnetaPrimanja(int radnikId, int godina, int mesec, Isplata? isplata)
     {
         try
         {
-            return _db.UnetaPrimanja
+            var upit = _db.UnetaPrimanja
                 .AsNoTracking()
                 .Include(p => p.VrstaPrimanja)
-                .Where(p => p.RadnikId == radnikId && p.Godina == godina && p.Mesec == mesec)
+                .Where(p => p.RadnikId == radnikId);
+
+            return IsplataService.Obuhvat(upit, godina, mesec, isplata)
                 .ToList()
                 .Where(p => p.VrstaPrimanja != null && p.Iznos != 0m)
                 .Select(p => new PodeljenoPrimanje
@@ -614,7 +642,8 @@ public class ObracunService
                     VrstaPrimanjaId = p.VrstaPrimanjaId,
                     Iznos = p.Iznos,
                     OporeziviDeo = OporeziviDeo(p.Iznos, p.VrstaPrimanja),
-                    UlaziUOsnovicuDoprinosa = p.VrstaPrimanja.UlaziUOsnovicuDoprinosa
+                    UlaziUOsnovicuDoprinosa = p.VrstaPrimanja.UlaziUOsnovicuDoprinosa,
+                    VecIsplacenoVanObracuna = p.VrstaPrimanja.VecIsplacenoVanObracuna
                 })
                 .ToList();
         }

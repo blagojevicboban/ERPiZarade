@@ -520,7 +520,7 @@ public partial class NoviObracunWindow : Window
                 _db.RadniSati.Add(radniSati);
 
                 // Izračunaj platu
-                var obracun = _obracunService.Calculate(radnik, radniSati, godina, mesec, vrednostBoda, fondSati, saObustavama);
+                var obracun = _obracunService.Calculate(radnik, radniSati, godina, mesec, vrednostBoda, fondSati, saObustavama, isplata);
                 obracun.IsplataId = isplata?.IsplataId;
                 obracun.Verzija = Services.VerzijeObracunaService.SledecaVerzija(
                     _db, godina, mesec, radnik.Id, isplata);

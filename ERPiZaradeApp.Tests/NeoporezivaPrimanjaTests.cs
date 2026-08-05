@@ -206,6 +206,45 @@ public class NeoporezivaPrimanjaTests
         Assert.Equal(0m, stavka.NeoporeziviDeo);
     }
 
+    /// <summary>
+    /// „Već isplaćeno van obračuna" (Faza 3.2 — npr. prekoračenje dnevnice iz putnog naloga):
+    /// iznos mora ući u bruto i osnovicu doprinosa kao svako oporezivo primanje, ali se NE sme
+    /// isplatiti drugi put kroz platni spisak — radnik ga je već primio. Neto zato ne raste za
+    /// pun iznos (kao kod običnog primanja), nego pada tačno za porez i doprinose koje to
+    /// primanje dodaje — to je ono što drži da isti novac ne ode radniku dvaput.
+    /// </summary>
+    [Fact]
+    public void Primanje_VecIsplacenoVanObracuna_UlaziUOsnovicuAliSeNeIsplacujeDrugiPut()
+    {
+        using var db = NoviKontekst();
+        Unesi(db, VrstePrimanjaSeed.DnevnicaPrekoracenje, 8000m);
+
+        var bez = ObracunBezPrimanja();
+        var obracun = Obracunaj(db);
+        var stavka = Stavka(db, obracun, VrstePrimanjaSeed.DnevnicaPrekoracenje);
+
+        // Ceo iznos je oporeziv (limit je već primenjen na strani ERPiFinansije).
+        Assert.Equal(8000m, stavka.OporeziviDeo);
+        Assert.Equal(0m, stavka.NeoporeziviDeo);
+
+        // Ulazi u poresku osnovicu i osnovicu doprinosa — PPP-PD i doprinosi rastu.
+        Assert.True(obracun.PorezNaDohodak > bez.PorezNaDohodak);
+        Assert.True(obracun.DoprinosPioRadnik > bez.DoprinosPioRadnik);
+
+        // Ne isplaćuje se drugi put: neto ne raste za 8000, nego pada tačno za dodatni porez
+        // i doprinose koje je to primanje dodalo — matematički identično kao da je 8000 bio
+        // običan gross bonus isplaćen kroz platu (radnik zadržava 8000 minus poreska obaveza),
+        // samo je 8000 već stiglo drugim kanalom (putni nalog), a poreska obaveza se poravnava
+        // kroz ovaj obračun.
+        decimal dodatniPorez = obracun.PorezNaDohodak - bez.PorezNaDohodak;
+        decimal dodatniDoprinosiRadnik =
+            (obracun.DoprinosPioRadnik - bez.DoprinosPioRadnik) +
+            (obracun.DoprinosZdravstvoRadnik - bez.DoprinosZdravstvoRadnik) +
+            (obracun.DoprinosNezaposlenostRadnik - bez.DoprinosNezaposlenostRadnik);
+
+        Assert.Equal(bez.NetoIsplata - dodatniPorez - dodatniDoprinosiRadnik, obracun.NetoIsplata);
+    }
+
     /// <summary>Bez unetih primanja obračun mora ostati identičan kao pre Faze 2.5.</summary>
     [Fact]
     public void Obracun_BezUnetihPrimanja_OstajeNepromenjen()

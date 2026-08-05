@@ -77,6 +77,10 @@ public class PreFlightService
 
         var nalazi = new List<NalazProvere>();
 
+        // Ide PRE praznog-perioda izlaza: baš kad obračuna uopšte nema je najčešći slučaj kad
+        // je uvoz prekoračenja dnevnice zaboravljen da se pretoči u platu.
+        ProveriPutneNalogeBezObracuna(godina, mesec, obracuni, nalazi);
+
         if (obracuni.Count == 0)
         {
             nalazi.Add(new NalazProvere
@@ -349,6 +353,60 @@ public class PreFlightService
                 Provera = "Neoporezivo primanje bez limita",
                 Opis = $"„{naziv}“ se isplaćuje bez poreza u punom iznosu jer neoporezivi limit nije unet u šifarnik."
             });
+        }
+    }
+
+    /// <summary>
+    /// Uvezeno prekoračenje dnevnice (Faza 3.2) ulazi u zaradu tek kad se obračun ponovo
+    /// pokrene — sam uvoz ne dira postojeći <c>ObracunPlate</c>. Bez ove provere bi uvoz posle
+    /// zaboravljenog ponovnog obračuna prošao nezapaženo, a radnikova zarada ostala kratka za
+    /// tačno taj iznos.
+    /// </summary>
+    private void ProveriPutneNalogeBezObracuna(
+        int godina, int mesec, List<ObracunPlate> obracuni, List<NalazProvere> nalazi)
+    {
+        List<UnetoPrimanje> dnp;
+        try
+        {
+            dnp = _db.UnetaPrimanja
+                .AsNoTracking()
+                .Include(p => p.VrstaPrimanja)
+                .Include(p => p.Radnik)
+                .Where(p => p.Godina == godina && p.Mesec == mesec && p.Iznos != 0m
+                         && p.VrstaPrimanja.Sifra == VrstePrimanjaSeed.DnevnicaPrekoracenje)
+                .ToList();
+        }
+        catch
+        {
+            return;   // baza starije verzije nema kolonu IsplataId na unetim primanjima
+        }
+
+        if (dnp.Count == 0) return;
+
+        var isplate = _db.Isplate
+            .Where(i => i.Godina == godina && i.Mesec == mesec)
+            .ToDictionary(i => i.IsplataId);
+
+        foreach (var p in dnp)
+        {
+            var isplata = p.IsplataId.HasValue && isplate.TryGetValue(p.IsplataId.Value, out var i) ? i : null;
+
+            bool imaObracun = IsplataService
+                .Obuhvat(obracuni.AsQueryable(), godina, mesec, isplata)
+                .Any(o => o.RadnikId == p.RadnikId);
+
+            if (!imaObracun)
+            {
+                nalazi.Add(new NalazProvere
+                {
+                    Tezina = TezinaNalaza.Upozorenje,
+                    BrojRadnika = p.Radnik?.BrojRadnika,
+                    Radnik = p.Radnik?.ImeIPrezime ?? $"(radnik #{p.RadnikId})",
+                    Provera = "Prekoračenje dnevnice bez obračuna",
+                    Opis = "Uvezeno je prekoračenje dnevnice, ali obračun te isplate još ne postoji ili " +
+                           "nije osvežen. Pokrenite ponovni obračun da iznos uđe u zaradu."
+                });
+            }
         }
     }
 

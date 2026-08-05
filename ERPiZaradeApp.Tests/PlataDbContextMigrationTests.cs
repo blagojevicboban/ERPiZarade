@@ -417,6 +417,75 @@ public class PlataDbContextMigrationTests : IDisposable
     }
 
     /// <summary>
+    /// Isto pravilo, sad nad <b>unetim primanjima</b> (Faza 3.2) — bez ovog testa bi pristup
+    /// <c>UnetoPrimanje.IsplataId</c> preko <c>IPripadaIsplati</c> prošao na InMemory bazi, a
+    /// pao tek na pravom SQLite fajlu kod korisnika, isto kao što bi prošao i za radne sate.
+    /// </summary>
+    [Fact]
+    public void ObuhvatUnetihPrimanja_RadiNadSqliteBazom()
+    {
+        string putanja = NovaPutanja();
+
+        using var db = PlataDbContext.Create(putanja);
+
+        db.Radnici.Add(new Radnik { BrojRadnika = 1, ImeIPrezime = "Pera Perić", Godina = 2026, Mesec = 6 });
+        db.SaveChanges();
+        int radnikId = db.Radnici.Single().Id;
+
+        var vrsta = db.VrstePrimanja.Single(v => v.Sifra == VrstePrimanjaSeed.DnevnicaPrekoracenje);
+
+        var servis = new ERPiZaradeApp.Services.IsplataService(db);
+        var prva = servis.Obezbedi(2026, 6);
+        var druga = servis.Dodaj(2026, 6, VrstaIsplate.Akontacija, "Akontacija", new DateTime(2026, 6, 15)).Isplata!;
+
+        db.UnetaPrimanja.AddRange(
+            new UnetoPrimanje { RadnikId = radnikId, Godina = 2026, Mesec = 6, VrstaPrimanjaId = vrsta.VrstaPrimanjaId, IsplataId = prva.IsplataId, Iznos = 1000m },
+            new UnetoPrimanje { RadnikId = radnikId, Godina = 2026, Mesec = 6, VrstaPrimanjaId = vrsta.VrstaPrimanjaId, IsplataId = druga.IsplataId, Iznos = 2000m });
+        db.SaveChanges();
+
+        Assert.Equal(1000m,
+            ERPiZaradeApp.Services.IsplataService.Obuhvat(db.UnetaPrimanja, 2026, 6, prva).Single().Iznos);
+        Assert.Equal(2000m,
+            ERPiZaradeApp.Services.IsplataService.Obuhvat(db.UnetaPrimanja, 2026, 6, druga).Single().Iznos);
+        Assert.Equal(2,
+            ERPiZaradeApp.Services.IsplataService.Obuhvat(db.UnetaPrimanja, 2026, 6, null).Count());
+    }
+
+    /// <summary>
+    /// Primanje je unos kao radni sat, ne dokaz kao obračun (pravilo #20) — pa
+    /// <c>IsplataService.Obrisi</c> mora da ga povuče sa sobom kad briše praznu isplatu.
+    /// </summary>
+    [Fact]
+    public void ObrisiIsplatu_BrisePrimanjaTeIsplate()
+    {
+        string putanja = NovaPutanja();
+
+        using var db = PlataDbContext.Create(putanja);
+
+        db.Radnici.Add(new Radnik { BrojRadnika = 1, ImeIPrezime = "Pera Perić", Godina = 2026, Mesec = 6 });
+        db.SaveChanges();
+        int radnikId = db.Radnici.Single().Id;
+
+        var vrsta = db.VrstePrimanja.Single(v => v.Sifra == VrstePrimanjaSeed.DnevnicaPrekoracenje);
+
+        var servis = new ERPiZaradeApp.Services.IsplataService(db);
+        servis.Obezbedi(2026, 6);
+        var druga = servis.Dodaj(2026, 6, VrstaIsplate.Akontacija, "Akontacija", new DateTime(2026, 6, 15)).Isplata!;
+
+        db.UnetaPrimanja.Add(new UnetoPrimanje
+        {
+            RadnikId = radnikId, Godina = 2026, Mesec = 6,
+            VrstaPrimanjaId = vrsta.VrstaPrimanjaId, IsplataId = druga.IsplataId, Iznos = 2000m
+        });
+        db.SaveChanges();
+
+        var rezultat = servis.Obrisi(druga.IsplataId);
+
+        Assert.True(rezultat.Uspesno);
+        Assert.Empty(db.UnetaPrimanja.Where(p => p.IsplataId == druga.IsplataId));
+    }
+
+    /// <summary>
     /// Zbir isplaćenog po ugovorima mora da radi nad <b>pravim SQLite-om</b>.
     ///
     /// SQLite ne ume <c>SUM</c> nad <c>decimal</c> kolonom: grupisanje na strani baze pada sa

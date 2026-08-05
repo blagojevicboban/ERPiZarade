@@ -261,18 +261,26 @@ public class IsplataService
         var sati = _db.RadniSati.Where(s => s.IsplataId == isplataId).ToList();
         if (sati.Count > 0) _db.RadniSati.RemoveRange(sati);
 
+        // Uneto primanje (Faza 3.2) je isti slučaj kao radni sat — unos, ne dokaz obračuna —
+        // pa odlazi sa svojom isplatom po istom pravilu.
+        var primanja = _db.UnetaPrimanja.Where(p => p.IsplataId == isplataId).ToList();
+        if (primanja.Count > 0) _db.UnetaPrimanja.RemoveRange(primanja);
+
         _db.Isplate.Remove(isplata);
         _db.SaveChanges();
 
+        int obrisanihUnosa = sati.Count + primanja.Count;
         AuditService.Zabelezi(_db, isplata.Godina, isplata.Mesec, AkcijaObracuna.IsplataObrisana,
             $"{isplata.RedniBroj}. isplata — {Isplata.NazivVrste(isplata.Vrsta)}" +
-            (sati.Count > 0 ? $"; obrisano i {sati.Count} unosa radnih sati" : ""));
+            (obrisanihUnosa > 0
+                ? $"; obrisano i {sati.Count} unosa radnih sati, {primanja.Count} unetih primanja"
+                : ""));
 
         return new RezultatIsplate
         {
             Uspesno = true,
-            Poruka = sati.Count > 0
-                ? $"Isplata je obrisana, zajedno sa {sati.Count} unosa radnih sati koji su joj pripadali."
+            Poruka = obrisanihUnosa > 0
+                ? $"Isplata je obrisana, zajedno sa {sati.Count} unosa radnih sati i {primanja.Count} unetih primanja koji su joj pripadali."
                 : "Isplata je obrisana."
         };
     }
@@ -320,7 +328,14 @@ public class IsplataService
 
         foreach (var s in sati) s.IsplataId = prva.IsplataId;
 
-        int povezano = obracuni.Count + sati.Count;
+        // Uneto primanje (Faza 3.2) nema UgovorId — nasleđuje isti obuhvat kao obračun zarade.
+        var primanja = _db.UnetaPrimanja
+            .Where(p => p.Godina == godina && p.Mesec == mesec && p.IsplataId == null)
+            .ToList();
+
+        foreach (var p in primanja) p.IsplataId = prva.IsplataId;
+
+        int povezano = obracuni.Count + sati.Count + primanja.Count;
         if (povezano > 0) _db.SaveChanges();
         return povezano;
     }

@@ -201,7 +201,7 @@ public partial class RadniSatiPage : Page
         bool saObustavama = _izabranaIsplata?.NosiObustave ?? true;
 
         var novi = new ObracunService(_db)
-            .Calculate(radnik, rs, godina, mesec, vrednostBoda, fondSati, saObustavama);
+            .Calculate(radnik, rs, godina, mesec, vrednostBoda, fondSati, saObustavama, _izabranaIsplata);
 
         // Naknade po ugovoru se ne diraju (odluka 17): ne nastaju iz sati i koeficijenata
         // koji se ovde ponovo računaju, nego zasebnom radnjom nad ugovorom.
@@ -576,7 +576,7 @@ public partial class RadniSatiPage : Page
 
                 // Automatski kreiraj i inicijalni obračun plate za tog radnika da sve bude u sinhronizaciji
                 var noviObracun = obracunService.Calculate(radnik, noviSat, godina, mesec, vrednostBoda, fondSati,
-                    _izabranaIsplata?.NosiObustave ?? true);
+                    _izabranaIsplata?.NosiObustave ?? true, _izabranaIsplata);
                 noviObracun.IsplataId = _izabranaIsplata?.IsplataId;
                 _db.ObracuniPlata.Add(noviObracun);
 
